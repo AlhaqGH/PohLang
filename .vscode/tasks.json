@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Transpile + Run (current example)",
+      "type": "shell",
+      "command": "dart",
+      "args": [
+        "run",
+        "src/transpiler.dart",
+        "${file}"
+      ],
+  "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Transpile + Run (invoice example)",
+      "type": "shell",
+      "command": "dart",
+      "args": [
+        "run",
+        "src/transpiler.dart",
+        "examples/phrase_invoice.poh"
+      ],
+  "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}

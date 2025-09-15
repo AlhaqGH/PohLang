@@ -1,0 +1,11 @@
+# Dart/Pub
+.dart_tool/
+.packages
+build/
+
+# OS/editor
+.DS_Store
+.idea/
+
+# Generated at root by old transpiler
+program.dart
