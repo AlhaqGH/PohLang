@@ -56,6 +56,20 @@ dart analyze
 dart format .
 ```
 
+### Install from pub.dev (after publish)
+
+Once published, users can install globally:
+
+```
+dart pub global activate pohlang
+```
+
+Run a program:
+
+```
+pohlang path/to/program.poh
+```
+
 ## Current Features (v0.1)
 - Write, Ask for, Set, Increase, Decrease
 - Inline If with Otherwise (single-line)
@@ -76,10 +90,10 @@ dart format .
 
 ## Directory Structure
 ```
-src/        Core transpiler sources
-examples/   Sample PohLang programs
-docs/       Vocabulary & syntax references
-lib/        Future runtime helpers / extensions
+src/       Core transpiler sources
+example/   Sample PohLang programs
+doc/       Vocabulary & syntax references
+lib/       Future runtime helpers / extensions
 ```
 
 ## Contributing
