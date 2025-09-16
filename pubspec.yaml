@@ -1,5 +1,5 @@
 name: pohlang
-version: 0.0.1
+version: 0.0.2
 description: "PohLang — a tiny, fully phrasal English-like language that transpiles to Dart."
 homepage: https://github.com/AlhaqGH/PohLang
 repository: https://github.com/AlhaqGH/PohLang

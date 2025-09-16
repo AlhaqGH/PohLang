@@ -2,10 +2,17 @@
 .dart_tool/
 .packages
 build/
+coverage/
+
+# VS Code
+.vscode/
 
 # OS/editor
 .DS_Store
 .idea/
+Thumbs.db
+*.swp
+*.swo
 
 # Generated at root by old transpiler
 program.dart

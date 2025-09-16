@@ -100,4 +100,4 @@ lib/       Future runtime helpers / extensions
 Open to experiments—keep syntax consistent and simple. Avoid adding multiple ways to express the same idea unless it aids learning progression.
 
 ## License
-MIT © 2025 AlhaqGH — see LICENSE for details.
+MIT © 2025 Habiburrahman Mukhlis — see LICENSE for details.

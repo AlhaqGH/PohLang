@@ -39,6 +39,10 @@ Expression       ::= Term { ('+' | '-') Term }
 Term             ::= Factor { ('*' | '/') Factor }          // * and / may not yet be parsed in implementation
 Factor           ::= NUMBER | STRING | IDENT | '(' Expression ')'
 
+Comments        : Lines may include comments starting with '#'.
+				  The parser strips everything from '#' to end of line.
+				  Example: Set x to 1  # this is a comment
+
 ## Desugaring
 Increase X by N => Set X X + N (make number bigger)
 Decrease X by N => Set X X - N (make number smaller)
@@ -55,10 +59,10 @@ Make f with a,b Write E => create a function returning E
 - Data structures: lists, dictionaries.
 - Random numbers, predicates (is even, etc.).
 
-## Error Strategy (Planned)
-- Unrecognized keyword suggestion (edit distance).
-- Provide line/column in messages.
-- Show expected pattern after failing a statement parse.
+## Error Strategy
+- Provide line numbers in error messages (e.g., "Line 3: Repeat block missing End").
+- Suggest canonical phrasing (e.g., "Use 'Write', not 'Say'").
+- Future: columns and edit-distance suggestions.
 
 ## Example
 ```

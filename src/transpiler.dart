@@ -1,17 +1,43 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'ast.dart';
 import 'parser.dart';
 import 'package:path/path.dart' as p;
 
 void main(List<String> args) async {
+  // Simple arg parser: file.poh [--no-run] [-o output.dart]
   if (args.isEmpty) {
-    stderr.writeln('Usage: dart run src/transpiler.dart <file.poh>');
+    stderr.writeln('Usage: dart run src/transpiler.dart <file.poh> [--no-run] [-o <output.dart>]');
     exit(64);
   }
-  final file = File(args[0]);
+  final inputPath = args[0];
+  bool run = true;
+  String? outPath;
+  for (int i = 1; i < args.length; i++) {
+    final a = args[i];
+    if (a == '--no-run') {
+      run = false;
+    } else if (a == '-o' && i + 1 < args.length) {
+      outPath = args[++i];
+    }
+  }
+  try {
+    final generated = await transpileFile(inputPath, outputPath: outPath, run: run);
+    if (!run) {
+      stdout.writeln('Generated: $generated');
+    }
+  } catch (e) {
+    stderr.writeln('$e');
+    exit(65);
+  }
+}
+
+/// Transpile a .poh file to Dart and optionally run it.
+/// Returns the generated Dart file path.
+Future<String> transpileFile(String inputPath, {String? outputPath, bool run = true}) async {
+  final file = File(inputPath);
   if (!await file.exists()) {
-    stderr.writeln('File not found: ${args[0]}');
-    exit(66);
+    throw FormatException('File not found: $inputPath');
   }
   final lines = await file.readAsLines();
   final parser = Parser(lines);
@@ -19,40 +45,44 @@ void main(List<String> args) async {
   try {
     result = parser.parse();
   } catch (e) {
-    stderr.writeln('Parse error: $e');
-    // stderr.writeln(st); // verbose option
-    exit(65);
+    throw FormatException('Parse error: $e');
   }
-  // Emit Dart alongside the input .poh file
-  final inputAbs = p.normalize(p.absolute(args[0]));
+  // Determine output path
+  final inputAbs = p.normalize(p.absolute(inputPath));
   final inputDir = p.dirname(inputAbs);
   final inputBase = p.basenameWithoutExtension(inputAbs);
-  final outPath = p.join(inputDir, '$inputBase.dart');
-  final dartCode = _emitDart(result.program, outPath);
+  final outPath = p.normalize(p.absolute(outputPath ?? p.join(inputDir, '$inputBase.dart')));
+  final dartCode = await _emitDart(result.program, outPath);
   await File(outPath).writeAsString(dartCode);
   stdout.writeln('Generated: $outPath');
+  if (!run) return outPath;
   // Auto-run the generated program
   try {
-    final proc = await Process.start('dart', ['run', outPath],
-        mode: ProcessStartMode.inheritStdio);
+    final proc = await Process.start('dart', ['run', outPath], mode: ProcessStartMode.inheritStdio);
     final code = await proc.exitCode;
-    exit(code);
+    if (code != 0) {
+      throw ProcessException('dart', ['run', outPath], 'Exited with $code', code);
+    }
   } catch (e) {
-    stderr.writeln('Failed to run generated program: $e');
-    exit(70);
+    throw FormatException('Failed to run generated program: $e');
   }
+  return outPath;
 }
 
-String _emitDart(Program program, String outPath) {
+Future<String> _emitDart(Program program, String outPath) async {
   final b = StringBuffer();
   b.writeln("import 'dart:io';");
-  // Compute relative import to runtime.dart from the output file directory
-  final outDir = p.normalize(p.dirname(p.absolute(outPath)));
-  final runtimeAbs =
-      p.normalize(p.join(Directory.current.path, 'src', 'runtime.dart'));
-  var runtimeRel = p.relative(runtimeAbs, from: outDir);
-  runtimeRel = runtimeRel.replaceAll('\\', '/');
-  b.writeln("import '$runtimeRel';");
+  // Compute absolute path to package entry (lib/pohlang.dart) and import via file: URI
+  final pkgRuntimeUri = await Isolate.resolvePackageUri(Uri.parse('package:pohlang/pohlang.dart'));
+  if (pkgRuntimeUri == null) {
+    // Fallback to local src/runtime.dart for repo development
+    final outDir = p.normalize(p.dirname(p.absolute(outPath)));
+  final runtimeAbs = p.normalize(p.join(Directory.current.path, 'src', 'runtime.dart'));
+    var runtimeRel = p.relative(runtimeAbs, from: outDir).replaceAll('\\', '/');
+    b.writeln("import '$runtimeRel';");
+  } else {
+    b.writeln("import '${pkgRuntimeUri.toFilePath().replaceAll('\\\\', '/')}';");
+  }
   // Emit functions (from Make) before main
   final funcDefs = <FunctionDefStmt>[];
   for (final node in program.statements) {

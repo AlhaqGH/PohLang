@@ -12,12 +12,20 @@ class Parser {
   Parser(this.lines);
 
   ParseResult parse() {
+    // Build filtered lines and keep mapping to original 1-based line numbers
     final filtered = <String>[];
-    for (var l in lines) {
-      final trimmed = l.trim();
+    final lineNumbers = <int>[];
+    for (var idx = 0; idx < lines.length; idx++) {
+      var raw = lines[idx];
+      // Remove inline comments starting with '#'.
+      // Note: We don't currently parse strings, so '#' inside strings is not supported.
+      final hashIdx = raw.indexOf('#');
+      if (hashIdx != -1) raw = raw.substring(0, hashIdx);
+      final trimmed = raw.trim();
       if (trimmed.isEmpty) continue;
       if (trimmed == 'Start Program' || trimmed == 'End Program') continue;
       filtered.add(trimmed);
+      lineNumbers.add(idx + 1);
     }
     final stmts = <Statement>[];
     var i = 0;
@@ -39,9 +47,13 @@ class Parser {
                 countStr.substring(0, countStr.length - ' times'.length).trim();
           }
           final bodyExprStr = line.substring(splitIdx + tokenLen).trim();
-          final countExpr = _parseExpression(countStr);
-          final bodyExpr = _parseExpression(bodyExprStr);
-          stmts.add(RepeatStmt(countExpr, [PrintStmt(bodyExpr)]));
+          try {
+            final countExpr = _parseExpression(countStr);
+            final bodyExpr = _parseExpression(bodyExprStr);
+            stmts.add(RepeatStmt(countExpr, [PrintStmt(bodyExpr)]));
+          } catch (e) {
+            throw FormatException('Line ${lineNumbers[i]}: $e');
+          }
           i++;
           continue;
         }
@@ -54,11 +66,15 @@ class Parser {
         final body = <Statement>[];
         i++;
         while (i < filtered.length && filtered[i] != 'End') {
-          body.add(_parsePhraseLine(filtered[i]));
+          try {
+            body.add(_parsePhraseLine(filtered[i]));
+          } catch (e) {
+            throw FormatException('Line ${lineNumbers[i]}: $e');
+          }
           i++;
         }
         if (i >= filtered.length || filtered[i] != 'End') {
-          throw FormatException('Repeat block missing End');
+          throw FormatException('Line ${lineNumbers[i - 1]}: Repeat block missing End');
         }
         // consume End
         i++;
@@ -66,7 +82,11 @@ class Parser {
         continue;
       }
       // default single-line statement
-      stmts.add(_parsePhraseLine(line));
+      try {
+        stmts.add(_parsePhraseLine(line));
+      } catch (e) {
+        throw FormatException('Line ${lineNumbers[i]}: $e');
+      }
       i++;
     }
     final desugared = _desugar(stmts);
@@ -167,8 +187,16 @@ class Parser {
         throw FormatException(
             "Missing 'Write' in If. Example: If cond Write X Otherwise Write Y");
       }
+    // If the line contains 'Otherwise' but not the required 'Otherwise Write', treat as malformed.
+    // Handle both cases: ' Otherwise ' (with trailing space) and end-of-line ' Otherwise'.
+    final otherwiseIdx = line.indexOf(' Otherwise ', writeIdx + ' Write '.length);
+    final otherwiseTailIdx = line.indexOf(' Otherwise', writeIdx + ' Write '.length);
       final elseIdx =
           line.indexOf(' Otherwise Write ', writeIdx + ' Write '.length);
+    if ((otherwiseIdx != -1 || otherwiseTailIdx != -1) && elseIdx == -1) {
+        throw FormatException(
+            "After 'Otherwise' you must add 'Write <expression>'. Example: If cond Write X Otherwise Write Y");
+      }
       if (elseIdx != -1) {
         final condStr = line.substring(3, writeIdx).trim();
         final thenExprStr =
