@@ -81,7 +81,8 @@ Future<String> _emitDart(Program program, String outPath) async {
     var runtimeRel = p.relative(runtimeAbs, from: outDir).replaceAll('\\', '/');
     b.writeln("import '$runtimeRel';");
   } else {
-    b.writeln("import '${pkgRuntimeUri.toFilePath().replaceAll('\\\\', '/')}';");
+    // Use the resolved file: URI directly so imports work even outside a package.
+    b.writeln("import '${pkgRuntimeUri.toString()}';");
   }
   // Emit functions (from Make) before main
   final funcDefs = <FunctionDefStmt>[];
