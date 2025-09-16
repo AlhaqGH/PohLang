@@ -39,11 +39,16 @@ Once in this repo:
 dart run bin/pohlang.dart examples/phrase_repeat.poh
 ```
 
+Flags:
+- `--no-run` — only transpile, don't execute the generated Dart
+- `-o <file.dart>` — write output to a custom path
+
 You can also run with tasks in VS Code: use the Command Palette → Run Task → "Transpile + Run (invoice example)".
 
 ### Package & publish
 
-This package is set to version `0.0.1`. To dry-run a publish:
+Current version: `0.0.2`.
+To dry-run a publish:
 
 ```
 dart pub publish --dry-run
@@ -56,7 +61,7 @@ dart analyze
 dart format .
 ```
 
-### Install from pub.dev (after publish)
+### Install from pub.dev
 
 Once published, users can install globally:
 
@@ -69,6 +74,10 @@ Run a program:
 ```
 pohlang path/to/program.poh
 ```
+
+Notes:
+- You can add comments with `#`. Everything after `#` on a line is ignored.
+- Parser errors include line numbers, for example: `Line 2: After 'Otherwise' you must add 'Write <expression>'`.
 
 ## Current Features (v0.1)
 - Write, Ask for, Set, Increase, Decrease
