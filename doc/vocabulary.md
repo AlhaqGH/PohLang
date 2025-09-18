@@ -21,6 +21,31 @@ PohLang uses natural, English-like commands. Each line is a statement. No symbol
 ## Expressions
 Numbers (e.g., `5`, `12`), strings (`"Hello"`), booleans (`true`, `false`), identifiers (`age`, `name`), addition / subtraction (`a + b`, `a - 1`), multiplication (`a * b`).
 
+### Built‑In Functions
+These are always available (no import needed):
+
+| Name | Forms | Result | Notes |
+|------|-------|--------|-------|
+| `length(x)` | `length List contains 1,2,3` | Number | Works on strings, lists, dictionaries (count of keys) |
+| `sum(list)` | `sum List contains 1,2,3` | Number | Elements must be numeric |
+| `min(list)` | `min List contains 4,2,9` | Number | Non‑empty numeric list |
+| `max(list)` | `max List contains 4,2,9` | Number | Non‑empty numeric list |
+| `range(n)` | `range(5)` | List | `[0,1,2,3,4]` |
+| `range(start,end)` | `range(2,5)` | List | `[2,3,4]` (end exclusive) |
+| `range(start,end,step)` | `range(0,10,2)` | List | `[0,2,4,6,8]` |
+| `join(list, sep)` | `join(nums, "-")` | String | Coerces each element to string; sep optional; default empty |
+| `split(text, sep)` | `split("a,b,c", ",")` | List | Does not trim whitespace automatically |
+| `now()` | `now()` | String | Current timestamp (ISO 8601, seconds precision) |
+
+Examples:
+```
+Set nums to range(5)
+Write join(nums, ",")            # 0,1,2,3,4
+Write length(nums)                # 5
+Write split("a|b|c", "|")     # [a, b, c]
+Write now()                       # 2025-09-18T12:34:56
+```
+
 ## Conditions
 Boolean connectors and phrase-based comparators:
 - Logical: `And`, `Or`, `Not`
