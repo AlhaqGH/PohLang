@@ -96,7 +96,7 @@ class Interpreter:
         self.execute(program)
 
     def run_file(self, path: str) -> None:
-        import os
+        import os, difflib
         full = os.path.abspath(path)
         if full in self.import_stack:
             chain = ' -> '.join(self.import_stack + [full])
@@ -109,6 +109,18 @@ class Interpreter:
                 with open(full, 'r', encoding='utf-8') as f:
                     src = f.read()
             except FileNotFoundError:
+                # Build candidate list: scan current working directory (and examples/poh) for .poh files
+                cwd = os.getcwd()
+                candidates: list[str] = []
+                for root, _, files in os.walk(cwd):
+                    for fn in files:
+                        if fn.lower().endswith('.poh'):
+                            candidates.append(os.path.join(root, fn))
+                short_requested = os.path.basename(full)
+                scored = difflib.get_close_matches(short_requested, [os.path.basename(c) for c in candidates], n=1)
+                if scored:
+                    suggestion = scored[0]
+                    raise RuntimeErrorPoh(f"I couldn't find the file '{path}'. Did you mean '{suggestion}'?")
                 raise RuntimeErrorPoh(f"I couldn't find the file '{path}'.")
             cwd_before = os.getcwd()
             os.chdir(os.path.dirname(full) or cwd_before)
@@ -491,10 +503,48 @@ class Interpreter:
             def call(self, args: List[Any]) -> Any:
                 return self.impl(args)
 
+        # New built-ins --------------------------------------------------
+        def _range(args: List[Any]) -> Any:
+            # range(n) or range(start, stop[, step])
+            if not 1 <= len(args) <= 3:
+                raise RuntimeErrorPoh("range expects 1 to 3 arguments")
+            nums = [int(a) for a in args]
+            if len(nums) == 1:
+                return list(range(nums[0]))
+            if len(nums) == 2:
+                return list(range(nums[0], nums[1]))
+            return list(range(nums[0], nums[1], nums[2]))
+
+        def _join(args: List[Any]) -> Any:
+            # join(list, sep) or join(list) default sep empty
+            if not (1 <= len(args) <= 2):
+                raise RuntimeErrorPoh("join expects list and optional separator")
+            col = args[0]
+            if not isinstance(col, (list, tuple)):
+                raise RuntimeErrorPoh("join expects a list")
+            sep = args[1] if len(args) == 2 else ''
+            return str(sep).join(str(x) for x in col)
+
+        def _split(args: List[Any]) -> Any:
+            # split(text, sep) -> list
+            if len(args) != 2:
+                raise RuntimeErrorPoh("split expects text and separator")
+            return str(args[0]).split(str(args[1]))
+
+        def _now(args: List[Any]) -> Any:
+            if args:
+                raise RuntimeErrorPoh("now expects no arguments")
+            import datetime
+            return datetime.datetime.now().isoformat(timespec='seconds')
+
         self.functions['length'] = _Builtin('length', _length)
         self.functions['sum'] = _Builtin('sum', _sum)
         self.functions['min'] = _Builtin('min', _minf)
         self.functions['max'] = _Builtin('max', _maxf)
+        self.functions['range'] = _Builtin('range', _range)
+        self.functions['join'] = _Builtin('join', _join)
+        self.functions['split'] = _Builtin('split', _split)
+        self.functions['now'] = _Builtin('now', _now)
 
     def _num_predicate(self, v: Any, pred: str) -> bool:
         if not isinstance(v, (int, float)):
