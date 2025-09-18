@@ -100,3 +100,12 @@ This vocabulary will expand cautiously to avoid overwhelming beginners.
 
 ### Scoping Recap
 Blocks (`If`, `While`, `Repeat`, function bodies, and `Begin`) create new scopes. New names disappear after `End`. Assigning to an existing outer name mutates it. The loop variable `it` only exists inside a `Repeat` body when iterating lists or dictionaries.
+
+### Recipes (See syntax.md for more)
+Common patterns:
+| Goal | Sketch |
+|------|--------|
+| Join numbers 0..4 | `Write join(range(5), ",")` |
+| Sum evens 0..9 | Use `Repeat range(10)` with `If it is even` accumulate `total` |
+| Filter odds | Add `it` to list if `it is odd` |
+| Timestamp | `Write now()` |

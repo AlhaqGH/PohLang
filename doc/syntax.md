@@ -64,6 +64,91 @@ Expression       ::= Term { ('+' | '-') Term }
 Term             ::= Factor { ('*' | '/') Factor }          // * and / may not yet be parsed in implementation
 Factor           ::= NUMBER | STRING | IDENT | '(' Expression ')'
 
+## Built-In Functions
+The interpreter ships with a small standard library of pure helpers:
+
+| Name | Forms | Result | Notes |
+|------|-------|--------|-------|
+| `length(x)` | `length List contains 1,2,3` | Number | Works on strings, lists, dictionaries |
+| `sum(list)` | `sum List contains 1,2,3` | Number | Elements must be numeric |
+| `min(list)` | `min List contains 4,2,9` | Number | Non-empty numeric list |
+| `max(list)` | `max List contains 4,2,9` | Number | Non-empty numeric list |
+| `range(n)` | `range(5)` | List | 0..n-1 |
+| `range(start,end)` | `range(2,5)` | List | start..end-1 |
+| `range(start,end,step)` | `range(0,10,2)` | List | step progression (no zero step) |
+| `join(list, sep)` | `join(nums, ":")` | String | Coerces elements; sep optional (default "") |
+| `split(text, sep)` | `split("a,b,c", ",")` | List | Simple separator split |
+| `now()` | `now()` | String | ISO-8601 timestamp |
+
+Example:
+```
+Set nums to range(5)
+Write join(nums, ",")    # 0,1,2,3,4
+Write length(nums)        # 5
+Write now()
+```
+
+### Misuse Examples (Runtime Errors)
+These demonstrate error conditions the runtime reports:
+
+| Code | Error (summary) | Reason |
+|------|------------------|--------|
+| `range(1,5,0)` | "range expects 1 to 3 arguments" or infinite-step prevention (future explicit check) | Zero step unsupported |
+| `join(5, ",")` | "join expects a list" | First arg must be list/tuple |
+| `sum List contains 1,"a"` | "sum expects numeric values" | Non-numeric in numeric fold |
+| `min List contains` | parse error | Empty literal / syntax issue |
+| `split("abc", "")` | Valid (returns every char) | Edge but allowed |
+
+Future improvement: specific message for zero step in `range`.
+
+## Recipes
+Practical multi-line idioms using existing primitives.
+
+### Join Numbers 1..N
+```
+Set out to ""
+Repeat range(1,6)
+	Set out to out + it + ","
+End
+Write out
+```
+
+### Sum Only Even Numbers 0..9
+```
+Set total to 0
+Repeat range(10)
+	If it is even
+		Set total to total + it
+	End
+End
+Write total   # 20
+```
+
+### Filter (Collect) Odd Numbers
+```
+Set odds to List contains
+Repeat range(10)
+	If it is odd
+		Add it to odds
+	End
+End
+Write odds
+```
+
+### Timestamped Log Line
+```
+Write "Started at " + now()
+```
+
+### Split, Transform, Rejoin
+```
+Set parts to split("a-b-c", "-")
+Repeat parts
+	Set it to it + it   # (planned: future map sugar)
+End
+Write join(parts, ":")
+```
+
 ## Desugaring
 Increase X by N => Set X X + N (make number bigger)
 Decrease X by N => Set X X - N (make number smaller)
