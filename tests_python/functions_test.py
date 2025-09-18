@@ -92,3 +92,13 @@ Write foo(1)
         run_code(src)
     assert 'expects 2 argument(s) but got 1' in str(e.value)
 
+
+def test_inline_function_arity_mismatch():
+    src = """
+Make greet with name, title Write "Hi " + title + " " + name
+Write greet("OnlyOne")
+""".strip()
+    with pytest.raises(RuntimeErrorPoh) as e:
+        run_code(src)
+    assert "expects 2 argument(s) but got 1" in str(e.value)
+

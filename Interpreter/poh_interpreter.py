@@ -47,19 +47,17 @@ class Environment:
         if defining_env is not None:
             defining_env.values[name] = value
             return
-        # Case 3: new symbol -> choose function-local if within a function, else global
-        # Walk up from current to find nearest function frame before global
-        probe: Environment = self
-        while probe and probe.frame_type != 'function' and probe.parent:
-            probe = probe.parent
-        if probe and probe.frame_type == 'function':
-            probe.values[name] = value  # define as function-local
-        else:
-            # global definition
-            root = self
-            while root.parent:
-                root = root.parent
-            root.values[name] = value
+        # Case 3: new symbol
+        if self.frame_type == 'block':
+            # Always keep block-introduced names local to the block (true lexical scoping).
+            self.values[name] = value
+            return
+        # For function or global frames: function -> local; global -> global
+        if self.frame_type == 'function':
+            self.values[name] = value
+            return
+        # global frame
+        self.values[name] = value
 
     def define(self, name: str, value: Any) -> None:
         self.values[name] = value

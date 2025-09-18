@@ -10,7 +10,7 @@ This version defines ONLY the phrasal/English-like grammar. Symbol mode has been
 ## High-Level Concepts
 - A program is a sequence of statements (one per line).
 - Each statement starts with a verb-like keyword: Write / Ask / Set / Increase / Decrease / If / Repeat / Make / Use.
-- Functions are currently single-line (inline). Multi-line blocks planned.
+- Functions support both single-line (inline) and multi-line block forms with parameters and returns.
 
 ## Scoping Rules (Current)
 PohLang uses lexical (static) scoping with block boundaries introduced by control structures (`If`, `While`, `Repeat`, function bodies) and explicit anonymous blocks using `Begin ... End`.
@@ -22,6 +22,13 @@ Rules:
 4. Loop iteration helper `it` (for `Repeat <list>` or `Repeat <dictionary>`) exists only inside each iteration body.
 5. Function parameters live in their own function scope; blocks inside a function can define new locals that disappear when the block ends, while mutations to existing variables (including parameters) persist for the rest of the function.
 6. Returning from inside a nested block immediately unwinds to the caller.
+7. New variables created inside a block (`If`/`While`/`Repeat`/`Begin`) are confined to that block and do not leak outside.
+
+### Function Scoping Specifics
+- Parameters shadow outer variables with the same name.
+- New names created via `Set` inside a function become function-locals unless they already exist in an outer scope.
+- Inner blocks do not leak their fresh variables to the function body (true lexical block scoping).
+- Recursion is supported; each call gets a fresh function environment.
 
 ### Anonymous Blocks
 Use `Begin ... End` to introduce a new scope without control flow:
@@ -49,7 +56,9 @@ DecStmt          ::= 'Decrease' IDENT 'by' NUMBER | 'Decrease' IDENT NUMBER
 IfInline         ::= 'If' Condition 'Write' Expression 'Otherwise' 'Write' Expression
 WhileInline      ::= 'While' Condition 'Write' Expression
 RepeatInline     ::= 'Repeat' (NUMBER|IDENT) 'times' 'Write' Expression | 'Repeat' (NUMBER|IDENT) 'Write' Expression
-FuncInline       ::= 'Make' IDENT 'with' ParamList 'Write' Expression
+FuncInline       ::= 'Make' IDENT 'with' ParamList 'Write' Expression  # inline form (implicit Return)
+FuncBlock        ::= 'Make' IDENT 'with' ParamList NEWLINE { Statement | ReturnStmt } 'End'
+ReturnStmt       ::= 'Return' [ Expression ]
 CallStmt         ::= 'Use' IDENT 'with' ArgList
 
 ParamList        ::= IDENT { ',' IDENT } | /* empty */
@@ -63,6 +72,36 @@ CompareOp        ::= 'Greater Or Equal' | 'Less Or Equal' | 'Equals' | 'Not Equa
 Expression       ::= Term { ('+' | '-') Term }
 Term             ::= Factor { ('*' | '/') Factor }          // * and / may not yet be parsed in implementation
 Factor           ::= NUMBER | STRING | IDENT | '(' Expression ')'
+
+## Functions
+
+### Inline Function
+```
+Make greet with name Write "Hello, " + name
+Write greet("World")   # Hello, World
+```
+
+### Block Function
+```
+Make add with a, b
+	Set total to a + b
+	Return total
+End
+Write add(3,4)   # 7
+```
+
+### Recursive Function
+```
+Make fact with n
+	If n is 0
+		Return 1
+	End
+	Return n * fact(n - 1)
+End
+Write fact(5)   # 120
+```
+
+Arity must match exactly; a mismatch raises a runtime error.
 
 ## Built-In Functions
 The interpreter ships with a small standard library of pure helpers:
@@ -147,6 +186,32 @@ Repeat parts
 	Set it to it + it   # (planned: future map sugar)
 End
 Write join(parts, ":")
+```
+
+### Factorial (Recursion Recipe)
+```
+Make fact with n
+	If n is 0
+		Return 1
+	End
+	Return n * fact(n - 1)
+End
+Write fact(6)  # 720
+```
+
+### Helper Function For Filtering
+```
+Set evens to List contains
+Make pushIfEven with n
+	If n is even
+		Add n to evens
+	End
+	Return nothing
+End
+Repeat range(10)
+	Use pushIfEven with it
+End
+Write evens
 ```
 
 ## Desugaring

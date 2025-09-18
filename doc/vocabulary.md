@@ -17,6 +17,7 @@ PohLang uses natural, English-like commands. Each line is a statement. No symbol
 | Make function (inline) | `Make <name> with <params> Write <expr>` | Creates a function that returns the expression |
 | Use function | `Use <name> with <args>` | Runs a function |
 | Anonymous block | `Begin` (lines...) `End` | Introduces a new lexical scope without control flow |
+| Function block | `Make <name> with <params>` ... `Return <expr>` ... `End` | Multi-line function; explicit Return (else returns nothing) |
 
 ## Expressions
 Numbers (e.g., `5`, `12`), strings (`"Hello"`), booleans (`true`, `false`), identifiers (`age`, `name`), addition / subtraction (`a + b`, `a - 1`), multiplication (`a * b`).
@@ -109,3 +110,4 @@ Common patterns:
 | Sum evens 0..9 | Use `Repeat range(10)` with `If it is even` accumulate `total` |
 | Filter odds | Add `it` to list if `it is odd` |
 | Timestamp | `Write now()` |
+| Factorial | See recursion example in syntax.md |
