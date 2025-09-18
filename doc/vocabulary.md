@@ -16,6 +16,7 @@ PohLang uses natural, English-like commands. Each line is a statement. No symbol
 | While loop (inline) | `While <condition> Write <expr>` | Single-line while form |
 | Make function (inline) | `Make <name> with <params> Write <expr>` | Creates a function that returns the expression |
 | Use function | `Use <name> with <args>` | Runs a function |
+| Anonymous block | `Begin` (lines...) `End` | Introduces a new lexical scope without control flow |
 
 ## Expressions
 Numbers (e.g., `5`, `12`), strings (`"Hello"`), booleans (`true`, `false`), identifiers (`age`, `name`), addition / subtraction (`a + b`, `a - 1`), multiplication (`a * b`).
@@ -71,3 +72,6 @@ Use greet with "Poh"
 
 ---
 This vocabulary will expand cautiously to avoid overwhelming beginners.
+
+### Scoping Recap
+Blocks (`If`, `While`, `Repeat`, function bodies, and `Begin`) create new scopes. New names disappear after `End`. Assigning to an existing outer name mutates it. The loop variable `it` only exists inside a `Repeat` body when iterating lists or dictionaries.

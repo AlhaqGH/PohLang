@@ -292,6 +292,8 @@ class Interpreter:
                 raise RuntimeErrorPoh(f"Line {st.line}: {e}")
         elif isinstance(st, ReturnStmt):
             raise _ReturnSignal(self._eval(st.value, env) if st.value is not None else None)
+        elif isinstance(st, BlockStmt):
+            self._exec_block(st.body, Environment(env, frame_type='block'))
         else:
             # placeholders for Stop/Skip were mapped to Write None in parser; detect specifically
             pass

@@ -14,6 +14,7 @@ from .poh_ast import (
     IfStmt,
     WhileStmt,
     RepeatStmt,
+    BlockStmt,
     FunctionDefStmt,
     ReturnStmt,
     UseStmt,
@@ -143,6 +144,23 @@ def _parse_stmt_or_block(cleaned: List[Tuple[int, str]], i: int) -> Tuple[Stmt, 
             stmt2, i = _parse_stmt_or_block(cleaned, i)
             body.append(stmt2)
         raise ParseError("Repeat block not closed with End/End Repeat", ln)
+
+    # Anonymous Block: Begin ... End
+    if low == "begin":
+        i += 1
+        body: List[Stmt] = []
+        while i < len(cleaned):
+            ln2, raw2 = cleaned[i]
+            t = raw2.strip()
+            l2 = t.lower()
+            if l2 == "end":
+                i += 1
+                return BlockStmt(body, ln), i
+            if l2.startswith("end "):
+                raise ParseError(f"Mismatched '{t}'; expected 'End'", ln2)
+            stmt2, i = _parse_stmt_or_block(cleaned, i)
+            body.append(stmt2)
+        raise ParseError("Block starting at Begin not closed with End", ln)
 
     # Function block
     if low.startswith("make ") and " write " not in low:
@@ -471,8 +489,10 @@ def _parse_primary(tokens: List[Tuple[str, str]], ln: int):
             rest = tokens[1:]
         # postfix 'at'
         while rest and rest[0][0] == 'IDENT' and rest[0][1].lower() == 'at':
-            rhs, rest2 = _parse_add_sub_tokens(rest[1:], ln)
-            expr = AtExpr(expr, rhs)
+            # Restrict key to a primary expression (identifier, string, number, grouped) to
+            # avoid unintended parsing like d at "a" + d at "b" turning into key 'a' + (...)
+            key_expr, rest2 = _parse_at_key(rest[1:], ln)
+            expr = AtExpr(expr, key_expr)
             rest = rest2
         return expr, rest
     if kind == '(':
@@ -481,8 +501,8 @@ def _parse_primary(tokens: List[Tuple[str, str]], ln: int):
             raise ParseError("expected ')' to close group", ln)
         rest = rest[1:]
         while rest and rest[0][0] == 'IDENT' and rest[0][1].lower() == 'at':
-            rhs, rest2 = _parse_add_sub_tokens(rest[1:], ln)
-            expr = AtExpr(expr, rhs)
+            key_expr, rest2 = _parse_at_key(rest[1:], ln)
+            expr = AtExpr(expr, key_expr)
             rest = rest2
         return expr, rest
     return IdentifierExpr(val), tokens[1:]
@@ -495,6 +515,30 @@ def _parse_add_sub_tokens(tokens: List[Tuple[str, str]], ln: int):
         rhs, rest = _parse_mul_div(rest[1:], ln)
         expr = BinaryExpr(expr, op, rhs)
     return expr, rest
+
+
+def _parse_at_key(tokens: List[Tuple[str, str]], ln: int):
+    """Parse a restricted key expression for 'at' postfix: only primary without further + or - chaining.
+    Allows grouped additive inside parentheses if user wants complex key.
+    """
+    if not tokens:
+        raise ParseError("expected key after 'at'", ln)
+    kind, val = tokens[0]
+    if kind == 'STRING':
+        return LiteralExpr(_unescape(val[1:-1])), tokens[1:]
+    if kind == 'NUMBER':
+        if '.' in val:
+            return LiteralExpr(float(val)), tokens[1:]
+        return LiteralExpr(int(val)), tokens[1:]
+    if kind == 'IDENT':
+        return IdentifierExpr(val), tokens[1:]
+    if kind == '(':
+        # full expression inside parentheses
+        expr, rest = _parse_add_sub_tokens(tokens[1:], ln)
+        if not rest or rest[0][0] != ')':
+            raise ParseError("expected ')' to close key group", ln)
+        return expr, rest[1:]
+    raise ParseError("invalid key after 'at'", ln)
 
 
 def _parse_logic_expr(src: str, ln: int):
