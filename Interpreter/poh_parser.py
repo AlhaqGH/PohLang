@@ -47,14 +47,28 @@ from .poh_ast import (
 
 
 class ParseError(Exception):
-    def __init__(self, msg: str, line: Optional[int] = None):
+    def __init__(self, msg: str, line: Optional[int] = None, col: Optional[int] = None, file: Optional[str] = None):
         self.line = line
-        super().__init__(msg if line is None else f"Line {line}: {msg}")
+        self.col = col
+        self.file = file
+        # Preserve legacy format when only line provided (to keep current tests passing)
+        if file is None and col is None and line is not None:
+            super().__init__(f"Line {line}: {msg}")
+            return
+        loc_parts = []
+        if file:
+            loc_parts.append(file)
+        if line is not None:
+            loc_parts.append(f"line {line}")
+        if col is not None:
+            loc_parts.append(f"col {col}")
+        loc_prefix = ("[" + ":".join(loc_parts) + "] ") if loc_parts else ""
+        super().__init__(f"{loc_prefix}{msg}")
 
 
 # Public API ---------------------------------------------------------------
 
-def parse_program(lines: List[str]) -> Program:
+def parse_program(lines: List[str], filename: Optional[str] = None) -> Program:
     cleaned: List[Tuple[int, str]] = []
     for i, raw in enumerate(lines, 1):
         line = _strip_comment(raw.rstrip("\n"))
@@ -72,6 +86,8 @@ def parse_program(lines: List[str]) -> Program:
 
 def _parse_stmt_or_block(cleaned: List[Tuple[int, str]], i: int) -> Tuple[Stmt, int]:
     ln, line = cleaned[i]
+    # Keep original line for column calculations on unknown keywords; use stripped for keyword detection
+    raw_line = line
     s = line.strip()
     low = s.lower()
 
@@ -187,20 +203,22 @@ def _parse_stmt_or_block(cleaned: List[Tuple[int, str]], i: int) -> Tuple[Stmt, 
         raise ParseError("Function block not closed with End", ln)
 
     # Fallback single-line
-    st = _parse_single_stmt(ln, s)
+    st = _parse_single_stmt(ln, raw_line)
     return st, i + 1
 
 
 def _parse_single_stmt(ln: int, s: str) -> Stmt:
-    low = s.lower()
+    orig = s
+    trim = s.strip()
+    low = trim.lower()
 
     # Write
     if low.startswith("write "):
-        return WriteStmt(_parse_expr(s[6:].strip(), ln), ln)
+        return WriteStmt(_parse_expr(trim[6:].strip(), ln), ln)
 
     # Ask for
     if low.startswith("ask for "):
-        body = s[8:].strip()
+        body = trim[8:].strip()
         parts = body.split()
         if len(parts) >= 2 and parts[-1].lower() in ("number", "decimal"):
             kind = "number" if parts[-1].lower() == "number" else "decimal"
@@ -210,7 +228,7 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
 
     # Set
     if low.startswith("set "):
-        rest = s[4:].strip()
+        rest = trim[4:].strip()
         if " to " in rest.lower():
             name, expr_src = re.split(r"(?i)\s+to\s+", rest, maxsplit=1)
         else:
@@ -224,19 +242,19 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
     # context here; if used outside a function the interpreter will raise at runtime
     # when the _ReturnSignal escapes to top-level (which we could optionally refine later).
     if low.startswith("return"):
-        expr_src = s[6:].strip()
+        expr_src = trim[6:].strip()
         return ReturnStmt(_parse_expr(expr_src, ln) if expr_src else None, ln)
 
     # Increase / Decrease
     if low.startswith("increase "):
-        rest = s[9:].strip()
+        rest = trim[9:].strip()
         if " by " in rest.lower():
             name, amt = re.split(r"(?i)\s+by\s+", rest, maxsplit=1)
         else:
             name, amt = rest, "1"
         return IncStmt(name.strip(), _parse_expr(amt.strip(), ln), ln)
     if low.startswith("decrease "):
-        rest = s[9:].strip()
+        rest = trim[9:].strip()
         if " by " in rest.lower():
             name, amt = re.split(r"(?i)\s+by\s+", rest, maxsplit=1)
         else:
@@ -245,13 +263,13 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
 
     # Add / Remove (list or dict)
     if low.startswith("add ") and " to " in low:
-        value_src, target_src = re.split(r"(?i)\s+to\s+", s[4:].strip(), maxsplit=1)
+        value_src, target_src = re.split(r"(?i)\s+to\s+", trim[4:].strip(), maxsplit=1)
         if ":" in value_src:
             k, v = value_src.split(":", 1)
             return AddToDictStmt(_parse_expr(k.strip(), ln), _parse_expr(v.strip(), ln), _parse_expr(target_src.strip(), ln), ln)
         return AddToListStmt(_parse_expr(value_src.strip(), ln), _parse_expr(target_src.strip(), ln), ln)
     if low.startswith("remove ") and " from " in low:
-        value_src, target_src = re.split(r"(?i)\s+from\s+", s[7:].strip(), maxsplit=1)
+        value_src, target_src = re.split(r"(?i)\s+from\s+", trim[7:].strip(), maxsplit=1)
         if value_src.strip().startswith(('"', "'")):
             return RemoveFromDictStmt(_parse_expr(value_src.strip(), ln), _parse_expr(target_src.strip(), ln), ln)
         return RemoveFromListStmt(_parse_expr(value_src.strip(), ln), _parse_expr(target_src.strip(), ln), ln)
@@ -259,7 +277,7 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
     # Inline If / While / Repeat / Make
     if low.startswith("if ") and " write " in low:
         # If cond Write expr [Otherwise Write expr]
-        m = re.match(r"(?i)if (.*) write (.*)", s)
+        m = re.match(r"(?i)if (.*) write (.*)", trim)
         if not m:
             raise ParseError("Malformed inline If", ln)
         cond_part = m.group(1)
@@ -276,7 +294,7 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
         return IfStmt(_parse_bool_expr(cond_part, ln), [then_stmt], else_block, ln)
 
     if low.startswith("while ") and " write " in low:
-        m = re.match(r"(?i)while (.*) write (.*)", s)
+        m = re.match(r"(?i)while (.*) write (.*)", trim)
         if not m:
             raise ParseError("Malformed inline While", ln)
         cond_src = m.group(1)
@@ -284,7 +302,7 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
         return WhileStmt(_parse_bool_expr(cond_src, ln), [WriteStmt(_parse_expr(expr_src, ln), ln)], ln)
 
     if low.startswith("repeat ") and " write " in low:
-        m = re.match(r"(?i)repeat (.*) write (.*)", s)
+        m = re.match(r"(?i)repeat (.*) write (.*)", trim)
         if not m:
             raise ParseError("Malformed inline Repeat", ln)
         count_src = m.group(1)
@@ -292,7 +310,7 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
         return RepeatStmt(_parse_expr(count_src, ln), [WriteStmt(_parse_expr(expr_src, ln), ln)], ln)
 
     if low.startswith("make ") and " write " in low:
-        rest = s[5:].strip()
+        rest = trim[5:].strip()
         # Split signature and expression at the first ' write '
         m = re.search(r"(?i)\swrite\s", rest)
         if not m:
@@ -303,12 +321,12 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
         return FunctionDefStmt(name, params, [ReturnStmt(_parse_expr(expr_src, ln), ln)], ln)
 
     if low.startswith("use "):
-        rest = s[4:].strip()
+        rest = trim[4:].strip()
         name, args = _parse_call_sig(rest, ln)
         return UseStmt(name, [_parse_expr(a, ln) for a in args], ln)
 
     if low.startswith("import "):
-        m = re.match(r"(?i)import\s+\"(.*)\"", s)
+        m = re.match(r"(?i)import\s+\"(.*)\"", trim)
         if not m:
             raise ParseError("Import expects a quoted path", ln)
         return ImportStmt(m.group(1), ln)
@@ -325,11 +343,16 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
     KNOWN = [
         'write','ask','set','increase','decrease','if','while','repeat','make','use','import','stop','skip','debug'
     ]
-    head = s.split()[0].lower() if s.split() else s.lower()
+    head = trim.split()[0].lower() if trim.split() else trim.lower()
     suggestion = difflib.get_close_matches(head, KNOWN, n=1)
+    # Compute column (first non-space char = 1-based)
+    stripped_index = 0
+    while stripped_index < len(orig) and orig[stripped_index].isspace():
+        stripped_index += 1
+    col = stripped_index + 1
     if suggestion:
-        raise ParseError(f"Unknown statement '{s}'. Did you mean '{suggestion[0]}'?", ln)
-    raise ParseError(f"Unknown statement: {s}", ln)
+        raise ParseError(f"Unknown statement '{s}'. Did you mean '{suggestion[0]}'?", ln, col=col)
+    raise ParseError(f"Unknown statement: {s}", ln, col=col)
 
 
 # Helpers -----------------------------------------------------------------
@@ -431,49 +454,49 @@ def _parse_expr(src: str, ln: int):
 # Pratt-style precedence --------------------------------------------------
 
 def _parse_add_sub(src: str, ln: int):
-    tokens = _tokenize(src)
+    tokens = _tokenize(src, ln)
     expr, rest = _parse_mul_div(tokens, ln)
     while rest and rest[0][0] in ('+', '-'):
         op = rest[0][0]
         rhs, rest = _parse_mul_div(rest[1:], ln)
-        expr = BinaryExpr(expr, op, rhs)
+        expr = BinaryExpr(expr, op, rhs, line=ln)
     return expr
 
 
-def _parse_mul_div(tokens: List[Tuple[str, str]], ln: int):
+def _parse_mul_div(tokens, ln: int):
     expr, rest = _parse_unary(tokens, ln)
     while rest and rest[0][0] in ('*', '/'):
         op = rest[0][0]
         rhs, rest = _parse_unary(rest[1:], ln)
-        expr = BinaryExpr(expr, op, rhs)
+        expr = BinaryExpr(expr, op, rhs, line=ln)
     return expr, rest
 
 
-def _parse_unary(tokens: List[Tuple[str, str]], ln: int):
+def _parse_unary(tokens, ln: int):
     if tokens and tokens[0][0] in ('+', '-', '!'):
         op = tokens[0][0]
         expr, rest = _parse_primary(tokens[1:], ln)
-        return UnaryExpr(op, expr), rest
+        return UnaryExpr(op, expr, line=ln), rest
     return _parse_primary(tokens, ln)
 
 
-def _parse_primary(tokens: List[Tuple[str, str]], ln: int):
+def _parse_primary(tokens, ln: int):
     if not tokens:
         raise ParseError("expected expression", ln)
-    kind, val = tokens[0]
+    kind, val, col = tokens[0]
     if kind == 'NUMBER':
         if '.' in val:
-            return LiteralExpr(float(val)), tokens[1:]
-        return LiteralExpr(int(val)), tokens[1:]
+            return LiteralExpr(float(val), line=ln, col=col), tokens[1:]
+        return LiteralExpr(int(val), line=ln, col=col), tokens[1:]
     if kind == 'STRING':
-        return LiteralExpr(_unescape(val[1:-1])), tokens[1:]
+        return LiteralExpr(_unescape(val[1:-1]), line=ln, col=col), tokens[1:]
     if kind == 'IDENT':
         # possible call
         if len(tokens) > 1 and tokens[1][0] == '(':
             args: List = []
             rest = tokens[2:]
             if rest and rest[0][0] == ')':
-                return CallExpr(val, []), rest[1:]
+                return CallExpr(val, [], line=ln, col=col), rest[1:]
             while True:
                 arg, rest = _parse_add_sub_tokens(rest, ln)
                 args.append(arg)
@@ -481,20 +504,20 @@ def _parse_primary(tokens: List[Tuple[str, str]], ln: int):
                     raise ParseError("expected ')' in call", ln)
                 if rest[0][0] == ')':
                     rest = rest[1:]
-                    expr: object = CallExpr(val, args)
+                    expr: object = CallExpr(val, args, line=ln, col=col)
                     break
                 if rest[0][0] != ',':
                     raise ParseError("expected ',' between args", ln)
                 rest = rest[1:]
         else:
-            expr = IdentifierExpr(val)
+            expr = IdentifierExpr(val, line=ln, col=col)
             rest = tokens[1:]
         # postfix 'at'
         while rest and rest[0][0] == 'IDENT' and rest[0][1].lower() == 'at':
             # Restrict key to a primary expression (identifier, string, number, grouped) to
             # avoid unintended parsing like d at "a" + d at "b" turning into key 'a' + (...)
             key_expr, rest2 = _parse_at_key(rest[1:], ln)
-            expr = AtExpr(expr, key_expr)
+            expr = AtExpr(expr, key_expr, line=ln, col=col)
             rest = rest2
         return expr, rest
     if kind == '(':
@@ -504,36 +527,36 @@ def _parse_primary(tokens: List[Tuple[str, str]], ln: int):
         rest = rest[1:]
         while rest and rest[0][0] == 'IDENT' and rest[0][1].lower() == 'at':
             key_expr, rest2 = _parse_at_key(rest[1:], ln)
-            expr = AtExpr(expr, key_expr)
+            expr = AtExpr(expr, key_expr, line=ln, col=col)
             rest = rest2
         return expr, rest
-    return IdentifierExpr(val), tokens[1:]
+    return IdentifierExpr(val, line=ln, col=col), tokens[1:]
 
 
-def _parse_add_sub_tokens(tokens: List[Tuple[str, str]], ln: int):
+def _parse_add_sub_tokens(tokens, ln: int):
     expr, rest = _parse_mul_div(tokens, ln)
     while rest and rest[0][0] in ('+', '-'):
         op = rest[0][0]
         rhs, rest = _parse_mul_div(rest[1:], ln)
-        expr = BinaryExpr(expr, op, rhs)
+        expr = BinaryExpr(expr, op, rhs, line=ln)
     return expr, rest
 
 
-def _parse_at_key(tokens: List[Tuple[str, str]], ln: int):
+def _parse_at_key(tokens, ln: int):
     """Parse a restricted key expression for 'at' postfix: only primary without further + or - chaining.
     Allows grouped additive inside parentheses if user wants complex key.
     """
     if not tokens:
         raise ParseError("expected key after 'at'", ln)
-    kind, val = tokens[0]
+    kind, val, col = tokens[0]
     if kind == 'STRING':
-        return LiteralExpr(_unescape(val[1:-1])), tokens[1:]
+        return LiteralExpr(_unescape(val[1:-1]), line=ln, col=col), tokens[1:]
     if kind == 'NUMBER':
         if '.' in val:
-            return LiteralExpr(float(val)), tokens[1:]
-        return LiteralExpr(int(val)), tokens[1:]
+            return LiteralExpr(float(val), line=ln, col=col), tokens[1:]
+        return LiteralExpr(int(val), line=ln, col=col), tokens[1:]
     if kind == 'IDENT':
-        return IdentifierExpr(val), tokens[1:]
+        return IdentifierExpr(val, line=ln, col=col), tokens[1:]
     if kind == '(':
         # full expression inside parentheses
         expr, rest = _parse_add_sub_tokens(tokens[1:], ln)
@@ -544,38 +567,38 @@ def _parse_at_key(tokens: List[Tuple[str, str]], ln: int):
 
 
 def _parse_logic_expr(src: str, ln: int):
-    tokens = _tokenize(src)
+    tokens = _tokenize(src, ln)
 
     def parse_and(rest):
         left, rest = _parse_compare(rest, ln)
         while rest and rest[0][0] == '&&':
             right, rest = _parse_compare(rest[1:], ln)
-            left = BinaryExpr(left, '&&', right)
+            left = BinaryExpr(left, '&&', right, line=ln)
         return left, rest
 
     def parse_or(rest):
         left, rest = parse_and(rest)
         while rest and rest[0][0] == '||':
             right, rest = parse_and(rest[1:])
-            left = BinaryExpr(left, '||', right)
+            left = BinaryExpr(left, '||', right, line=ln)
         return left, rest
 
     expr, rest = parse_or(tokens)
     return expr
 
 
-def _parse_compare(tokens: List[Tuple[str, str]], ln: int):
+def _parse_compare(tokens, ln: int):
     left, rest = _parse_add_sub_tokens(tokens, ln)
     if rest and rest[0][0] in ('==', '!=', '>=', '<=', '>', '<'):
         op = rest[0][0]
         right, rest = _parse_add_sub_tokens(rest[1:], ln)
-        return BinaryExpr(left, op, right), rest
+        return BinaryExpr(left, op, right, line=ln), rest
     return left, rest
 
 
 # Tokenizer ---------------------------------------------------------------
 
-def _tokenize(src: str) -> List[Tuple[str, str]]:
+def _tokenize(src: str, line: int) -> List[Tuple[str, str, int]]:
     spec = r"""
         (?P<SPACE>\s+)
       | (?P<NUMBER>\d+(?:\.\d+)?)
@@ -583,16 +606,16 @@ def _tokenize(src: str) -> List[Tuple[str, str]]:
       | (?P<OP>==|!=|>=|<=|&&|\|\||\+|\-|\*|/|\(|\)|,|>|<|!)
       | (?P<IDENT>[A-Za-z_][A-Za-z0-9_]*)
     """
-    tokens: List[Tuple[str, str]] = []
+    tokens: List[Tuple[str, str, int]] = []
     for m in re.finditer(spec, src, flags=re.VERBOSE):
         kind = m.lastgroup
         val = m.group()
         if kind == 'SPACE':
             continue
         if kind == 'OP':
-            tokens.append((val, val))
+            tokens.append((val, val, m.start() + 1))  # 1-based column
         else:
-            tokens.append((kind, val))
+            tokens.append((kind, val, m.start() + 1))
     return tokens
 
 

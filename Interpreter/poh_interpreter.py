@@ -79,7 +79,10 @@ class Function:
     def call(self, args: List[Any]) -> Any:
         # Arity check
         if len(args) != len(self.decl.params):
-            raise RuntimeErrorPoh(f"Function '{self.decl.name}' expects {len(self.decl.params)} argument(s) but got {len(args)}")
+            def_line = getattr(self.decl, 'line', '?')
+            raise RuntimeErrorPoh(
+                f"Function '{self.decl.name}' defined at line {def_line} expects {len(self.decl.params)} argument(s) but got {len(args)}"
+            )
         env = Environment(self.closure, frame_type='function')
         for name, val in zip(self.decl.params, args):
             env.define(name, val)
@@ -125,9 +128,9 @@ class Interpreter:
         self.import_stack: list[str] = []
         self.loaded_files: set[str] = set()
 
-    def run(self, src: str) -> None:
+    def run(self, src: str, filename: str | None = None) -> None:
         lines = src.splitlines()
-        program = parse_program(lines)
+        program = parse_program(lines, filename=filename)
         self.execute(program)
 
     def run_file(self, path: str) -> None:
@@ -162,7 +165,7 @@ class Interpreter:
             try:
                 # Parse and execute in its own module environment to avoid leaking variables
                 from .poh_parser import parse_program
-                program = parse_program(src.splitlines())
+                program = parse_program(src.splitlines(), filename=full)
                 module_name = os.path.splitext(os.path.basename(full))[0]
                 module_env = Environment(self.globals, frame_type='module')
                 self._execute_module(program, module_env)
@@ -390,6 +393,9 @@ class Interpreter:
             if e.op in ('+', '-', '*', '/'):
                 l = self._eval(e.left, env)
                 r = self._eval(e.right, env)
+                # Type mismatch detection for numeric ops (except '+' where string concat is allowed)
+                if e.op != '+' and (isinstance(l, str) or isinstance(r, str)):
+                    raise RuntimeErrorPoh(f"Type mismatch at line {getattr(e,'line', '?')}: cannot apply '{e.op}' to string operand(s)")
                 if e.op == '+':
                     # Allow string concatenation
                     if isinstance(l, str) or isinstance(r, str):
