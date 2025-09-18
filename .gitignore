@@ -1,18 +1,51 @@
-# Dart/Pub
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+interpreter/
+# Common virtualenv names
+env/
+venv/
+
+# Dart
 .dart_tool/
 .packages
 build/
-coverage/
+pubspec.lock
 
-# VS Code
-.vscode/
-
-# OS/editor
+# General
 .DS_Store
 .idea/
-Thumbs.db
-*.swp
-*.swo
+.vscode/
+*.log
 
-# Generated at root by old transpiler
-program.dart
+# Secrets / credentials (prevent accidental commits)
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.keystore
+*.jks
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.pub
+
+# Node / JS (future tooling)
+node_modules/
+package-lock.json
+
+# Coverage / reports
+coverage/
+lcov.info
+*.coverage
+
+# Generated transpiled Dart examples
+examples/dart/*.dart
+!examples/dart/phrase_*.dart
