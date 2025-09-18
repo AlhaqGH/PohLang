@@ -202,6 +202,13 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
             name, expr_src = parts
         return SetStmt(name.strip(), _parse_expr(expr_src.strip(), ln), ln)
 
+    # Return (allowed inside function bodies, including nested blocks). We don't enforce
+    # context here; if used outside a function the interpreter will raise at runtime
+    # when the _ReturnSignal escapes to top-level (which we could optionally refine later).
+    if low.startswith("return"):
+        expr_src = s[6:].strip()
+        return ReturnStmt(_parse_expr(expr_src, ln) if expr_src else None, ln)
+
     # Increase / Decrease
     if low.startswith("increase "):
         rest = s[9:].strip()
