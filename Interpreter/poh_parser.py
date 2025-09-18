@@ -293,11 +293,13 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
 
     if low.startswith("make ") and " write " in low:
         rest = s[5:].strip()
-        name, params = _parse_func_sig(rest, ln)
-        m = re.search(r"(?i) write ", rest)
+        # Split signature and expression at the first ' write '
+        m = re.search(r"(?i)\swrite\s", rest)
         if not m:
             raise ParseError("Malformed inline Make", ln)
+        sig_part = rest[:m.start()].rstrip()
         expr_src = rest[m.end():].strip()
+        name, params = _parse_func_sig(sig_part, ln)
         return FunctionDefStmt(name, params, [ReturnStmt(_parse_expr(expr_src, ln), ln)], ln)
 
     if low.startswith("use "):

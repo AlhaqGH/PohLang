@@ -23,19 +23,43 @@ class Environment:
         raise RuntimeErrorPoh(f"Undefined variable '{name}'")
 
     def set(self, name: str, value: Any) -> None:
-        # Assign to nearest scope containing the name; otherwise define in nearest non-function ancestor.
+        """
+        Assignment resolution rules:
+        - If the variable exists in any enclosing scope, mutate the closest scope that already defines it.
+        - Otherwise:
+            * If we're inside a function (current frame or an ancestor function frame before hitting global), define it in the innermost function frame (i.e., local variable).
+            * If no function frame found (we are at global), define globally.
+        This prevents accidental mutation of globals by implicit local assignment inside functions, while still allowing
+        loops/blocks inside a function to assign to locals declared in that function.
+        """
+        # Case 1: already defined in this frame
         if name in self.values:
             self.values[name] = value
             return
-        if self.parent and self.parent.has(name):
-            # propagate down assignment to where it lives
-            self.parent.set(name, value)
+        # Case 2: exists in some parent => assign to that defining frame
+        cur = self.parent
+        defining_env: Optional[Environment] = None
+        while cur:
+            if name in cur.values:
+                defining_env = cur
+                break
+            cur = cur.parent
+        if defining_env is not None:
+            defining_env.values[name] = value
             return
-        # escalate definition upward until reaching non-function if current is function inner block
-        target: Environment = self
-        while target.parent and target.frame_type == 'block' and target.parent.frame_type == 'function':
-            target = target.parent
-        target.values[name] = value
+        # Case 3: new symbol -> choose function-local if within a function, else global
+        # Walk up from current to find nearest function frame before global
+        probe: Environment = self
+        while probe and probe.frame_type != 'function' and probe.parent:
+            probe = probe.parent
+        if probe and probe.frame_type == 'function':
+            probe.values[name] = value  # define as function-local
+        else:
+            # global definition
+            root = self
+            while root.parent:
+                root = root.parent
+            root.values[name] = value
 
     def define(self, name: str, value: Any) -> None:
         self.values[name] = value
@@ -55,14 +79,22 @@ class Function:
         self.interpret = interpret
 
     def call(self, args: List[Any]) -> Any:
+        # Arity check
+        if len(args) != len(self.decl.params):
+            raise RuntimeErrorPoh(f"Function '{self.decl.name}' expects {len(self.decl.params)} argument(s) but got {len(args)}")
         env = Environment(self.closure, frame_type='function')
         for name, val in zip(self.decl.params, args):
             env.define(name, val)
+        # push call frame
+        self.interpret.call_stack.append(self.decl.name)
         try:
-            return self.interpret._exec_block(self.decl.body, env)
-        except _ReturnSignal as r:
-            return r.value
-        return None
+            try:
+                return self.interpret._exec_block(self.decl.body, env)
+            except _ReturnSignal as r:
+                return r.value
+            return None
+        finally:
+            self.interpret.call_stack.pop()
 
 
 class _ReturnSignal(Exception):
@@ -84,6 +116,7 @@ class Interpreter:
         self.input_fn = input_fn or (lambda prompt: input(prompt))
         self.output_fn = output_fn or print
         self.functions: Dict[str, Function] = {}
+        self.call_stack: List[str] = []  # track active function names for debugging / future error reporting
         # Built-in standard library functions
         self._install_builtins()
         self.debug_enabled = False
