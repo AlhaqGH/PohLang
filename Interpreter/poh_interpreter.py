@@ -115,6 +115,10 @@ class Interpreter:
         self.output_fn = output_fn or print
         self.functions: Dict[str, Function] = {}
         self.call_stack: List[str] = []  # track active function names for debugging / future error reporting
+        # Module registry: module_name -> exported variables dict
+        self.modules: Dict[str, Dict[str, Any]] = {}
+        # Expose modules dictionary to user code for explicit access
+        self.globals.define('_modules', self.modules)
         # Built-in standard library functions
         self._install_builtins()
         self.debug_enabled = False
@@ -156,7 +160,15 @@ class Interpreter:
             cwd_before = os.getcwd()
             os.chdir(os.path.dirname(full) or cwd_before)
             try:
-                self.run(src)
+                # Parse and execute in its own module environment to avoid leaking variables
+                from .poh_parser import parse_program
+                program = parse_program(src.splitlines())
+                module_name = os.path.splitext(os.path.basename(full))[0]
+                module_env = Environment(self.globals, frame_type='module')
+                self._execute_module(program, module_env)
+                # Export module variables (non-function values) into registry for explicit access
+                exports = {k: v for k, v in module_env.values.items() if k not in self.functions}
+                self.modules[module_name] = exports
             finally:
                 os.chdir(cwd_before)
             self.loaded_files.add(full)
@@ -173,6 +185,22 @@ class Interpreter:
             if isinstance(st, FunctionDefStmt):
                 continue
             self._exec_stmt(st, self.globals)
+
+    def _execute_module(self, program: Program, module_env: Environment) -> None:
+        """Execute a parsed Program inside a dedicated module environment.
+        Functions are still registered globally (so they are directly callable), but their closure
+        captures the module environment, enabling per-module state without leaking module variables
+        into the global namespace.
+        """
+        # Collect function defs with closure = module_env
+        for st in program.statements:
+            if isinstance(st, FunctionDefStmt):
+                self.functions[st.name] = Function(st, module_env, self)
+        # Execute non-function statements inside the module scope
+        for st in program.statements:
+            if isinstance(st, FunctionDefStmt):
+                continue
+            self._exec_stmt(st, module_env)
 
     def _exec_block(self, stmts: List[Stmt], env: Environment) -> Any:
         # Execute until a Return is thrown or end.
@@ -318,7 +346,17 @@ class Interpreter:
             if not os.path.isabs(path):
                 path = os.path.normpath(os.path.join(os.getcwd(), path))
             try:
+                # Execute target file (if not loaded). Exports registered in self.modules.
+                prev_loaded = set(self.loaded_files)
                 self.run_file(path)
+                # If we're inside a module environment, inject exported variables from the imported module
+                if env.frame_type == 'module':
+                    module_basename = os.path.splitext(os.path.basename(path))[0]
+                    exports = self.modules.get(module_basename, {})
+                    for k, v in exports.items():
+                        # Do not override existing names in current module
+                        if k not in env.values:
+                            env.define(k, v)
             except RuntimeErrorPoh as e:
                 raise RuntimeErrorPoh(f"Line {st.line}: {e}")
         elif isinstance(st, ReturnStmt):
