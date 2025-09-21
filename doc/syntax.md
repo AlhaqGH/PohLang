@@ -1,9 +1,9 @@
-# PohLang Syntax (v0.1 Draft)
+# PohLang Syntax (v0.2 Draft)
 
-This document describes the dual grammar (phrase mode + symbol mode) for the early prototype.
+This document describes the phrasal grammar for the early prototype. It is a work in progress and subject to change. This document is not exhaustive but covers the core features. It is intended for developers and advanced users. It is a living document and will be updated as the language evolves. This document is a draft and may contain inaccuracies or omissions. For the latest updates, refer to the official repository. This document is a companion to the PohLang interpreter.
 
 ## High-Level Concepts
-# PohLang Syntax (Phrasal v0.1)
+# PohLang Syntax (Phrasal v0.2)
 
 This version defines ONLY the phrasal/English-like grammar. Symbol mode has been removed to keep the language focused and approachable.
 
@@ -36,7 +36,7 @@ Use `Begin ... End` to introduce a new scope without control flow:
 Set x to 1
 Begin
 	Set y to 2
-	Set x to x + y   # mutates outer x
+	Set x to x plus y   # mutates outer x
 End
 Write x    # 3
 Write y    # error: y is not defined here
@@ -46,7 +46,7 @@ Nested `Begin` blocks behave exactly like nested `If` blocks with respect to sco
 
 ## Grammar (Current Subset)
 Program          ::= { Statement NEWLINE }
-Statement        ::= WriteStmt | AskStmt | SetStmt | IncStmt | DecStmt | IfInline | WhileInline | RepeatInline | FuncInline | CallStmt
+Statement        ::= WriteStmt | AskStmt | SetStmt | IncStmt | DecStmt | IfInline | WhileInline | RepeatInline | FuncInline | FuncBlock | CallStmt | ImportStmt | DebugStmt
 
 WriteStmt        ::= 'Write' Expression
 AskStmt          ::= 'Ask for' IDENT
@@ -56,13 +56,15 @@ DecStmt          ::= 'Decrease' IDENT 'by' NUMBER | 'Decrease' IDENT NUMBER
 IfInline         ::= 'If' Condition 'Write' Expression 'Otherwise' 'Write' Expression
 WhileInline      ::= 'While' Condition 'Write' Expression
 RepeatInline     ::= 'Repeat' (NUMBER|IDENT) 'times' 'Write' Expression | 'Repeat' (NUMBER|IDENT) 'Write' Expression
-FuncInline       ::= 'Make' IDENT 'with' ParamList 'Write' Expression  # inline form (implicit Return)
-FuncBlock        ::= 'Make' IDENT 'with' ParamList NEWLINE { Statement | ReturnStmt } 'End'
+FuncInline       ::= 'Make' IDENT 'with' ParamList DefaultParamClauses? 'Write' Expression  # inline form (implicit Return)
+FuncBlock        ::= 'Make' IDENT 'with' ParamList DefaultParamClauses? NEWLINE { Statement | ReturnStmt } 'End'
 ReturnStmt       ::= 'Return' [ Expression ]
-CallStmt         ::= 'Use' IDENT 'with' ArgList
+CallStmt         ::= 'Use' IDENT 'with' ArgList | 'Call' IDENT_OR_EXPR 'with' ArgList
 
 ParamList        ::= IDENT { ',' IDENT } | /* empty */
 ArgList          ::= Expression { ',' Expression } | /* empty */
+DefaultParamClauses ::= { ParamDefault }
+ParamDefault     ::= IDENT 'set to' Expression
 
 Condition        ::= BoolExpr
 BoolExpr         ::= BoolExpr ' Or ' BoolExpr | BoolExpr ' And ' BoolExpr | 'Not ' BoolExpr | CompareExpr
@@ -71,20 +73,20 @@ CompareOp        ::= 'Greater Or Equal' | 'Less Or Equal' | 'Equals' | 'Not Equa
 
 Expression       ::= Term { ('+' | '-') Term }
 Term             ::= Factor { ('*' | '/') Factor }          // * and / may not yet be parsed in implementation
-Factor           ::= NUMBER | STRING | IDENT | '(' Expression ')'
+Factor           ::= NUMBER | STRING | IDENT | '(' Expression ')' | IDENT_OR_EXPR '(' ArgList ')'  # expression call form
 
 ## Functions
 
 ### Inline Function
 ```
-Make greet with name Write "Hello, " + name
+Make greet with name Write "Hello, " plus name
 Write greet("World")   # Hello, World
 ```
 
 ### Block Function
 ```
 Make add with a, b
-	Set total to a + b
+	Set total to a plus b
 	Return total
 End
 Write add(3,4)   # 7
@@ -96,12 +98,60 @@ Make fact with n
 	If n is 0
 		Return 1
 	End
-	Return n * fact(n - 1)
+	Return n times fact(n minus 1)
 End
 Write fact(5)   # 120
 ```
 
 Arity must match exactly; a mismatch raises a runtime error.
+
+### First-Class Functions (New)
+Functions are values. You can store them, pass them to other functions, return them, and call them via expressions.
+
+Example:
+```
+Make greet with who Write "Hi " plus who
+Set f to greet
+Write f("Alice")      # Hi Alice
+
+# Statement call forms
+Call f with "Bob"
+Use greet with "Poh"   # both forms supported
+```
+
+The expression form `f(args...)` can be used anywhere an expression is allowed.
+
+### Closures (New)
+Functions capture their surrounding environment (lexical scope) when created.
+
+```
+Make makeAdder with x
+	Make inner with y
+		Return x plus y
+	End
+	Return inner
+End
+
+Set add2 to makeAdder(2)
+Write add2(3)   # 5
+```
+
+### Default Parameters (New)
+Provide default values with `set to` in the function header. Omitted arguments use defaults.
+
+Inline:
+```
+Make greet with name set to "World" Write "Hello " plus name
+Call greet              # Hello World
+Call greet with "Alice" # Hello Alice
+```
+
+Block:
+```
+Make greet with name set to "World"
+	Write "Hello " plus name
+End
+```
 
 ## Built-In Functions
 The interpreter ships with a small standard library of pure helpers:
@@ -127,6 +177,35 @@ Write length(nums)        # 5
 Write now()
 ```
 
+## Collections: Immutable-by-default (new)
+
+Lists and dictionaries default to immutable values. Use the keyword "mutable" when you need in-place updates.
+
+- Immutable list literal: `Make a list of 1, 2, and 3` → a fixed tuple (cannot be modified)
+- Mutable list literal: `Make a mutable list of 1, 2, and 3` → can be changed with Add/Remove/Set Nth/Remove last
+
+- Immutable dictionary literal: `Make a dictionary with "a" as 1 and "b" as 2` → a frozen dictionary (cannot be modified)
+- Mutable dictionary literal: `Make a mutable dictionary with "a" as 1 and "b" as 2` → can be changed with Add/Remove
+
+Legacy literal expressions remain supported for a transition period:
+
+- `List contains 1, 2, 3`
+- `Dictionary contains "a": 1, "b": 2`
+
+Behavior for legacy literals:
+- They evaluate to special wrapper values that allow mutation, but the first mutation will emit a Warning:
+	`[file.poh: Line N: Col M] Warning: Implicit mutable list/dictionary is deprecated. Use 'mutable list/dictionary' instead.`
+- Please migrate to the new explicit forms.
+
+Mutation on immutable collections raises a clear runtime error with location info, for example:
+`[script.poh: Line 4: Col 1] Cannot modify immutable list. Did you mean "Make a mutable list ..."?`
+
+Common operations affected:
+- Lists: `Add X to xs`, `Remove X from xs`, `Set the N item in xs to V`, `Remove the last item from xs`
+- Dictionaries: `Add "k": v to d`, `Remove "k" from d`
+
+Non-mutating reads like `Take the 2 item from xs`, `Take the value of "a" from d`, `keys of d`, `values of d`, and `length(xs)` work for both immutable and mutable collections.
+
 ### Misuse Examples (Runtime Errors)
 These demonstrate error conditions the runtime reports:
 
@@ -147,7 +226,7 @@ Practical multi-line idioms using existing primitives.
 ```
 Set out to ""
 Repeat range(1,6)
-	Set out to out + it + ","
+	Set out to out plus it plus ","
 End
 Write out
 ```
@@ -157,7 +236,7 @@ Write out
 Set total to 0
 Repeat range(10)
 	If it is even
-		Set total to total + it
+		Set total to total plus it
 	End
 End
 Write total   # 20
@@ -176,14 +255,14 @@ Write odds
 
 ### Timestamped Log Line
 ```
-Write "Started at " + now()
+Write "Started at " plus now()
 ```
 
 ### Split, Transform, Rejoin
 ```
 Set parts to split("a-b-c", "-")
 Repeat parts
-	Set it to it + it   # (planned: future map sugar)
+	Set it to it plus it   # (planned: future map sugar)
 End
 Write join(parts, ":")
 ```
@@ -194,7 +273,7 @@ Make fact with n
 	If n is 0
 		Return 1
 	End
-	Return n * fact(n - 1)
+	Return n times fact(n minus 1)
 End
 Write fact(6)  # 720
 ```
@@ -215,8 +294,8 @@ Write evens
 ```
 
 ## Desugaring
-Increase X by N => Set X X + N (make number bigger)
-Decrease X by N => Set X X - N (make number smaller)
+Increase X by N => Set X X plus N (make number bigger)
+Decrease X by N => Set X X minus N (make number smaller)
 Repeat N Write E => internal counted loop => for i in [0..N)
 Make f with a,b Write E => create a function returning E
 
@@ -235,21 +314,101 @@ Make f with a,b Write E => create a function returning E
 - Provide line/column in messages.
 - Show expected pattern after failing a statement parse.
 
-## Example
+## Error Reporting (Updated)
+PohLang now emits enriched parse and runtime errors with positional metadata when available.
+
+Formats:
+- Parse errors (with file + column): `[file.poh: Line 12: Col 7] Unknown statement 'Writ'. Did you mean 'write'?`
+- Parse errors (legacy line-only): `Line 5: If block not closed with End/End If` (used when only line known)
+- Runtime errors (function arity): `[script.poh: Line 3: Col 1] Function 'add' defined at line 1 expects 2 argument(s) but got 1`
+	- Unknown function: `[script.poh: Line 3: Col 1] Unknown function 'gree'. Did you mean 'greet'?`
+	- Wrong number of arguments (from definition site): `[script.poh: Line 5: Col 2] Function 'sumTwo' defined at line 1 expects 2 arguments but got 1`
+- Type mismatch (numeric ops): `[script.poh: Line 8: Col 5] Type mismatch: cannot apply '-' to string operand(s)`
+- Division by zero: `[calc.poh: Line 4: Col 10] You tried to divide by zero.`
+
+Column Tracking:
+The parser tracks the first non-whitespace column for statement keywords and token start columns inside expressions. Runtime errors now uniformly show `Line` / `Col` when originating node metadata is available.
+
+## Debug Mode
+Run with `--debug` (Python CLI) to enable execution tracing:
 ```
-Ask for name
-Write "Hello " + name
-Set count 3
-Repeat count Write "Hi"
-If count is greater than 1 Write "Many" Otherwise Write "Few"
-Make greet with who Write "Hi " + who
-Use greet with "Poh"
+python -m Interpreter.cli program.poh --debug
+```
+Output includes lines like:
+```
+[script.poh: Line 3: Col 1] Executing: WriteStmt
+[script.poh: Line 3: Col 1] Evaluating: Literal => 5
+```
+Use `Debug on` / `Debug off` statements inside a script to toggle at runtime.
+
+## Imports
+Use `Import` to load modules. Two forms are available: local file imports and system (stdlib) imports.
+
+### Local file imports
+`Import "<path>.poh"` executes another PohLang file.
+- Paths are resolved relative to the current script's directory.
+- Each imported file runs in its own module scope; its variables are exported via a module registry and may be injected into importer scope.
+- Functions and variables defined in imports become available in the current scope.
+- Imports are cached (idempotent); the same file won't run twice.
+- Circular imports are detected and reported as:
+	`[script.poh: Line N: Col M] Error: Circular import detected with other.poh. Chain: <a -> b -> ...>`
+
+### System imports (Hybrid Imports)
+`Import system "name"` loads a module from the standard library (e.g., `Interpreter/stdlib/`).
+
+Example:
+```
+Import system "collections"
+Set xs to List contains 10, 20, 30
+Write head(xs)    # 10
 ```
 
-## Implementation Notes
-- Current parser is single-pass, line-based.
-- Expression parsing presently supports + and - only (improve with precedence parser later).
-- All variables are implicitly declared on first assignment.
+System and local imports are both cached and cycle-safe.
+
+CLI runs the main file and its imports:
+```
+python -m Interpreter.cli path\to\main.poh
+```
+
+Example session snippet:
+```
+Debug on
+Set x to 5
+Write x plus 1
+Debug off
+```
+
+Produces (abridged trace):
+```
+[example.poh: Line 1: Col 1] Executing: DebugStmt
+[example.poh: Line 2: Col 1] Executing: SetStmt
+[example.poh: Line 2: Col 1] Evaluating: Literal => 5
+[example.poh: Line 2: Col 1] Set variable 'x' = 5
+[example.poh: Line 3: Col 1] Executing: WriteStmt
+[example.poh: Line 3: Col 1] Evaluating: Identifier 'x' => 5
+[example.poh: Line 3: Col 1] Evaluating: Literal => 1
+[example.poh: Line 3: Col 1] Evaluating: Binary '+' => 6
+6
+[example.poh: Line 4: Col 1] Executing: DebugStmt
+```
+
+Trace message forms:
+- Statement execution: `[file: Line N: Col M] Executing: <StmtType>`
+- Expression evaluation: `[file: Line N: Col M] Evaluating: <Kind> => <value>`
+- Variable set/update: `[file: Line N: Col M] Set variable 'name' = <repr>`
+- Function entry: `[file: Line N: Col M] Enter function fname(a=1, b=2)`
+- Function return: `[file: Line N: Col M] Return <repr>`
+- Import: `[import: otherfile.poh]`
+
+Normal (non-debug) runs output only program results (e.g., Write statements) with no trace noise.
+
+Example session snippet:
+```
+Debug on
+Set x to 5
+Write x + 1
+Debug off
+```
 
 ---
 The syntax will evolve carefully; simplicity and readability take priority over feature breadth.

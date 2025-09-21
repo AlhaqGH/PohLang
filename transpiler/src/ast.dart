@@ -130,6 +130,32 @@ class StopStmt extends Statement {} // break
 
 class SkipStmt extends Statement {} // continue
 
+// Collection mutation statements
+class AddToListStmt extends Statement {
+  final String targetName; // identifier to mutate
+  final Expression value;
+  AddToListStmt(this.targetName, this.value);
+}
+
+class AddToMapStmt extends Statement {
+  final String targetName; // identifier to mutate
+  final Expression key;
+  final Expression value;
+  AddToMapStmt(this.targetName, this.key, this.value);
+}
+
+class RemoveFromListStmt extends Statement {
+  final String targetName; // identifier to mutate
+  final Expression value; // value to remove
+  RemoveFromListStmt(this.targetName, this.value);
+}
+
+class RemoveFromMapStmt extends Statement {
+  final String targetName; // identifier to mutate
+  final Expression key; // key to remove
+  RemoveFromMapStmt(this.targetName, this.key);
+}
+
 // Expressions
 class BinaryExpr extends Expression {
   final String op;
@@ -161,3 +187,36 @@ class CallExpr extends Expression {
 }
 
 // Utility for pretty printing (optional future)
+
+// Collection expressions
+class ListLiteralExpr extends Expression {
+  final List<Expression> items;
+  final bool isMutable; // explicit mutable opt-in
+  final bool isLegacy; // legacy literal (List contains ...)
+  ListLiteralExpr(this.items, {this.isMutable = false, this.isLegacy = false});
+}
+
+class MapLiteralExpr extends Expression {
+  final List<Expression> keys;
+  final List<Expression> values;
+  final bool isMutable; // explicit mutable opt-in
+  final bool isLegacy; // legacy literal (Dictionary contains ...)
+  MapLiteralExpr(this.keys, this.values,
+      {this.isMutable = false, this.isLegacy = false});
+}
+
+class IndexExpr extends Expression {
+  final Expression container;
+  final Expression index;
+  IndexExpr(this.container, this.index);
+}
+
+class KeysOfExpr extends Expression {
+  final Expression mapExpr;
+  KeysOfExpr(this.mapExpr);
+}
+
+class ValuesOfExpr extends Expression {
+  final Expression mapExpr;
+  ValuesOfExpr(this.mapExpr);
+}

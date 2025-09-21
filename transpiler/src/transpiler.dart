@@ -278,6 +278,15 @@ String _emitStmt(Statement s, Set<String> declared) {
     }
   } else if (s is ReturnStmt) {
     return '  return ${s.value != null ? _emitExpr(s.value!) : ''};';
+  } else if (s is AddToListStmt) {
+    // Enforce immutability by default; only allow if target is a PohList (mutable)
+    return '  PohRuntime.listAdd(${s.targetName}, ${_emitExpr(s.value)});';
+  } else if (s is AddToMapStmt) {
+    return '  PohRuntime.mapAdd(${s.targetName}, ${_emitExpr(s.key)}, ${_emitExpr(s.value)});';
+  } else if (s is RemoveFromListStmt) {
+    return '  PohRuntime.collectionRemove(${s.targetName}, ${_emitExpr(s.value)});';
+  } else if (s is RemoveFromMapStmt) {
+    return '  PohRuntime.collectionRemove(${s.targetName}, ${_emitExpr(s.key)});';
   }
   return '  // Unhandled statement ${s.runtimeType}';
 }
@@ -327,6 +336,25 @@ String _emitExpr(Expression e) {
   } else if (e is CallExpr) {
     final args = e.args.map(_emitExpr).join(', ');
     return '${e.name}($args)';
+  } else if (e is ListLiteralExpr) {
+    final items = e.items.map(_emitExpr).join(', ');
+    final mut = e.isMutable ? 'true' : 'false';
+    final legacy = e.isLegacy ? 'true' : 'false';
+    return 'PohRuntime.listLiteral([$items], mutable: $mut, legacy: $legacy)';
+  } else if (e is MapLiteralExpr) {
+    final entries = <String>[];
+    for (var i = 0; i < e.keys.length; i++) {
+      entries.add('${_emitExpr(e.keys[i])}: ${_emitExpr(e.values[i])}');
+    }
+    final mut = e.isMutable ? 'true' : 'false';
+    final legacy = e.isLegacy ? 'true' : 'false';
+    return 'PohRuntime.mapLiteral({${entries.join(', ')}}, mutable: $mut, legacy: $legacy)';
+  } else if (e is IndexExpr) {
+    return 'PohRuntime.indexAt(${_emitExpr(e.container)}, ${_emitExpr(e.index)})';
+  } else if (e is KeysOfExpr) {
+    return 'PohRuntime.keysOf(${_emitExpr(e.mapExpr)})';
+  } else if (e is ValuesOfExpr) {
+    return 'PohRuntime.valuesOf(${_emitExpr(e.mapExpr)})';
   }
   return '/*expr*/';
 }

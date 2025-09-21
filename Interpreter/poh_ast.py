@@ -88,6 +88,7 @@ class BlockStmt(Stmt):
 class FunctionDefStmt(Stmt):
     name: str
     params: List[str]
+    defaults: List[Optional["Expr"]]  # aligned with params; None if no default
     body: List[Stmt]
     line: int
     col: int = 1
@@ -113,6 +114,7 @@ class ImportStmt(Stmt):
     path: str
     line: int
     col: int = 1
+    system: bool = False  # Import system "name"
 
 
 # Expressions
@@ -159,6 +161,14 @@ class CallExpr(Expr):
 
 
 @dataclass
+class CallValueStmt(Stmt):
+    callee: Expr  # expression that should evaluate to a function value
+    args: List[Expr]
+    line: int
+    col: int = 1
+
+
+@dataclass
 class PredicateExpr(Expr):
     name: str  # 'even' | 'odd' | 'positive' | 'negative'
     value: Expr
@@ -183,6 +193,8 @@ class SkipStmt(Stmt):
 @dataclass
 class ListLiteralExpr(Expr):
     items: list[Expr]
+    mutable: bool = False
+    legacy_literal: bool = False  # True when created via legacy 'List contains ...'
     line: int = 0
     col: int = 0
 
@@ -190,6 +202,8 @@ class ListLiteralExpr(Expr):
 @dataclass
 class DictLiteralExpr(Expr):
     items: list[tuple[Expr, Expr]]  # key, value (allow Expr keys for flexibility)
+    mutable: bool = False
+    legacy_literal: bool = False  # True when created via legacy 'Dictionary contains ...'
     line: int = 0
     col: int = 0
 
@@ -251,6 +265,29 @@ class RemoveFromDictStmt(Stmt):
 @dataclass
 class DebugStmt(Stmt):
     enabled: bool
+    line: int
+    col: int = 1
+
+# Phrasal list/dict extended forms
+
+@dataclass
+class NthItemExpr(Expr):
+    index: Expr  # 1-based index expression
+    container: Expr
+    line: int = 0
+    col: int = 0
+
+@dataclass
+class SetNthItemStmt(Stmt):
+    index: Expr  # 1-based
+    container: Expr
+    value: Expr
+    line: int
+    col: int = 1
+
+@dataclass
+class RemoveLastItemStmt(Stmt):
+    container: Expr
     line: int
     col: int = 1
 

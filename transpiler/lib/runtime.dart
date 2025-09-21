@@ -163,4 +163,113 @@ class PohRuntime {
     if (Platform.isWindows) return ['/c', cmd];
     return ['-c', cmd];
   }
+
+  // ================= Collections Runtime =================
+  static dynamic listLiteral(List<dynamic> items, {bool mutable = false, bool legacy = false}) {
+    if (mutable || legacy) {
+      return _PohList(items, legacy: legacy);
+    }
+    return List<dynamic>.unmodifiable(items);
+  }
+
+  static dynamic mapLiteral(Map<dynamic, dynamic> entries, {bool mutable = false, bool legacy = false}) {
+    if (mutable || legacy) {
+      return _PohMap(Map<dynamic, dynamic>.from(entries), legacy: legacy);
+    }
+    return Map<dynamic, dynamic>.unmodifiable(entries);
+  }
+
+  static dynamic indexAt(dynamic container, dynamic index) {
+    if (container is _PohList) {
+      final i = _toIndex(index) - 1;
+      if (i < 0 || i >= container._items.length) return null;
+      return container._items[i];
+    }
+    if (container is List) {
+      final i = _toIndex(index) - 1;
+      if (i < 0 || i >= container.length) return null;
+      return container[i];
+    }
+    if (container is _PohMap) {
+      return container._map[index];
+    }
+    if (container is Map) {
+      return container[index];
+    }
+    return null;
+  }
+
+  static List<dynamic> keysOf(dynamic m) {
+    if (m is _PohMap) return m._map.keys.toList(growable: false);
+    if (m is Map) return m.keys.toList(growable: false);
+    return <dynamic>[];
+  }
+
+  static List<dynamic> valuesOf(dynamic m) {
+    if (m is _PohMap) return m._map.values.toList(growable: false);
+    if (m is Map) return m.values.toList(growable: false);
+    return <dynamic>[];
+  }
+
+  static void listAdd(dynamic target, dynamic value) {
+    if (target is _PohList) {
+      if (target.legacy) _legacyWarn('list');
+      target._items.add(value);
+      return;
+    }
+    _mutationError('list');
+  }
+
+  static void collectionRemove(dynamic target, dynamic valueOrKey) {
+    if (target is _PohList) {
+      if (target.legacy) _legacyWarn('list');
+      target._items.remove(valueOrKey);
+      return;
+    }
+    if (target is _PohMap) {
+      if (target.legacy) _legacyWarn('dictionary');
+      target._map.remove(valueOrKey);
+      return;
+    }
+    _mutationError('collection');
+  }
+
+  static void mapAdd(dynamic target, dynamic key, dynamic value) {
+    if (target is _PohMap) {
+      if (target.legacy) _legacyWarn('dictionary');
+      target._map[key] = value;
+      return;
+    }
+    _mutationError('dictionary');
+  }
+
+  static int _toIndex(dynamic n) {
+    if (n is int) return n;
+    if (n is double) return n.floor();
+    if (n is String) {
+      final v = int.tryParse(n.trim());
+      if (v != null) return v;
+    }
+    return 0;
+  }
+
+  static Never _mutationError(String kind) {
+    throw StateError('Cannot mutate $kind; use "Make a mutable ..." to create a mutable one');
+  }
+
+  static void _legacyWarn(String what) {
+    stderr.writeln('Deprecated: mutating legacy $what literal; use "Make a mutable $what ..."');
+  }
+}
+
+class _PohList {
+  final List<dynamic> _items;
+  final bool legacy;
+  _PohList(List<dynamic> items, {this.legacy = false}) : _items = List<dynamic>.from(items);
+}
+
+class _PohMap {
+  final Map<dynamic, dynamic> _map;
+  final bool legacy;
+  _PohMap(Map<dynamic, dynamic> map, {this.legacy = false}) : _map = Map<dynamic, dynamic>.from(map);
 }

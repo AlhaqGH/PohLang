@@ -459,6 +459,48 @@ class Parser {
       return WhileStmt(cond, [PrintStmt(bodyExpr)]);
     }
 
+    // Collections: Add/Remove for list and dictionary
+    // Add "x" to items  | Add "k": v to ages
+    if (line.startsWith('Add ')) {
+      final toIdx = line.indexOf(' to ');
+      if (toIdx == -1) {
+        throw FormatException(
+            "Invalid Add syntax. Examples: Add \"x\" to items | Add \"k\": 1 to ages");
+      }
+      final before = line.substring(4, toIdx).trim();
+      final target = line.substring(toIdx + 4).trim();
+      // Map form: <key>: <expr>
+      final colonIdx = _indexOfTopLevelColon(before);
+      if (colonIdx != -1) {
+        final keyStr = before.substring(0, colonIdx).trim();
+        final valStr = before.substring(colonIdx + 1).trim();
+        if (!_looksLikeIdentifier(target)) {
+          throw FormatException('Add target must be an identifier (got: $target)');
+        }
+        return AddToMapStmt(target, _parseExpression(keyStr), _parseExpression(valStr));
+      }
+      // List form
+      if (!_looksLikeIdentifier(target)) {
+        throw FormatException('Add target must be an identifier (got: $target)');
+      }
+      return AddToListStmt(target, _parseExpression(before));
+    }
+    if (line.startsWith('Remove ')) {
+      // Remove "x" from items | Remove "k" from ages
+      final fromIdx = line.indexOf(' from ');
+      if (fromIdx == -1) {
+        throw FormatException(
+            "Invalid Remove syntax. Examples: Remove \"x\" from items | Remove \"k\" from ages");
+      }
+      final itemStr = line.substring(7, fromIdx).trim();
+      final target = line.substring(fromIdx + 6).trim();
+      if (!_looksLikeIdentifier(target)) {
+        throw FormatException('Remove target must be an identifier (got: $target)');
+      }
+      // Heuristic: quoted string or not doesn't matter; for maps we treat as key removal
+      return RemoveFromMapStmt(target, _parseExpression(itemStr));
+    }
+
     // System/OS phrase commands
     if (line.startsWith('Import ')) {
       final rest = line.substring('Import '.length).trim();
@@ -592,6 +634,15 @@ class Parser {
     src = src.trim();
     // Normalize phrase-based arithmetic operators to symbolic ones
     src = _normalizeArithmetic(src);
+    // Collection special forms first
+    final listExpr = _tryParseListLiteral(src);
+    if (listExpr != null) return listExpr;
+    final mapExpr = _tryParseMapLiteral(src);
+    if (mapExpr != null) return mapExpr;
+    final idxExpr = _tryParseIndexing(src);
+    if (idxExpr != null) return idxExpr;
+    final keysVals = _tryParseKeysValues(src);
+    if (keysVals != null) return keysVals;
     return _parseAddSub(src);
   }
 
@@ -785,6 +836,107 @@ class Parser {
     // 'nothing' literal (maps to null in emitted code)
     if (s == 'nothing' || s == 'Nothing') return LiteralExpr(null);
     return IdentifierExpr(s);
+  }
+
+  // Helpers for collections parsing
+  Expression? _tryParseListLiteral(String src) {
+    // Forms:
+    // - Make a list of a, b, c
+    // - Make a mutable list of a, b
+    // - List contains a, b, c  (legacy)
+    final s = src.trim();
+    bool mutable = false;
+    bool legacy = false;
+    String? itemsStr;
+    if (s.startsWith('Make a ')) {
+      var rest = s.substring('Make a '.length).trim();
+      if (rest.startsWith('mutable list of ')) {
+        mutable = true;
+        itemsStr = rest.substring('mutable list of '.length).trim();
+      } else if (rest.startsWith('list of ')) {
+        itemsStr = rest.substring('list of '.length).trim();
+      }
+    } else if (s.startsWith('List contains ')) {
+      legacy = true;
+      itemsStr = s.substring('List contains '.length).trim();
+    }
+    if (itemsStr == null) return null;
+    final parts = itemsStr.isEmpty
+        ? <Expression>[]
+        : itemsStr.split(',').map((e) => _parseExpression(e.trim())).toList();
+    return ListLiteralExpr(parts, isMutable: mutable, isLegacy: legacy);
+  }
+
+  Expression? _tryParseMapLiteral(String src) {
+    // Forms:
+    // - Make a dictionary with "k": v, "k2": v2
+    // - Make a mutable dictionary with ...
+    // - Dictionary contains "k": v, ... (legacy)
+    final s = src.trim();
+    bool mutable = false;
+    bool legacy = false;
+    String? itemsStr;
+    if (s.startsWith('Make a ')) {
+      var rest = s.substring('Make a '.length).trim();
+      if (rest.startsWith('mutable dictionary with ')) {
+        mutable = true;
+        itemsStr = rest.substring('mutable dictionary with '.length).trim();
+      } else if (rest.startsWith('dictionary with ')) {
+        itemsStr = rest.substring('dictionary with '.length).trim();
+      }
+    } else if (s.startsWith('Dictionary contains ')) {
+      legacy = true;
+      itemsStr = s.substring('Dictionary contains '.length).trim();
+    }
+    if (itemsStr == null) return null;
+    if (itemsStr.isEmpty) return MapLiteralExpr(<Expression>[], <Expression>[], isMutable: mutable, isLegacy: legacy);
+    final pairs = _splitTopLevel(itemsStr, ',');
+    final keys = <Expression>[];
+    final values = <Expression>[];
+    for (final p in pairs) {
+      final idx = _indexOfTopLevelColon(p);
+      if (idx == -1) {
+        throw FormatException('Dictionary pair missing ":": $p');
+      }
+      final k = p.substring(0, idx).trim();
+      final v = p.substring(idx + 1).trim();
+      keys.add(_parseExpression(k));
+      values.add(_parseExpression(v));
+    }
+    return MapLiteralExpr(keys, values, isMutable: mutable, isLegacy: legacy);
+  }
+
+  Expression? _tryParseIndexing(String src) {
+    // '<expr> at <expr>'
+    final s = src.trim();
+    final atIdx = s.lastIndexOf(' at ');
+    if (atIdx == -1) return null;
+    final base = s.substring(0, atIdx).trim();
+    final idxStr = s.substring(atIdx + 4).trim();
+    return IndexExpr(_parseExpression(base), _parseExpression(idxStr));
+  }
+
+  Expression? _tryParseKeysValues(String src) {
+    // 'keys of <expr>' | 'values of <expr>'
+    final s = src.trim();
+    if (s.startsWith('keys of ')) {
+      return KeysOfExpr(_parseExpression(s.substring('keys of '.length).trim()));
+    }
+    if (s.startsWith('values of ')) {
+      return ValuesOfExpr(_parseExpression(s.substring('values of '.length).trim()));
+    }
+    return null;
+  }
+
+  int _indexOfTopLevelColon(String src) {
+    // No parentheses parsing yet; just find the first ':' not inside quotes
+    bool inStr = false;
+    for (int i = 0; i < src.length; i++) {
+      final ch = src[i];
+      if (ch == '"') inStr = !inStr;
+      if (!inStr && ch == ':') return i;
+    }
+    return -1;
   }
 
   // Split by a delimiter string at top level (no parentheses parsing yet)

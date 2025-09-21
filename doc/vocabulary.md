@@ -1,6 +1,10 @@
-# PohLang Vocabulary (Phrasal Only v0.1)
+# PohLang Vocabulary (Phrasal Only v0.2)
 
 PohLang uses natural, English-like commands. Each line is a statement. No symbol mode; the entire language is phrasal.
+
+See also:
+- Comprehensive guide: [PohLang_Guide.md](../PohLang_Guide.md)
+- Syntax reference: [syntax.md](./syntax.md)
 
 ## Core Statements
 
@@ -11,16 +15,52 @@ PohLang uses natural, English-like commands. Each line is a statement. No symbol
 | Assignment | `Set <name> to <expression>` | Also accepts `Set <name> <expression>` |
 | Increase | `Increase <name> by <number>` | Makes the number bigger (default 1 if omitted) |
 | Decrease | `Decrease <name> by <number>` | Makes the number smaller (default 1 if omitted) |
-| Conditional (inline) | `If <condition> Write <expr> Otherwise Write <expr>` | Single-line conditional (legacy: `Say`) |
-| Loop (inline) | `Repeat <count> times Write <expr>` | Also accepts `Repeat <count> Write <expr>` |
-| While loop (inline) | `While <condition> Write <expr>` | Single-line while form |
+| Conditional (inline) | `If <condition> Write <expr> Otherwise Write <expr>` | Single-line conditional |
+| Conditional (block) | `If <condition>` … `[Otherwise …]` `End` | Multi-line with optional `Otherwise` block |
+| Repeat (inline) | `Repeat <count> Write <expr>` | `times` keyword optional |
+| Repeat (block) | `Repeat <count-or-collection>` … `End` | Number: repeat N times. List/Dict: iterate; implicit `it` inside |
+| While (inline) | `While <condition> Write <expr>` | Single-line while form |
+| While (block) | `While <condition>` … `End` | Multi-line while loop |
 | Make function (inline) | `Make <name> with <params> Write <expr>` | Creates a function that returns the expression |
 | Use function | `Use <name> with <args>` | Runs a function |
+| Call function (expr) | `Call <expr> with <args>` | Calls a function value (first‑class) |
 | Anonymous block | `Begin` (lines...) `End` | Introduces a new lexical scope without control flow |
 | Function block | `Make <name> with <params>` ... `Return <expr>` ... `End` | Multi-line function; explicit Return (else returns nothing) |
+| Break / Continue | `Stop` / `Skip` | Inside loops: break/continue |
+| Import module | `Import "path/to/file.poh"` | Executes another file with circular import detection |
+| Debug tracing | `Debug on` / `Debug off` | Toggles rich runtime tracing |
+| List ops (mutating) | `Add <value> to <list>`; `Remove <value> from <list>` | Requires a mutable list (see Collections) |
+| List ops (index/last) | `Set the <N> item in <list> to <value>`; `Remove the last item from <list>` | 1-based index |
+| Dict ops (mutating) | `Add "key": <value> to <dict>`; `Remove "key" from <dict>` | Requires a mutable dictionary |
 
 ## Expressions
-Numbers (e.g., `5`, `12`), strings (`"Hello"`), booleans (`true`, `false`), identifiers (`age`, `name`), addition / subtraction (`a + b`, `a - 1`), multiplication (`a * b`).
+Numbers (e.g., `5`, `12`), strings (`"Hello"`), booleans (`true`, `false`), `nothing`, identifiers (`age`, `name`).
+
+Arithmetic & logic:
+- `+ - * /` with standard precedence (string concat allowed with `+`)
+- Comparisons: `is`, `is not`, `is greater than`, `is less than`, `is at least`, `is at most` (normalized to `== != > < >= <=`)
+- Logical: `and`, `or`, `not` (normalized to `&& || !`)
+
+Predicates (numeric):
+- `x is even`, `x is odd`, `x is positive`, `x is negative`
+
+Random:
+- `random between A and B` (integer)
+- `random decimal between A and B` (float)
+- `random from <collection>` (random element/value)
+
+Collections (construction):
+- Immutable list: `Make a list of 1, 2, and 3`
+- Mutable list: `Make a mutable list of 1, 2, and 3`
+- Immutable dictionary: `Make a dictionary with "a" as 1 and "b" as 2`
+- Mutable dictionary: `Make a mutable dictionary with "a" as 1 and "b" as 2`
+
+Collections (access & queries):
+- `Take the <N> item from <list>` (1-based)
+- `Take the value of <key> from <dict>`
+- Postfix `at`: `xs at 2`, `d at "a"` (advanced)
+- `keys of <dict>`, `values of <dict>`
+- `contains <item> in <collection>`; `Check if <dict> has <key>`
 
 ### Built‑In Functions
 These are always available (no import needed):
@@ -43,15 +83,76 @@ Examples:
 Set nums to range(5)
 Write join(nums, ",")            # 0,1,2,3,4
 Write length(nums)                # 5
-Write split("a|b|c", "|")     # [a, b, c]
+Write split("a|b|c", "|")        # [a, b, c]
 Write now()                       # 2025-09-18T12:34:56
 ```
+
+## First‑Class Functions
+Functions are values. You can store them, pass them as arguments, return them, and call them via expression syntax.
+
+```
+Make greet with who Write "Hi " plus who
+Set f to greet
+Write f("Alice")
+Call f with "Bob"
+Use greet with "Poh"
+```
+
+Expression calls (`f(...)`) are valid anywhere expressions are allowed.
+
+## Closures
+Functions capture surrounding variables at creation time.
+
+```
+Make makeAdder with x
+	Make inner with y
+	Return x plus y
+	End
+	Return inner
+End
+Set add2 to makeAdder(2)
+Write add2(3)   # 5
+```
+
+## Default Parameters
+Provide defaults using `set to` in the header. Omitted arguments use defaults.
+
+Inline:
+```
+Make greet with name set to "World" Write "Hello " plus name
+Call greet
+Call greet with "Alice"
+```
+
+Block:
+```
+Make greet with name set to "World"
+	Write "Hello " plus name
+End
+```
+
+## Hybrid Imports
+Two forms:
+
+- System imports:
+```
+Import system "collections"
+Set xs to List contains 10, 20, 30
+Write head(xs)   # 10
+```
+
+- Local file imports:
+```
+Import "math_utils.poh"
+```
+
+Both are cached and cycle‑safe. Imported functions and variables become available in the current scope.
 
 ## Conditions
 Boolean connectors and phrase-based comparators:
 - Logical: `And`, `Or`, `Not`
 - Comparisons: `Equals`, `Not Equals`, `Greater Than`, `Less Than`, `Greater Or Equal`, `Less Or Equal`
-- Back-compat verbal forms still work: `is equal to`, `is not equal to`, `is greater than`, `is less than`
+- Back-compat verbal forms also work: `is equal to`, `is not equal to`, `is greater than`, `is less than`, `is at least`, `is at most`
 - Symbolic `=` inside conditions is treated as equality.
 
 Examples:
@@ -64,16 +165,23 @@ If Not hasPaid Write "Payment required"
 ## Sugars (Desugaring)
 | Sugar | Expansion |
 |-------|-----------|
-| `Increase x by 2` | `Set x x + 2` |
-| `Decrease x by 1` | `Set x x - 1` |
+| `Increase x by 2` | `Set x x plus 2` |
+| `Decrease x by 1` | `Set x x minus 1` |
 | `Repeat 5 Write "Hi"` | Expand to internal counted loop |
 
-## Planned Extensions
-- Multi-line blocks (indentation): `If <cond>` then indented statements and an optional `Otherwise` section.
-- Lists & dictionaries: `List numbers contains 1, 2, 3`.
-- Predicates: `If age is greater than 18 ...` (verbal comparisons).
-- Random numbers: `Set n random between 1 10` (syntax under consideration).
-- Multi-line function bodies.
+## Collections (Immutable-by-default)
+Lists and dictionaries are immutable unless created with the `mutable` keyword.
+
+- Immutable list: `Make a list of 1, 2`
+- Mutable list: `Make a mutable list of 1, 2`
+- Immutable dictionary: `Make a dictionary with "a" as 1`
+- Mutable dictionary: `Make a mutable dictionary with "a" as 1`
+
+Legacy literal expressions are supported temporarily for migration:
+- `List contains 1, 2, 3`
+- `Dictionary contains "a": 1`
+
+Mutating these legacy values emits a Warning advising to switch to explicit `mutable` forms.
 
 ## Design Principles
 1. One way per concept (no synonyms like Print/Say/Show).
@@ -84,17 +192,51 @@ If Not hasPaid Write "Payment required"
 ## Example Program
 ```
 Ask for name
-Write "Hello " + name
+Write "Hello " plus name
 Set count 3
 Repeat count Write "Hi"
-If count > 1 Write "Many" Otherwise Write "Few"
-Make greet with who Write "Hi " + who
+If count is greater than 1 Write "Many" Otherwise Write "Few"
+If count is greater than 1 Write "Many" Otherwise Write "Few"
+Make greet with who Write "Hi " plus who
 Use greet with "Poh"
 ```
 
-## Error Examples (Planned)
-- `Sya "Hi"` → Did you mean `Write`?
-- `Set x` → Missing value after variable name.
+## Error Messages (Updated)
+Common enriched errors now include optional line/column:
+| Situation | Example |
+|-----------|---------|
+| Unknown keyword | `[script.poh: Line 1: Col 4] Unknown statement 'Writ 5'. Did you mean 'write'?` |
+| Arity mismatch | `[script.poh: Line 7: Col 1] Function 'sumTwo' defined at line 1 expects 2 argument(s) but got 1` |
+| Unknown function | `[script.poh: Line 3: Col 1] Unknown function 'gree'. Did you mean 'greet'?` |
+| Type mismatch | `[script.poh: Line 9: Col 6] Type mismatch: cannot apply '-' to string operand(s)` |
+| Undefined variable | `[script.poh: Line 3: Col 7] Undefined variable 'foo'` |
+| Division by zero | `[script.poh: Line 5: Col 12] You tried to divide by zero.` |
+| Immutable mutation | `[script.poh: Line 4: Col 1] Cannot modify immutable list. Did you mean "Make a mutable list ..."?` |
+
+`Line N:` style messages appear for legacy parse errors where only the line number is known.
+
+## Debug Controls
+- Global flag: CLI `--debug` prints rich traces with file/line/col.
+- In-script toggles: `Debug on` / `Debug off` statements.
+
+Example:
+```
+Debug on
+Set a to 1
+Write a plus 2
+Debug off
+```
+
+Produces (abridged):
+```
+[example.poh: Line 1: Col 1] Executing: DebugStmt
+[example.poh: Line 2: Col 1] Executing: SetStmt
+[example.poh: Line 3: Col 1] Executing: WriteStmt
+[example.poh: Line 3: Col 1] Evaluating: Identifier 'a' => 1
+[example.poh: Line 3: Col 1] Evaluating: Literal => 2
+[example.poh: Line 3: Col 1] Evaluating: Binary '+' => 3
+3
+```
 
 ---
 This vocabulary will expand cautiously to avoid overwhelming beginners.
@@ -111,3 +253,8 @@ Common patterns:
 | Filter odds | Add `it` to list if `it is odd` |
 | Timestamp | `Write now()` |
 | Factorial | See recursion example in syntax.md |
+
+---
+Cross-links:
+- Full guide: [../PohLang_Guide.md](../PohLang_Guide.md)
+- Syntax: [./syntax.md](./syntax.md)

@@ -43,6 +43,10 @@ from .poh_ast import (
     AddToDictStmt,
     RemoveFromDictStmt,
     DebugStmt,
+    NthItemExpr,
+    SetNthItemStmt,
+    RemoveLastItemStmt,
+    CallValueStmt,
 )
 
 
@@ -50,20 +54,14 @@ class ParseError(Exception):
     def __init__(self, msg: str, line: Optional[int] = None, col: Optional[int] = None, file: Optional[str] = None):
         self.line = line
         self.col = col
-        self.file = file
-        # Preserve legacy format when only line provided (to keep current tests passing)
-        if file is None and col is None and line is not None:
-            super().__init__(f"Line {line}: {msg}")
-            return
-        loc_parts = []
-        if file:
-            loc_parts.append(file)
+        self.file = file or '<stdin>'
+        parts = [self.file]
         if line is not None:
-            loc_parts.append(f"line {line}")
+            parts.append(f"Line {line}")
         if col is not None:
-            loc_parts.append(f"col {col}")
-        loc_prefix = ("[" + ":".join(loc_parts) + "] ") if loc_parts else ""
-        super().__init__(f"{loc_prefix}{msg}")
+            parts.append(f"Col {col}")
+        prefix = f"[{':'.join(parts)}] "
+        super().__init__(prefix + msg)
 
 
 # Public API ---------------------------------------------------------------
@@ -178,10 +176,14 @@ def _parse_stmt_or_block(cleaned: List[Tuple[int, str]], i: int) -> Tuple[Stmt, 
             body.append(stmt2)
         raise ParseError("Block starting at Begin not closed with End", ln)
 
-    # Function block
-    if low.startswith("make ") and " write " not in low:
+    # Function block (with optional 'function' keyword and defaults)
+    # Make function name with A, B set to 0
+    if low.startswith("make ") and " write " not in low and not re.match(r"(?i)^make\s+a\s+(mutable\s+)?(list|dictionary)\b", s.strip()):
         rest = s[5:].strip()
-        name, params = _parse_func_sig(rest, ln)
+        # Optional 'function' keyword
+        if rest.lower().startswith('function '):
+            rest = rest[9:].strip()
+        name, params, defaults = _parse_func_sig_with_defaults(rest, ln)
         i += 1
         body: List[Stmt] = []
         while i < len(cleaned):
@@ -190,7 +192,7 @@ def _parse_stmt_or_block(cleaned: List[Tuple[int, str]], i: int) -> Tuple[Stmt, 
             l2 = t.lower()
             if l2 == "end":
                 i += 1
-                return FunctionDefStmt(name, params, body, ln), i
+                return FunctionDefStmt(name, params, defaults, body, ln), i
             if l2.startswith("end "):
                 raise ParseError(f"Mismatched '{t}'; expected 'End'", ln2)
             if l2.startswith("return"):
@@ -211,6 +213,74 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
     orig = s
     trim = s.strip()
     low = trim.lower()
+
+    # Phrasal list/dict statements first (specific forms)
+    # Make a (mutable) list of X, Y, and Z
+    m = re.match(r"(?i)^make\s+a\s+(mutable\s+)?list\s+of(?:\s+(.*))?$", trim)
+    if m:
+        is_mutable = bool(m.group(1))
+        items_src = m.group(2) or ""
+        # Allow optional 'and' before last item
+        items_src = re.sub(r"(?i)\s+and\s+", ",", items_src)
+        items = _split_top_level(items_src)
+        return SetStmt("it", ListLiteralExpr([_parse_expr(it.strip(), ln) for it in items if it.strip()], mutable=is_mutable), ln)
+
+    # Make a (mutable) dictionary with k1 as v1 and k2 as v2
+    m = re.match(r"(?i)^make\s+a\s+(mutable\s+)?dictionary\s+with\s+(.+)$", trim)
+    if m:
+        is_mutable = bool(m.group(1))
+        pairs_src = m.group(2)
+        # Replace ' and ' between pairs with comma to split
+        pairs_src = re.sub(r"(?i)\s+and\s+", ",", pairs_src)
+        # Pairs of form KEY as VAL
+        parts = _split_top_level(pairs_src)
+        kv_exprs = []
+        for part in parts:
+            mm = re.match(r"(?i)^(.*)\s+as\s+(.*)$", part.strip())
+            if not mm:
+                raise ParseError("dictionary entry must be '<key> as <value>'", ln)
+            k_src = mm.group(1).strip()
+            v_src = mm.group(2).strip()
+            kv_exprs.append((_parse_expr(k_src, ln), _parse_expr(v_src, ln)))
+        return SetStmt("it", DictLiteralExpr(kv_exprs, mutable=is_mutable), ln)
+
+    # Set the Nth item in <list> to VALUE
+    m = re.match(r"(?i)^set\s+the\s+(.*)\s+item\s+in\s+(.*)\s+to\s+(.*)$", trim)
+    if m:
+        idx_src = m.group(1)
+        cont_src = m.group(2)
+        val_src = m.group(3)
+        return SetNthItemStmt(_parse_expr(idx_src, ln), _parse_expr(cont_src, ln), _parse_expr(val_src, ln), ln)
+
+    # Remove the last item from <list>
+    m = re.match(r"(?i)^remove\s+the\s+last\s+item\s+from\s+(.*)$", trim)
+    if m:
+        return RemoveLastItemStmt(_parse_expr(m.group(1).strip(), ln), ln)
+
+    # Add VALUE to <list> (already supported but keep compatibility with phrasing)
+    # handled later by existing AddToListStmt rule
+
+    # Tell me the length of <list>
+    m = re.match(r"(?i)^tell\s+me\s+the\s+length\s+of\s+(.*)$", trim)
+    if m:
+        return WriteStmt(CallExpr('length', [_parse_expr(m.group(1).strip(), ln)], line=ln), ln)
+
+    # Give me the keys of <dict>
+    m = re.match(r"(?i)^give\s+me\s+the\s+keys\s+of\s+(.*)$", trim)
+    if m:
+        return WriteStmt(KeysOfExpr(_parse_expr(m.group(1).strip(), ln)), ln)
+
+    # Give me the values of <dict>
+    m = re.match(r"(?i)^give\s+me\s+the\s+values\s+of\s+(.*)$", trim)
+    if m:
+        return WriteStmt(ValuesOfExpr(_parse_expr(m.group(1).strip(), ln)), ln)
+
+    # Check if <dict> has KEY
+    m = re.match(r"(?i)^check\s+if\s+(.*)\s+has\s+(.*)$", trim)
+    if m:
+        dict_src = m.group(1).strip()
+        key_src = m.group(2).strip()
+        return WriteStmt(ContainsExpr(_parse_expr(dict_src, ln), _parse_expr(key_src, ln)), ln)
 
     # Write
     if low.startswith("write "):
@@ -317,16 +387,35 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
             raise ParseError("Malformed inline Make", ln)
         sig_part = rest[:m.start()].rstrip()
         expr_src = rest[m.end():].strip()
-        name, params = _parse_func_sig(sig_part, ln)
-        return FunctionDefStmt(name, params, [ReturnStmt(_parse_expr(expr_src, ln), ln)], ln)
+        if sig_part.lower().startswith('function '):
+            sig_part = sig_part[9:].strip()
+        name, params, defaults = _parse_func_sig_with_defaults(sig_part, ln)
+        return FunctionDefStmt(name, params, defaults, [ReturnStmt(_parse_expr(expr_src, ln), ln)], ln)
 
     if low.startswith("use "):
         rest = trim[4:].strip()
         name, args = _parse_call_sig(rest, ln)
         return UseStmt(name, [_parse_expr(a, ln) for a in args], ln)
 
+    # Direct call form: Call <name> [with args]
+    if low.startswith('call '):
+        rest = trim[5:].strip()
+        # allow calling function via variable: Call fvar with 1,2
+        if ' with ' in rest.lower():
+            target, tail = re.split(r"(?i)\swith\s", rest, maxsplit=1)
+            args = [a.strip() for a in _split_top_level(tail) if a.strip()]
+        else:
+            target, args = rest, []
+        # If target is identifier, parse as IdentifierExpr; else generic expr
+        target_expr = IdentifierExpr(target) if re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", target) else _parse_expr(target, ln)
+        return CallValueStmt(target_expr, [_parse_expr(a, ln) for a in args], ln)
+
     if low.startswith("import "):
-        m = re.match(r"(?i)import\s+\"(.*)\"", trim)
+        # Import system "name" | Import "path"
+        m_sys = re.match(r"(?i)^import\s+system\s+\"(.*)\"$", trim)
+        if m_sys:
+            return ImportStmt(m_sys.group(1), ln, system=True)
+        m = re.match(r"(?i)^import\s+\"(.*)\"$", trim)
         if not m:
             raise ParseError("Import expects a quoted path", ln)
         return ImportStmt(m.group(1), ln)
@@ -357,13 +446,26 @@ def _parse_single_stmt(ln: int, s: str) -> Stmt:
 
 # Helpers -----------------------------------------------------------------
 
-def _parse_func_sig(src: str, ln: int) -> Tuple[str, List[str]]:
+def _parse_func_sig_with_defaults(src: str, ln: int) -> Tuple[str, List[str], List[Optional[object]]]:
+    # Parse: name [with A [set to expr], B [set to expr], ...]
     if " with " in src.lower():
         name, tail = re.split(r"(?i)\swith\s", src, maxsplit=1)
-        params = [p.strip() for p in tail.split(',') if p.strip()]
+        raw_params = [p.strip() for p in _split_top_level(tail) if p.strip()]
     else:
-        name, params = src, []
-    return name.strip(), params
+        name, raw_params = src, []
+    params: list[str] = []
+    defaults: list[Optional[object]] = []
+    for rp in raw_params:
+        m = re.match(r"(?i)^([A-Za-z_][A-Za-z0-9_]*)\s+set\s+to\s+(.*)$", rp)
+        if m:
+            pname = m.group(1)
+            pexpr = m.group(2)
+            params.append(pname)
+            defaults.append(_parse_expr(pexpr, ln))
+        else:
+            params.append(rp)
+            defaults.append(None)
+    return name.strip(), params, defaults
 
 
 def _parse_call_sig(src: str, ln: int) -> Tuple[str, List[str]]:
@@ -401,6 +503,18 @@ def _parse_bool_expr(src: str, ln: int):
 def _parse_expr(src: str, ln: int):
     # Random expressions
     s = src.strip()
+    # Phrasal access: Take the Nth item from <list>
+    m = re.match(r"(?i)^take\s+the\s+(.*)\s+item\s+from\s+(.*)$", s)
+    if m:
+        idx_src = m.group(1).strip()
+        cont_src = m.group(2).strip()
+        return NthItemExpr(_parse_expr(idx_src, ln), _parse_expr(cont_src, ln), line=ln)
+    # Phrasal dict lookup: Take the value of KEY from <dict>
+    m = re.match(r"(?i)^take\s+the\s+value\s+of\s+(.*)\s+from\s+(.*)$", s)
+    if m:
+        key_src = m.group(1).strip()
+        dict_src = m.group(2).strip()
+        return AtExpr(_parse_expr(dict_src, ln), _parse_expr(key_src, ln), line=ln)
     m = re.match(r"(?i)^random\s+decimal\s+between\s+(.*)\s+(?:and|to)\s+(.*)$", s)
     if m:
         return RandomFloatBetweenExpr(_parse_expr(m.group(1).strip(), ln), _parse_expr(m.group(2).strip(), ln))
@@ -419,14 +533,15 @@ def _parse_expr(src: str, ln: int):
     m = re.match(r"(?i)^any\s+(.*)\s+is\s+(even|odd|positive|negative)$", s)
     if m:
         return AnyPredicateExpr(_parse_expr(m.group(1).strip(), ln), m.group(2).lower())
-    # List literal: List contains a, b, c
+    # List literal (legacy mutable): List contains a, b, c
     if re.match(r"(?i)^list\s+contains\b", s):
-        tail = re.sub(r"(?i)^list\s+contains\s+", "", s)
+        # Allow zero or more spaces after 'contains' to support empty default like 'List contains'
+        tail = re.sub(r"(?i)^list\s+contains\b\s*", "", s)
         items = _split_top_level(tail)
-        return ListLiteralExpr([_parse_expr(it.strip(), ln) for it in items if it.strip()])
-    # Dict literal: Dictionary contains key: value, key: value
+        return ListLiteralExpr([_parse_expr(it.strip(), ln) for it in items if it.strip()], mutable=True, legacy_literal=True)
+    # Dict literal (legacy mutable): Dictionary contains key: value, key: value
     if re.match(r"(?i)^dictionary\s+contains\b", s):
-        tail = re.sub(r"(?i)^dictionary\s+contains\s+", "", s)
+        tail = re.sub(r"(?i)^dictionary\s+contains\b\s*", "", s)
         pairs = _split_top_level(tail)
         kvs: list[tuple] = []
         for p in pairs:
@@ -434,7 +549,7 @@ def _parse_expr(src: str, ln: int):
                 raise ParseError("dictionary entry must be 'key: value'", ln)
             k, v = p.split(":", 1)
             kvs.append((_parse_expr(k.strip(), ln), _parse_expr(v.strip(), ln)))
-        return DictLiteralExpr(kvs)
+        return DictLiteralExpr(kvs, mutable=True, legacy_literal=True)
     # keys/values of
     if re.match(r"(?i)^keys\s+of\s+", s):
         tail = re.sub(r"(?i)^keys\s+of\s+", "", s)

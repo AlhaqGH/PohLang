@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pohlang"
+version = "0.1.0"
+description = "PohLang — a fully phrasal (English-like) language: Python interpreter (authoritative) and Dart transpiler (experimental). First experimental release."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+	{ name = "PohLang Authors", email = "contact@pohlang.dev" }
+]
+keywords = ["education", "language", "interpreter", "dart", "transpiler", "phrasal", "beginner"]
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+	"Topic :: Education",
+	"Topic :: Software Development :: Interpreters",
+	"Topic :: Software Development :: Compilers",
+	"Intended Audience :: Education",
+	"Intended Audience :: Developers"
+]
+dependencies = []
+
+[project.scripts]
+pohlang = "Interpreter.run_poh:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["Interpreter*", "pohlang*", "examples*", "tests_python*", "tests_dart*"]
+exclude = ["transpiler*", "examples/dart*"]
+
+[tool.setuptools.package-data]
+"Interpreter" = [
+	"examples/*.poh",
+	"stdlib/**/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+	"tests_python"
+]

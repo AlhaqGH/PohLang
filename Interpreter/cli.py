@@ -18,16 +18,10 @@ def main():
 	parser.add_argument('--debug', action='store_true', help='Enable debug tracing')
 	args = parser.parse_args()
 	path = args.script
-	try:
-		with open(path, 'r', encoding='utf-8') as f:
-			src = f.read()
-	except FileNotFoundError:
-		print(f"File not found: {path}")
-		sys.exit(66)
 	interp = Interpreter()
 	interp.debug_enabled = args.debug
 	try:
-		interp.run(src, filename=path)
+		interp.run_file(path)
 	except (RuntimeErrorPoh, Exception) as e:  # noqa: BLE001
 		print(f"Runtime error: {e}")
 		if args.debug:

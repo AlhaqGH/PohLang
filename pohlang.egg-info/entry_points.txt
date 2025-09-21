@@ -1,0 +1,2 @@
+[console_scripts]
+pohlang = Interpreter.run_poh:main
