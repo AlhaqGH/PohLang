@@ -1,0 +1,234 @@
+name: PohLang SDK Release
+
+on:
+  push:
+    tags:
+      - 'pohlang-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.5.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (no publishing)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run tests
+      run: |
+        python -m pytest tests_python/ -v
+    
+    - name: Test interpreter smoke test
+      run: |
+        echo 'Write "Hello from CI"' > test_ci.poh
+        python -m Interpreter.run_poh test_ci.poh
+        rm test_ci.poh
+
+  build-python-sdk:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build package
+      run: |
+        python -m build
+    
+    - name: Check package
+      run: |
+        python -m twine check dist/*
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-sdk-dist
+        path: dist/
+
+  build-dart-sdk:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Dart
+      uses: dart-lang/setup-dart@v1
+      with:
+        sdk: stable
+    
+    - name: Get Dart dependencies
+      run: |
+        cd transpiler
+        dart pub get
+    
+    - name: Test Dart transpiler
+      run: |
+        cd transpiler
+        dart test
+    
+    - name: Compile transpiler
+      run: |
+        cd transpiler
+        dart compile exe bin/transpiler.dart -o ../bin/pohlang-transpiler
+    
+    - name: Create Dart SDK bundle
+      run: |
+        mkdir -p dart-sdk/bin
+        mkdir -p dart-sdk/lib
+        cp bin/pohlang-transpiler dart-sdk/bin/
+        cp -r transpiler/lib/* dart-sdk/lib/
+        cp -r lib/* dart-sdk/lib/
+        tar -czf dart-sdk.tar.gz dart-sdk/
+    
+    - name: Upload Dart SDK
+      uses: actions/upload-artifact@v3
+      with:
+        name: dart-sdk
+        path: dart-sdk.tar.gz
+
+  release:
+    needs: [build-python-sdk, build-dart-sdk]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/pohlang-v') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Python SDK
+      uses: actions/download-artifact@v3
+      with:
+        name: python-sdk-dist
+        path: dist/
+    
+    - name: Download Dart SDK
+      uses: actions/download-artifact@v3
+      with:
+        name: dart-sdk
+    
+    - name: Extract version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/pohlang-v}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: pohlang-v${{ steps.version.outputs.version }}
+        release_name: PohLang SDK v${{ steps.version.outputs.version }}
+        body: |
+          # PohLang SDK v${{ steps.version.outputs.version }}
+          
+          ## What's Included
+          
+          ### Python SDK (pip install)
+          - Complete PohLang interpreter
+          - CLI tools: `pohlang script.poh`
+          - Library for embedding: `import pohlang`
+          
+          ### Dart SDK (standalone)
+          - PohLang → Dart transpiler
+          - Runtime libraries for transpiled code
+          - CLI tools: `pohlang-transpiler script.poh`
+          
+          ## Installation
+          
+          ### Python SDK
+          ```bash
+          pip install pohlang==${{ steps.version.outputs.version }}
+          ```
+          
+          ### Dart SDK
+          Download and extract `dart-sdk.tar.gz`, add `bin/` to PATH.
+          
+          ## Quick Start
+          ```pohlang
+          Write "Hello, PohLang!"
+          Set x to 42
+          Write "The answer is " plus x
+          ```
+          
+          Save as `hello.poh`, then:
+          - Python: `pohlang hello.poh`
+          - Dart: `pohlang-transpiler hello.poh && dart hello.dart`
+        draft: false
+        prerelease: false
+    
+    - name: Upload Python wheel
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/pohlang-${{ steps.version.outputs.version }}-py3-none-any.whl
+        asset_name: pohlang-${{ steps.version.outputs.version }}-py3-none-any.whl
+        asset_content_type: application/zip
+    
+    - name: Upload Python source
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/pohlang-${{ steps.version.outputs.version }}.tar.gz
+        asset_name: pohlang-${{ steps.version.outputs.version }}.tar.gz
+        asset_content_type: application/gzip
+    
+    - name: Upload Dart SDK
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dart-sdk.tar.gz
+        asset_name: pohlang-dart-sdk-${{ steps.version.outputs.version }}.tar.gz
+        asset_content_type: application/gzip
+    
+    - name: Publish to PyPI
+      if: ${{ !github.event.inputs.dry_run }}
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        pip install twine
+        python -m twine upload dist/* --skip-existing

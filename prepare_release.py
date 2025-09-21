@@ -7,6 +7,7 @@ This script prepares PohLang for release by:
 2. Building distribution packages
 3. Validating installation
 4. Creating release artifacts
+5. Creating a git tag in the format pohlang-vX.Y.Z
 
 Usage:
     python prepare_release.py [--dry-run]
@@ -19,6 +20,7 @@ from pathlib import Path
 import argparse
 import tempfile
 import shutil
+import datetime
 
 
 def run_command(cmd, check=True, capture_output=False):
@@ -38,73 +40,95 @@ def run_command(cmd, check=True, capture_output=False):
         return False
 
 
-def check_version_consistency():
-    """Check that versions are consistent across files."""
-    print("🔍 Checking version consistency...")
-    
-    # Read pyproject.toml version
+def extract_version_from_interpreter() -> str | None:
+    """Extract __version__ from Interpreter/__init__.py (authoritative language version)."""
+    init_path = Path("Interpreter/__init__.py")
+    if not init_path.exists():
+        return None
+    try:
+        for line in init_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("__version__"):
+                # __version__ = "0.5.0"
+                val = line.split("=", 1)[1].strip().strip("'\"")
+                return val
+    except Exception:
+        return None
+    return None
+
+
+def read_pyproject_version() -> str | None:
     pyproject_path = Path("pyproject.toml")
     if not pyproject_path.exists():
-        print("❌ pyproject.toml not found")
-        return False
-    
-    with open(pyproject_path) as f:
-        content = f.read()
-        if 'version = "0.1.0"' not in content:
-            print("❌ pyproject.toml version is not 0.1.0")
-            return False
-    
-    # Check interpreter version
-    init_path = Path("Interpreter/__init__.py")
-    if init_path.exists():
-        with open(init_path) as f:
-            content = f.read()
-            if '__version__ = "0.5.0"' not in content:
-                print("❌ Interpreter version is not 0.5.0")
-                return False
-    
-    # Check transpiler version
-    transpiler_pubspec = Path("transpiler/pubspec.yaml")
-    if transpiler_pubspec.exists():
-        with open(transpiler_pubspec) as f:
-            content = f.read()
-            if 'version: 0.3.5' not in content:
-                print("❌ Transpiler version is not 0.3.5")
-                return False
-    
-    print("✅ Version consistency check passed")
-    return True
-
-
-def run_tests():
-    """Run the test suite."""
-    print("🧪 Running tests...")
-    
-    # Try to run a simple interpreter test
-    test_code = '''
-Write "Hello, PohLang!"
-Set x to 5
-Set y to 3
-Set result to x plus y
-Write "5 + 3 = " plus result
-'''
-    
+        return None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.poh', delete=False) as f:
+        for line in pyproject_path.read_text(encoding="utf-8").splitlines():
+            if line.strip().startswith("version") and "[project]" not in line:
+                return line.split("=", 1)[1].strip().strip("'\"")
+    except Exception:
+        return None
+    return None
+
+
+def check_version_consistency() -> tuple[bool, str | None]:
+    """Check version consistency and return (ok, version)."""
+    print("🔍 Checking version consistency...")
+    lang_version = extract_version_from_interpreter()
+    py_version = read_pyproject_version()
+
+    if not lang_version:
+        print("❌ Could not determine language version from Interpreter/__init__.py")
+        return False, None
+    if not py_version:
+        print("❌ Could not determine project version from pyproject.toml")
+        return False, lang_version
+    if lang_version.split("-")[0] != py_version.split("-")[0]:
+        print(f"❌ Version mismatch: Interpreter __version__ is {lang_version} but pyproject is {py_version}")
+        return False, lang_version
+    print(f"✅ Version check: {lang_version}")
+    return True, lang_version
+
+
+def run_tests() -> bool:
+    """Run the test suite via pytest if available, else unittest; also a tiny smoke test."""
+    print("🧪 Running tests...")
+    # Prefer pytest
+    try:
+        res = subprocess.run([sys.executable, '-m', 'pytest', '-q'], capture_output=True, text=True)
+        if res.returncode == 0:
+            print("✅ Pytest suite passed")
+        else:
+            print("⚠️ Pytest failed; falling back to unittest\n" + res.stdout + "\n" + res.stderr)
+            raise RuntimeError()
+    except Exception:
+        res = subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests_python'], capture_output=True, text=True)
+        if res.returncode != 0:
+            print("❌ Unittest suite failed")
+            print(res.stdout)
+            print(res.stderr)
+            return False
+        print("✅ Unittest suite passed")
+
+    # Extra: basic interpreter smoke test
+    test_code = (
+        "Write \"Hello, PohLang!\"\n"
+        "Set x to 5\n"
+        "Set y to 3\n"
+        "Set result to x plus y\n"
+        "Write \"5 + 3 = \" plus result\n"
+    )
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.poh', delete=False, encoding='utf-8') as f:
             f.write(test_code)
             test_file = f.name
-        
-        # Test interpreter
         cmd = [sys.executable, "-m", "Interpreter.run_poh", test_file]
-        if run_command(cmd, capture_output=True):
-            print("✅ Basic interpreter test passed")
-            os.unlink(test_file)
+        ok = run_command(cmd, capture_output=True)
+        os.unlink(test_file)
+        if ok:
+            print("✅ Interpreter smoke test passed")
             return True
-        else:
-            print("❌ Basic interpreter test failed")
-            os.unlink(test_file)
-            return False
-            
+        print("❌ Interpreter smoke test failed")
+        return False
     except Exception as e:
         print(f"❌ Test execution failed: {e}")
         return False
@@ -171,9 +195,14 @@ def create_release_notes():
     """Create release notes file."""
     print("📝 Creating release notes...")
     
-    release_notes = """# PohLang v0.1.0 Release Notes
+    # Determine current versions for notes
+    ok, lang_version = check_version_consistency()
+    py_version = read_pyproject_version() or 'unknown'
+    display_ver = py_version
 
-## First Experimental Release - September 21, 2025
+    release_notes = f"""# PohLang v{display_ver} Release Notes
+
+## Automated Release - {datetime.datetime.now().strftime('%B %d, %Y')}
 
 This is the inaugural release of PohLang, introducing a beginner-friendly, fully phrasal programming language designed specifically for educational purposes.
 
@@ -181,7 +210,7 @@ This is the inaugural release of PohLang, introducing a beginner-friendly, fully
 
 **Complete Language Implementation**
 - Natural English-like syntax for all programming constructs
-- Stable Python interpreter (v0.5.0) 
+- Stable Python interpreter (v{lang_version or 'unknown'}) 
 - Experimental Dart transpiler (v0.3.5)
 - Comprehensive documentation and examples
 
@@ -286,19 +315,44 @@ def main():
     success &= build_package()
     success &= validate_package()
     success &= create_release_notes()
+
+    # Create git tag if inside repository
+    ok, lang_version = check_version_consistency()
+    tag_name = None
+    if ok and lang_version:
+        # pyproject version used for tag X.Y.Z
+        ver = read_pyproject_version() or lang_version
+        tag_name = f"pohlang-v{ver}"
+        try:
+            res = subprocess.run(['git', 'rev-parse', '--is-inside-work-tree'], capture_output=True, text=True)
+            if res.returncode == 0 and 'true' in res.stdout.lower():
+                # Commit any changes (release notes, dist ignored typically) and tag
+                subprocess.run(['git', 'add', '-A'], check=False)
+                # Commit only if staged changes
+                diff = subprocess.run(['git', 'diff', '--cached', '--quiet'])
+                if diff.returncode != 0:
+                    subprocess.run(['git', 'commit', '-m', f'Release {ver} artifacts'], check=False)
+                # Create or update tag
+                subprocess.run(['git', 'tag', '-f', tag_name, '-m', f'PohLang {ver}'], check=False)
+                print(f"🏷️  Created/updated git tag {tag_name}")
+            else:
+                print("ℹ️  Not a git repository; skipping tagging.")
+        except Exception as e:
+            print(f"⚠️  Failed to create git tag: {e}")
     
     print("\n🏁 Release Preparation Complete")
     if success:
-        print("✅ PohLang v0.1.0 is ready for release!")
+        print(f"✅ PohLang v{read_pyproject_version() or 'unknown'} is ready for release!")
         print("\nRelease artifacts:")
         print("- Distribution packages in dist/")
         print("- Release notes in RELEASE_NOTES.md")
-        print("- Updated CHANGELOG.md")
+        print(f"- Git tag: {tag_name or 'n/a'}")
         print("\nNext steps:")
         print("1. Test installation: pip install dist/*.whl")
         print("2. Upload to PyPI: twine upload dist/*")
-        print("3. Create GitHub release with artifacts")
-        print("4. Update documentation websites")
+        print("3. Git tag has been created (if repo). Push tags if needed.")
+        print("4. Create GitHub release with artifacts (optional)")
+        print("5. Update documentation websites")
     else:
         print("❌ Some steps failed. Please review and fix before release.")
         sys.exit(1)

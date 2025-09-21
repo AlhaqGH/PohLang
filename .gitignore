@@ -1,50 +1,79 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
 .pytest_cache/
-.venv/
-# Common virtualenv names
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Environments
+.env
+.venv
 env/
 venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Dart
 .dart_tool/
 .packages
-build/
 pubspec.lock
 
-# General
-.DS_Store
-.idea/
-.vscode/
+# PohLang specific
+*.poh.dart
+temp_*.poh
+
+# Additional ignores for public release hygiene
+# Node/TypeScript
+out/
+*.tsbuildinfo
+
+# Build artifacts
+release/
+
+# Archive bundles (CI-only)
+*.zip
+*.tar.gz
+
+# Logs & temp files
 *.log
-
-# Secrets / credentials (prevent accidental commits)
-.env
-.env.*
-*.pem
-*.key
-*.crt
-*.pfx
-*.p12
-*.keystore
-*.jks
-id_rsa
-id_dsa
-id_ecdsa
-id_ed25519
-*.pub
-
-# Node / JS (future tooling)
-node_modules/
-package-lock.json
-
-# Coverage / reports
-coverage/
-lcov.info
-*.coverage
-
-# Generated transpiled Dart examples
-examples/dart/*.dart
-!examples/dart/phrase_*.dart
+*.tmp
+*.bak
+*.swp
