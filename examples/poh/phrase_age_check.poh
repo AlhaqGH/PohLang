@@ -1,3 +1,3 @@
-// moved from transpiler/example
+// Example: age check phrase
 Set age to 30
 If age is greater than 18 Write "Adult" Otherwise Write "Minor"

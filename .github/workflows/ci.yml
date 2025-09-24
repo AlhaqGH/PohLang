@@ -32,8 +32,43 @@ jobs:
           python -m Interpreter.run_poh hello_ci.poh
           rm hello_ci.poh
 
+  build-runtime:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build runtime (release)
+        run: |
+          cargo build --release --manifest-path runtime-rs/Cargo.toml
+      - name: Collect artifact
+        shell: bash
+        run: |
+          mkdir -p out
+          case "${{ matrix.os }}" in
+            windows-latest)
+              cp runtime-rs/target/release/pohlangc.exe out/pohlangc-windows.exe
+              ;;
+            ubuntu-latest)
+              cp runtime-rs/target/release/pohlangc out/pohlangc-linux
+              chmod +x out/pohlangc-linux
+              ;;
+            macos-latest)
+              cp runtime-rs/target/release/pohlangc out/pohlangc-macos
+              chmod +x out/pohlangc-macos
+              ;;
+          esac
+      - name: Upload runtime artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-${{ matrix.os }}
+          path: out/
+
   package:
-    needs: test
+    needs: [test, build-runtime]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/sdk-v')
     steps:
@@ -45,6 +80,18 @@ jobs:
         id: version
         run: |
           echo "version=${GITHUB_REF_NAME#sdk-v}" >> $GITHUB_OUTPUT
+      - name: Download runtime artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: runtime-*
+          merge-multiple: true
+          path: runtime-binaries
+      - name: Arrange cross-platform binaries
+        run: |
+          mkdir -p bin/linux bin/windows bin/macos
+          if [ -f runtime-binaries/pohlangc-linux ]; then cp runtime-binaries/pohlangc-linux bin/linux/pohlangc; chmod +x bin/linux/pohlangc; fi
+          if [ -f runtime-binaries/pohlangc-windows.exe ]; then cp runtime-binaries/pohlangc-windows.exe bin/windows/pohlangc.exe; fi
+          if [ -f runtime-binaries/pohlangc-macos ]; then cp runtime-binaries/pohlangc-macos bin/macos/pohlangc; chmod +x bin/macos/pohlangc; fi
       - name: Build Python package
         run: |
           python -m pip install --upgrade pip
@@ -60,7 +107,7 @@ jobs:
           [ -d Interpreter ] && cp -r Interpreter "$SDK_DIR/"
           [ -d lib ] && cp -r lib "$SDK_DIR/"
           [ -d bin ] && cp -r bin "$SDK_DIR/"
-          [ -d transpiler ] && cp -r transpiler "$SDK_DIR/" || true
+          # component removed from the project
           [ -d examples ] && cp -r examples "$SDK_DIR/" || true
           [ -d doc ] && cp -r doc "$SDK_DIR/" || true
 

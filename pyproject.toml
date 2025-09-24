@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pohlang"
 version = "0.5.0"
-description = "PohLang — a fully phrasal (English-like) language: Python interpreter (authoritative) and Dart transpiler (experimental). First experimental release."
+description = "PohLang — a fully phrasal (English-like) language with a Python interpreter (authoritative) and a Rust runtime/VM (experimental)."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
 	{ name = "PohLang Authors", email = "contact@pohlang.dev" }
 ]
-keywords = ["education", "language", "interpreter", "dart", "transpiler", "phrasal", "beginner"]
+keywords = ["education", "language", "interpreter", "phrasal", "beginner", "rust", "runtime"]
 classifiers = [
 	"Development Status :: 3 - Alpha",
 	"Programming Language :: Python :: 3",
@@ -29,7 +29,7 @@ dependencies = []
 
 [project.scripts]
 # Unified CLI: supports running .poh files and `pohlang release`
-pohlang = "pohlang.cli:main"
+pohlang = "Interpreter.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
@@ -37,8 +37,8 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["Interpreter*", "pohlang*", "examples*", "tests_python*", "tests_dart*"]
-exclude = ["transpiler*", "examples/dart*"]
+include = ["Interpreter*", "pohlang*", "examples*", "tests_python*"]
+exclude = []
 
 [tool.setuptools.package-data]
 "Interpreter" = [

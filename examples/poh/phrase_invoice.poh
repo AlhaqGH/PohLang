@@ -1,4 +1,4 @@
-// moved from transpiler/example
+// Example: invoice phrase
 Set subtotal to 120
 Set discount to 10
 Set taxRate to 0.07

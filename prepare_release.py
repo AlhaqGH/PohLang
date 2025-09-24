@@ -210,8 +210,8 @@ This is the inaugural release of PohLang, introducing a beginner-friendly, fully
 
 **Complete Language Implementation**
 - Natural English-like syntax for all programming constructs
-- Stable Python interpreter (v{lang_version or 'unknown'}) 
-- Experimental Dart transpiler (v0.3.5)
+- Stable Python interpreter (v{lang_version or 'unknown'})
+- Experimental Rust runtime/VM (pohlangc)
 - Comprehensive documentation and examples
 
 **Key Features**
@@ -254,7 +254,6 @@ PohLang is designed for:
 - Programming beginners
 - Educational institutions
 - Learning programming concepts without syntax complexity
-- Transitioning to other languages via Dart transpilation
 
 ### 🔮 Future Plans
 

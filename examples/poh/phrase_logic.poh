@@ -1,4 +1,4 @@
-// moved from transpiler/example
+// Example: logic phrase
 Set age to 20
 Set hasID to true
 Set isStudent to false

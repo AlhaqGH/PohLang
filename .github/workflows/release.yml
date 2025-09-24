@@ -78,50 +78,10 @@ jobs:
         name: python-sdk-dist
         path: dist/
 
-  build-dart-sdk:
-    needs: test
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Dart
-      uses: dart-lang/setup-dart@v1
-      with:
-        sdk: stable
-    
-    - name: Get Dart dependencies
-      run: |
-        cd transpiler
-        dart pub get
-    
-    - name: Test Dart transpiler
-      run: |
-        cd transpiler
-        dart test
-    
-    - name: Compile transpiler
-      run: |
-        cd transpiler
-        dart compile exe bin/transpiler.dart -o ../bin/pohlang-transpiler
-    
-    - name: Create Dart SDK bundle
-      run: |
-        mkdir -p dart-sdk/bin
-        mkdir -p dart-sdk/lib
-        cp bin/pohlang-transpiler dart-sdk/bin/
-        cp -r transpiler/lib/* dart-sdk/lib/
-        cp -r lib/* dart-sdk/lib/
-        tar -czf dart-sdk.tar.gz dart-sdk/
-    
-    - name: Upload Dart SDK
-      uses: actions/upload-artifact@v3
-      with:
-        name: dart-sdk
-        path: dart-sdk.tar.gz
+  # Removed Dart SDK build; project no longer includes that component
 
   release:
-    needs: [build-python-sdk, build-dart-sdk]
+    needs: [build-python-sdk]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/pohlang-v') || github.event_name == 'workflow_dispatch'
     
@@ -133,11 +93,6 @@ jobs:
       with:
         name: python-sdk-dist
         path: dist/
-    
-    - name: Download Dart SDK
-      uses: actions/download-artifact@v3
-      with:
-        name: dart-sdk
     
     - name: Extract version
       id: version
@@ -166,20 +121,12 @@ jobs:
           - CLI tools: `pohlang script.poh`
           - Library for embedding: `import pohlang`
           
-          ### Dart SDK (standalone)
-          - PohLang → Dart transpiler
-          - Runtime libraries for transpiled code
-          - CLI tools: `pohlang-transpiler script.poh`
-          
           ## Installation
           
           ### Python SDK
           ```bash
           pip install pohlang==${{ steps.version.outputs.version }}
           ```
-          
-          ### Dart SDK
-          Download and extract `dart-sdk.tar.gz`, add `bin/` to PATH.
           
           ## Quick Start
           ```pohlang
@@ -190,7 +137,6 @@ jobs:
           
           Save as `hello.poh`, then:
           - Python: `pohlang hello.poh`
-          - Dart: `pohlang-transpiler hello.poh && dart hello.dart`
         draft: false
         prerelease: false
     
@@ -214,15 +160,7 @@ jobs:
         asset_name: pohlang-${{ steps.version.outputs.version }}.tar.gz
         asset_content_type: application/gzip
     
-    - name: Upload Dart SDK
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dart-sdk.tar.gz
-        asset_name: pohlang-dart-sdk-${{ steps.version.outputs.version }}.tar.gz
-        asset_content_type: application/gzip
+  # Removed Dart SDK asset upload; no such artifacts are produced
     
     - name: Publish to PyPI
       if: ${{ !github.event.inputs.dry_run }}

@@ -13,7 +13,6 @@ This is the first experimental release of PohLang, marking the initial public av
 **Release Components:**
 - **PohLang Core**: v0.1.0 (First Experimental Release)
 - **Python Interpreter**: v0.5.0 (Stable)
-- **Dart Transpiler**: v0.3.5 (Fourth Experimental Release)
 
 ### Added
 
@@ -41,14 +40,10 @@ This is the first experimental release of PohLang, marking the initial public av
 - File I/O and system interaction capabilities
 - Collection support (lists, basic data structures)
 
-#### Dart Transpiler (v0.3.5)
-- Direct PohLang-to-Dart code generation
-- Function and variable name translation
-- Control flow structure mapping
-- Expression and operator translation
-- Shared runtime library for transpiled execution
-- Command-line transpilation interface
-- Generated code readability for learning transitions
+#### Rust Runtime (experimental)
+- Standalone Rust VM (pohlangc)
+- CLI: run `.poh` scripts natively
+- Early implementation with basic parsing and execution
 
 #### Development Environment
 - Command-line tools for program execution
@@ -112,9 +107,6 @@ pip install -e .
 ```bash
 # Using Python interpreter (recommended)
 pohlang my_program.poh
-
-# Using Dart transpiler (requires Dart SDK)
-dart run bin/pohlang.dart my_program.poh
 ```
 
 ### Documentation
@@ -129,7 +121,6 @@ dart run bin/pohlang.dart my_program.poh
 - Test: Comprehensive test suite for interpreter and language features
 
 ### Known Limitations
-- Dart transpiler requires separate Dart SDK installation
 - Limited standard library (expanding in future releases)
 - Error messages could be more educational/beginner-friendly
 - No IDE integrations yet (planned for upcoming releases)
@@ -145,7 +136,7 @@ This release establishes the foundation for PohLang as an educational programmin
 - Web-based interactive playground
 - More comprehensive educational resources
 - Performance optimizations
-- Additional transpilation targets
+- Additional execution/runtime targets
 
 ### Contributing
 - **GitHub Repository**: https://github.com/AlhaqGH/PohLang
@@ -166,4 +157,4 @@ MIT License - Open source and free for educational use
 - Import system with cycle detection
 - Debug tracing implementation
 
-Note: See `transpiler/CHANGELOG.md` for detailed Dart transpiler development history.
+Note: Earlier experimental transpiler efforts have been retired.

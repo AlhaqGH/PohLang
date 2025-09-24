@@ -1,6 +1,6 @@
 # PohLang Guide (September 2025)
 
-This guide teaches PohLang from the first steps to the most advanced features available in this repository today. It serves both users (writing PohLang programs) and developers (extending the language/transpiler/interpreter).
+This guide teaches PohLang from the first steps to the most advanced features available in this repository today. It serves both users (writing PohLang programs) and developers (extending the language and interpreter/runtime).
 
 Contents
 - What is PohLang?
@@ -26,7 +26,7 @@ Contents
 
 PohLang is a phrasal, English-like programming language that prioritizes readability and explicitness. It currently targets two runtimes:
 - A Python interpreter for experimentation and tests.
-- A Dart transpiler that emits runnable Dart code.
+- A Rust VM/runtime (pohlangc) for standalone execution.
 
 Programs are written in simple statements (one per line), with blocks delimited by `End`.
 
@@ -38,7 +38,7 @@ Programs are written in simple statements (one per line), with blocks delimited 
   ```
   Write "Hello, PohLang"
   ```
-- Run with the Python interpreter (see repo CLI in `Interpreter/cli.py`) or use the Dart transpiler to generate and run Dart.
+- Run with the Python interpreter (see repo CLI in `Interpreter/cli.py`) or use the Rust VM to execute directly.
 
 ---
 
@@ -358,8 +358,7 @@ Examples:
 ## CLI & Tooling
 
 - Python interpreter: `Interpreter/` (with `cli.py` for running files; tests live under `tests_python/`).
-- Dart transpiler: `transpiler/src/` (CLI in root `bin/pohlang.dart` and `transpiler/bin/pohlang.dart`).
-- Generated Dart files import a shared runtime from `lib/runtime.dart`.
+- Rust runtime: `runtime-rs/` (build with Cargo; binary name `pohlangc`).
 
 ---
 
@@ -371,21 +370,20 @@ High-level components:
   - `Interpreter/poh_parser.py` — single-pass, line-based parser with expression parsing.
   - `Interpreter/poh_interpreter.py` — interpreter with scoping, functions, control flow, collections, I/O, imports, tracing.
 
-- Dart transpiler core:
-  - `src/ast.dart`, `src/parser.dart`, `src/transpiler.dart` (or `transpiler/src/*` based on recent restructuring).
-  - Emits a single Dart program with function definitions above `main()`.
-  - Runtime imported via `package:pohlang/runtime.dart` or a computed relative fallback.
+- Rust runtime:
+  - `runtime-rs/src/parser.rs` — parser for a subset of the language used by the VM.
+  - `runtime-rs/src/vm.rs` — simple VM executing statements and expressions.
+  - `runtime-rs/src/main.rs` — CLI wiring (run/compile stubs).
 
 Extending the language:
 1. Add a node (statement/expression) in AST.
 2. Update parser to recognize the new syntax (statement forms in `_parse_stmt_or_block` / `_parse_single_stmt` and/or expression forms in `_parse_expr`).
-3. Implement evaluation/transpilation in the interpreter and/or transpiler.
-4. Add runtime helpers if needed (in Dart: `lib/runtime.dart`).
-5. Add tests (unit and E2E where needed).
+3. Implement evaluation in the interpreter and, optionally, in the Rust VM.
+4. Add tests (unit and E2E where needed).
 
 Testing strategy:
 - Python: unit + E2E tests in `tests_python/`.
-- Dart: unit tests in `tests_dart/` (parser/control flow/arithmetic/IO/strict warnings, etc.).
+- Rust: cargo tests under `runtime-rs/tests`.
 
 ---
 
@@ -397,4 +395,4 @@ Testing strategy:
 
 ---
 
-This guide will evolve alongside the language. If code and docs disagree, treat the interpreter and transpiler source directories as the source of truth.
+This guide will evolve alongside the language. If code and docs disagree, treat the interpreter and Rust runtime source directories as the source of truth.
