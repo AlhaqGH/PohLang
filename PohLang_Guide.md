@@ -1,398 +1,273 @@
-# PohLang Guide (September 2025)
+# PohLang Language Guide (September 2025)
 
-This guide teaches PohLang from the first steps to the most advanced features available in this repository today. It serves both users (writing PohLang programs) and developers (extending the language and interpreter/runtime).
+This is a step‑by‑step user manual for PohLang. It teaches absolute beginners and experienced developers how to write real programs with the current language and runtime. The language is phrasal (English‑like), avoids brackets and symbols in user code, and favors clarity. Equality uses the word form “is” and the symbol “=”; no other symbols are required in everyday code.
 
-Contents
-- What is PohLang?
-- Quick Start
-- Core Concepts
-- Language Reference (Statements)
-- Language Reference (Expressions)
-- Collections (Immutable-by-default, Mutable opt-in)
-- Built-in Functions
-- Control Flow
-- Functions
-- Modules & Imports
-- Debugging & Tracing
-- Errors & Warnings
-- CLI & Tooling
-- Developer Reference (Architecture & Extending)
-- Testing
-- Migration Notes (Legacy forms)
+Table of contents
+- 1. First steps (Hello World → Variables → Expressions)
+- 2. Conditions and loops
+- 3. Collections (lists and dictionaries)
+- 4. Functions (inline and block), defaults, closures
+- 5. Modules and imports
+- 6. Built‑ins you will use every day
+- 7. Errors you might see and how to fix them
+- 8. Command‑line usage
+- 9. Notes for contributors (optional)
 
 ---
 
-## What is PohLang?
+## 1. First steps
 
-PohLang is a phrasal, English-like programming language that prioritizes readability and explicitness. It currently targets two runtimes:
-- A Python interpreter for experimentation and tests.
-- A Rust VM/runtime (pohlangc) for standalone execution.
-
-Programs are written in simple statements (one per line), with blocks delimited by `End`.
-
----
-
-## Quick Start
-
-- Write a script:
-  ```
-  Write "Hello, PohLang"
-  ```
-- Run with the Python interpreter (see repo CLI in `Interpreter/cli.py`) or use the Rust VM to execute directly.
-
----
-
-## Core Concepts
-
-- One statement per line. Blocks end with `End`.
-- Variables are created on first assignment with `Set`.
-- Lexical scoping with block boundaries at `If`, `While`, `Repeat`, function bodies, and `Begin ... End`.
-- Expressions support arithmetic, comparisons, boolean logic, predicates, random, list/dict operations, and function calls.
-- Collections are immutable by default; use the keyword `mutable` to opt into mutability.
- - Functions are first-class values: you can store them in variables, pass them as arguments, return them from other functions, and call them via expression form. Closures are supported. Default parameters can be provided with `set to`.
-
----
-
-## Language Reference (Statements)
-
-The following statements are recognized at the start of a line. Keywords are case-insensitive (the guide shows canonical capitalization):
-
-- Write
-  - `Write <expr>`
-  - Prints the textual representation of `<expr>`.
-
-- Ask
-  - `Ask for <name>`
-  - `Ask for <name> number`
-  - `Ask for <name> decimal`
-  - Reads input and assigns to `<name>` (number → int with fallback 0, decimal → float with fallback 0.0, otherwise string).
-
-- Set
-  - `Set <name> to <expr>`
-  - `Set <name> <expr>` (alias)
-  - Assigns the evaluated expression to `<name>` in the appropriate scope.
-
-- Increase / Decrease
-  - `Increase <name> by <expr>` or `Increase <name> <expr>` (default 1)
-  - `Decrease <name> by <expr>` or `Decrease <name> <expr>` (default 1)
-
-- If
-  - Block form:
-    ```
-    If <condition>
-      ...
-    Otherwise
-      ...
-    End
-    ```
-  - Inline form:
-    `If <condition> Write <expr> Otherwise Write <expr>`
-
-- While
-  - Block form:
-    ```
-    While <condition>
-      ...
-    End
-    ```
-  - Inline form:
-    `While <condition> Write <expr>`
-
-- Repeat
-  - Block form:
-    ```
-    Repeat <count-or-collection>
-      ...
-    End
-    ```
-    - If number: repeats N times.
-    - If list: iterates elements; implicit `it` is each element.
-    - If dictionary: iterates keys; implicit `it` is each key.
-  - Inline form (write only): `Repeat <count-or-collection> Write <expr>`
-
-- Stop / Skip
-  - `Stop` breaks out of the nearest loop.
-  - `Skip` continues to the next loop iteration.
-
-- Begin / End (Anonymous Block)
-  - `Begin` ... `End` introduces a new lexical block scope without control flow.
-
-- Make (Function Definition)
-  - Block form:
-    ```
-    Make <name> with a, b, c
-      ...
-      Return <expr>
-    End
-    ```
-  - Inline form:
-    `Make <name> with a, b Write <expr>` (implicit return)
-
-- Return
-  - `Return` or `Return <expr>` inside function bodies.
-
-- Use (Function Call)
-  - `Use <name> with arg1, arg2, ...`
-  - `Call <expr> with arg1, arg2, ...` (first‑class function call)
-  - Expression call form is also supported: `f(arg1, arg2, ...)` where `f` is a function value.
-
-- Import
-  - `Import "path/to/file.poh"`
-  - Executes another PohLang file in its own module scope; exports made available via module registry and injected for module-to-module imports.
-
-- Debug
-  - `Debug on` / `Debug off` toggles runtime tracing.
-
-- List-specific statements
-  - `Set the <N> item in <list> to <value>` (1-based index)
-  - `Remove the last item from <list>` (no-op on empty)
-  - `Add <value> to <list>`
-  - `Remove <value> from <list>`
-
-- Dictionary-specific statements
-  - `Add "key": <value> to <dict>`
-  - `Remove "key" from <dict>`
-
----
-
-## Language Reference (Expressions)
-
-- Literals
-  - Numbers: `123`, `12.34`
-  - Strings: `"text"` (supports `\n`, escaped quotes `\"`)
-  - Booleans: `true`, `false`
-  - Nothing: `nothing` (evaluates to null/None)
-
-- Identifiers
-  - Refer to variables or functions by name.
-
-- Arithmetic
-  - Phrasal operators are preferred in examples: `plus`, `minus`, `times` (and concatenation with `plus`). The symbols `+`, `-`, `*`, `/` may be accepted but are discouraged when writing PohLang. String concatenation uses `plus`.
-
-- Comparisons
-  - `is`, `is not`, `is greater than`, `is less than`, `is at least`, `is at most` (normalized internally to `==`, `!=`, `>`, `<`, `>=`, `<=`).
-
-- Boolean logic
-  - `and`, `or`, `not` (normalized to `&&`, `||`, `!`).
-
-- Predicates (numeric)
-  - `x is even`, `x is odd`, `x is positive`, `x is negative`.
-
-- Random
-  - `random between A and B` → integer
-  - `random decimal between A and B` → float
-  - `random from <collection>` → random element or value
-
-- Collections
-  - Lists (immutable): `Make a list of 1, 2, and 3` → immutable list (tuple)
-  - Lists (mutable): `Make a mutable list of 1, 2, and 3`
-  - Dictionaries (immutable): `Make a dictionary with "a" as 1 and "b" as 2` → frozen dict
-  - Dictionaries (mutable): `Make a mutable dictionary with "a" as 1 and "b" as 2`
-
-- Collection access
-  - `Take the <N> item from <list>` (1-based index)
-  - `Take the value of <key> from <dict>`
-  - Postfix `at` operator (advanced): `d at "a"`, `xs at 1` (1-based for the phrasal Nth and 0-based for direct index access; prefer the phrasal forms for clarity)
-  - `keys of <dict>`, `values of <dict>`
-  - `contains <item> in <collection>` or `Check if <dict> has <key>` returns boolean
-
----
-
-## Collections (Immutable-by-default, Mutable opt-in)
-
-- Default behavior
-  - Lists and dictionaries are immutable unless you use the `mutable` keyword when creating them.
-  - Immutable lists are represented internally as tuples; immutable dictionaries as frozen dictionaries.
-
-- Mutable opt-in
-  - `Make a mutable list of ...`
-  - `Make a mutable dictionary with ...`
-
-- Legacy literal expressions
-  - `List contains 1, 2, 3`
-  - `Dictionary contains "a": 1`
-  - These are supported for migration. They evaluate to wrappers that allow mutation but emit a Warning on mutation:
-    - `Warning: Implicit mutable list/dictionary is deprecated. Use 'mutable list/dictionary' instead.`
-
-- Mutation operations and constraints
-  - Lists: Add/Remove value; Set Nth; Remove last.
-  - Dictionaries: Add/Remove key.
-  - Mutating an immutable collection raises a clear runtime error advising to create a mutable collection.
-
----
-
-## Built-in Functions
-
-- `length(x)` → number; works for strings, lists, dictionaries.
-- `sum(list)` → number; elements must be numeric.
-- `min(list)` / `max(list)` → number; non-empty numeric list.
-- `range(n)` / `range(start, end[, step])` → list of numbers.
-- `join(list, sep?)` → string; coerces elements to strings.
-- `split(text, sep)` → list.
-- `now()` → ISO-8601 timestamp.
-
----
-
-## Control Flow
-
-- If / Otherwise / End
-- While / End
-- Repeat / End
-  - Repeat with a number repeats N times.
-  - Repeat over a list/dict iterates with implicit `it` inside the loop.
-- Stop / Skip inside loops.
-
----
-
-## Functions
-
-- Define with `Make`, call with `Use` (statement), `Call f with ...`, or by expression `f(args)`.
-- Inline form returns the expression value; block form uses `Return`.
-- Default parameters can be declared with `set to` in the function header.
-- Exact arity enforcement; mismatch raises a runtime error.
-- Lexical scoping for locals and closures is respected (closures capture surrounding variables when functions are created).
-
-### First‑Class Functions
-Functions are values that you can store, pass, and return.
+Write a line to the console:
 
 ```
-Make greet with who Write "Hi " plus who
-Set f to greet
-Write f("Alice")
-Call f with "Bob"
-Use greet with "Poh"
+Write "Hello, PohLang"
 ```
 
-### Closures
-Functions capture variables from their defining scope.
+Create and use variables with Set:
+
+```
+Set name to "Ada"
+Write "Hi " plus name
+```
+
+Numbers and basic math use words, not symbols:
+
+```
+Set a to 2
+Set b to 3
+Write a plus b          # 5
+```
+
+Booleans and None:
+
+```
+Set ok to True
+Set empty to None
+Write ok                 # True
+Write empty              # None
+```
+
+Function calls are phrasal. Use “Use” for statements; use “with” to pass arguments. In expressions you can also call by name with “with”:
+
+```
+Make greet with who Write "Hello " plus who
+Use greet with "World"
+
+# As an expression call
+Set msg to greet with "Reader"
+Write msg
+```
+
+Equality uses “is” (or “=”). Inequality uses “is not”. Logical operators can be lowercase (and, or, not):
+
+```
+If name is "Ada" Write "Welcome"
+If ok and not (name is "Bob") Write "Proceed"   # parentheses shown only for grouping in the comment; you do not need them in code
+```
+
+Tip: You do not need brackets in PohLang code. Prefer phrasal forms like “name with a, b” and “List contains …”.
+
+---
+
+## 2. Conditions and loops
+
+If/Otherwise/End:
+
+```
+If name is "Ada"
+  Write "Welcome back"
+Otherwise
+  Write "Hello"
+End
+```
+
+While/End:
+
+```
+Set n to 3
+While n is greater than 0
+  Write n
+  Set n to n minus 1
+End
+```
+
+Repeat/End:
+
+```
+Repeat 3 times
+  Write "Tick"
+End
+```
+
+You can also repeat over a collection (see lists and dictionaries below).
+
+---
+
+## 3. Collections (lists and dictionaries)
+
+Lists (legacy literal supported):
+
+```
+Set xs to List contains 1, 2, 3
+Write xs
+Write length(xs)        # 3
+Write len(xs)           # 3 (alias)
+```
+
+Dictionaries (legacy literal supported):
+
+```
+Set d to Dictionary contains "a" set to 1, "b" set to 2
+Write d
+Write length(d)         # 2
+```
+
+Repeat over a list or dictionary:
+
+```
+Set xs to List contains "red", "green", "blue"
+Repeat length(xs) times
+  # add your own indexing or iteration helpers as you grow the stdlib
+End
+```
+
+Simple membership and size checks:
+
+```
+If length(xs) is 3 Write "OK"
+If length(d) is not 0 Write "Has items"
+```
+
+Note: The language aims to keep collections immutable by default. Mutation helpers may live in the standard library modules you Import (see below).
+
+---
+
+## 4. Functions (inline and block), defaults, closures
+
+Inline function (single expression return):
+
+```
+Make greet with who set to "World" Write "Hello " plus who
+Write greet with "Ada"
+Write greet              # Calls with default → Hello World
+```
+
+Block function (use Return):
+
+```
+Make add with a, b
+  Return a plus b
+End
+
+Write add with 2, 3
+```
+
+First‑class functions and closures:
 
 ```
 Make makeAdder with x
-  Make inner with y
-    Return x plus y
-  End
+  Make inner with y Write x plus y
   Return inner
 End
 
-Set add2 to makeAdder(2)
-Write add2(3)   # 5
+Set add2 to makeAdder with 2
+Write add2 with 3         # 5
 ```
 
-### Default Parameters
-Provide defaults using `set to` in the header. Omitted arguments use defaults.
+Arity and defaults:
 
-Inline form:
 ```
-Make greet with name set to "World" Write "Hello " plus name
-Call greet              # Hello World
-Call greet with "Alice" # Hello Alice
-```
-
-Block form:
-```
-Make greet with name set to "World"
-  Write "Hello " plus name
-End
+Make hello with name set to "World" Write "Hi " plus name
+Write hello               # Hi World
+Write hello with "Poh"    # Hi Poh
 ```
 
 ---
 
-## Modules & Imports
+## 5. Modules and imports
 
-- Local file imports: `Import "file.poh"` executes the file once (cached), detects circular imports, and records exports.
-- System imports (stdlib): `Import system "module"` loads a standard library module (e.g., `collections`).
-- Imported modules run in a module scope; functions and variables can be injected into the importing module's scope and become available to use.
+Local files:
 
-Example (system import):
+```
+Import "utils.poh"
+Use helper with "data"
+```
+
+System (standard library) modules:
+
 ```
 Import system "collections"
-Set xs to List contains 10, 20, 30
-Write head(xs)    # 10
 ```
 
----
-
-## Debugging & Tracing
-
-- `Debug on` / `Debug off` statements toggle tracing.
-- CLI flag `--debug` (Python) also enables rich tracing.
-- Trace lines include file, line, column, and activity:
-  - Executing statements
-  - Evaluating expressions
-  - Variable assignments
-  - Function enter/return
-  - Import notices
+The runtime looks for `Interpreter/stdlib/<module>.poh` (or a folder you set in the `POHLANG_STDLIB` environment variable). If a system module is not found, the import quietly does nothing so your program still runs.
 
 ---
 
-## Errors & Warnings
+## 6. Built‑ins you will use every day
 
-- All runtime and parse errors are reported with this format when positional info is available:
-  `[file.poh: Line N: Col M] <Message>`
-
-- Common runtime errors:
-  - Undefined variable `x`.
-  - Function arity mismatch.
-  - Division by zero.
-  - Type mismatch (numeric ops with strings).
-  - Collection mutation on immutable values.
-  - Index out of range / key not found.
-  - Unknown function `name` (with suggestion if similar exists).
+- length(x) / len(x) — size of a string, list, or dictionary
+- range(n) or range(start, end[, step]) — list of numbers
+- join(list, sep) — text
+- split(text, sep) — list of strings
+- now() — current timestamp (seconds)
 
 Examples:
-- Unknown function:
-```
-[script.poh: Line 3: Col 1] Unknown function 'gree'. Did you mean 'greet'?
-```
 
-- Wrong number of arguments (referencing the definition site):
 ```
-[script.poh: Line 5: Col 2] Function 'sumTwo' defined at line 1 expects 2 arguments but got 1
+Write length("abc")            # 3
+Write join(List contains 1, 2, 3, ", ")
+Write split("a,b,c", ",")
+Write range(3)                  # legacy parentheses accepted in examples; prefer phrasal forms elsewhere
 ```
-
-- Warnings:
-  - Legacy collection literal mutations emit deprecation warnings advising explicit `mutable` usage.
 
 ---
 
-## CLI & Tooling
+## 7. Errors you might see and how to fix them
 
-- Python interpreter: `Interpreter/` (with `cli.py` for running files; tests live under `tests_python/`).
-- Rust runtime: `runtime-rs/` (build with Cargo; binary name `pohlangc`).
+If something goes wrong, the runtime prints a helpful message with a line number when it can. Common issues:
 
----
+- Unknown function name: check spelling, or define it with Make.
+- Wrong number of arguments: make sure calls match the function’s header (defaults help).
+- Type mismatches: use numbers with numbers; text with text (plus concatenates text).
+- Index or key problems: verify bounds and keys before access.
 
-## Developer Reference (Architecture & Extending)
+Example messages:
 
-High-level components:
-- Python interpreter:
-  - `Interpreter/poh_ast.py` — AST node definitions.
-  - `Interpreter/poh_parser.py` — single-pass, line-based parser with expression parsing.
-  - `Interpreter/poh_interpreter.py` — interpreter with scoping, functions, control flow, collections, I/O, imports, tracing.
-
-- Rust runtime:
-  - `runtime-rs/src/parser.rs` — parser for a subset of the language used by the VM.
-  - `runtime-rs/src/vm.rs` — simple VM executing statements and expressions.
-  - `runtime-rs/src/main.rs` — CLI wiring (run/compile stubs).
-
-Extending the language:
-1. Add a node (statement/expression) in AST.
-2. Update parser to recognize the new syntax (statement forms in `_parse_stmt_or_block` / `_parse_single_stmt` and/or expression forms in `_parse_expr`).
-3. Implement evaluation in the interpreter and, optionally, in the Rust VM.
-4. Add tests (unit and E2E where needed).
-
-Testing strategy:
-- Python: unit + E2E tests in `tests_python/`.
-- Rust: cargo tests under `runtime-rs/tests`.
+```
+[script.poh: Line 3] Unknown function 'gree'. Did you mean 'greet'?
+[script.poh: Line 5] Function 'sumTwo' expects 2..2 args but got 1
+```
 
 ---
 
-## Migration Notes (Legacy forms)
+## 8. Command‑line usage
 
-- The legacy expressions `List contains ...` and `Dictionary contains ...` are temporarily supported.
-- Mutating these legacy values prints a deprecation Warning recommending explicit `mutable` forms.
-- Prefer using `Make a mutable list of ...` and `Make a mutable dictionary with ...` going forward.
+Two ways to run PohLang today:
+
+- Python interpreter (legacy reference): under `Interpreter/`.
+- Rust runtime (recommended for standalone): under `runtime-rs/` with the `pohlangc` binary.
+
+Run a file with the Rust runtime:
+
+```
+pohlangc --run path\to\script.poh
+```
+
+Optionally set a standard library path:
+
+```
+POHLANG_STDLIB=path\to\stdlib pohlangc --run script.poh
+```
 
 ---
 
-This guide will evolve alongside the language. If code and docs disagree, treat the interpreter and Rust runtime source directories as the source of truth.
+## 9. Notes for contributors (optional)
+
+- Parser and VM live in `runtime-rs/src/parser.rs` and `runtime-rs/src/vm.rs`.
+- Tests live in `runtime-rs/tests`.
+- The language avoids brackets and favors phrasal forms:
+  - Prefer `name with a, b` over `name(a, b)` in examples and docs.
+  - Prefer `List contains ...` and `Dictionary contains ...`.
+- Equality can be written as `is` or `=`; inequality as `is not`.
+
+This guide follows the language as implemented in this repository. If you see a mismatch, the code is the source of truth. Contributions welcome!

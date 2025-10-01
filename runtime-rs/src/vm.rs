@@ -8,8 +8,11 @@ use std::fs;
 enum Value {
     Str(String),
     Num(f64),
+    Bool(bool),
+    Null,
     Func(Func),
     List(Vec<Value>),
+    Dict(HashMap<String, Value>),
 }
 
 #[derive(Clone, Debug)]
@@ -103,8 +106,7 @@ impl Vm {
                     self.import_local(path)?;
                 }
                 Stmt::ImportSystem { name } => {
-                    // Stub: mark as loaded to avoid repeats; no-op body
-                    self.loaded_system.insert(name.clone());
+                    self.import_system(name)?;
                 }
                 Stmt::Use { name, args } => {
                     let argv = args.iter().map(|e| self.eval(e)).collect::<Result<Vec<_>>>()?;
@@ -140,6 +142,8 @@ impl Vm {
         match e {
             Expr::Str(s) => Ok(Value::Str(s.clone())),
             Expr::Num(n) => Ok(Value::Num(*n)),
+            Expr::Bool(b) => Ok(Value::Bool(*b)),
+            Expr::Null => Ok(Value::Null),
             Expr::Ident(name) => {
                 if let Some(v) = self.globals.get(name) { return Ok(v.clone()); }
                 Ok(Value::Str(format!("<{}>", name)))
@@ -196,6 +200,16 @@ impl Vm {
                 let argv = args.iter().map(|e| self.eval(e)).collect::<Result<Vec<_>>>()?;
                 self.call_function(name, &argv)
             }
+            Expr::ListLit(items) => {
+                let mut out = Vec::new();
+                for it in items { out.push(self.eval(it)?); }
+                Ok(Value::List(out))
+            }
+            Expr::DictLit(pairs) => {
+                let mut map = HashMap::new();
+                for (k, ve) in pairs { map.insert(k.clone(), self.eval(ve)?); }
+                Ok(Value::Dict(map))
+            }
         }
     }
 
@@ -203,8 +217,11 @@ impl Vm {
         match v {
             Value::Num(n) => Ok(*n != 0.0),
             Value::Str(s) => Ok(!s.is_empty()),
+            Value::Bool(b) => Ok(*b),
+            Value::Null => Ok(false),
             Value::Func(_) => Ok(true),
             Value::List(v) => Ok(!v.is_empty()),
+            Value::Dict(m) => Ok(!m.is_empty()),
         }
     }
 
@@ -216,6 +233,7 @@ impl Vm {
             "join" => { return builtin_join(args); }
             "split" => { return builtin_split(args); }
             "length" => { return builtin_length(args); }
+            "len" => { return builtin_length(args); }
             _ => {}
         }
         // User-defined
@@ -223,7 +241,7 @@ impl Vm {
             Some(Value::Func(f)) => {
                 self.call_func_value(f, args)
             }
-            _ => Err(anyhow!("Unknown function: {}", name)),
+            _ => Err(anyhow!("Error: Function '{}' is not defined", name)),
         }
     }
 
@@ -361,7 +379,7 @@ impl Vm {
                 if let Some(v) = self.globals.get(n) { return Ok(v.clone()); }
                 Ok(Value::Str(format!("<{}>", n)))
             }
-            Expr::Str(_) | Expr::Num(_) => self.eval(e),
+            Expr::Str(_) | Expr::Num(_) | Expr::Bool(_) | Expr::Null => self.eval(e),
             Expr::Plus(a, b) => {
                 let sa = self.eval_in_frame(a, frame)?;
                 let sb = self.eval_in_frame(b, frame)?;
@@ -417,6 +435,16 @@ impl Vm {
                 if let Some(Value::Func(f)) = self.globals.get(name) { return self.call_func_value(f, &argv); }
                 self.call_function(name, &argv)
             }
+            Expr::ListLit(items) => {
+                let mut out = Vec::new();
+                for it in items { out.push(self.eval_in_frame(it, frame)?); }
+                Ok(Value::List(out))
+            }
+            Expr::DictLit(pairs) => {
+                let mut map = HashMap::new();
+                for (k, ve) in pairs { map.insert(k.clone(), self.eval_in_frame(ve, frame)?); }
+                Ok(Value::Dict(map))
+            }
         }
     }
 
@@ -427,7 +455,7 @@ impl Vm {
                 if let Some(v) = self.globals.get(n) { return Ok(v.clone()); }
                 Ok(Value::Str(format!("<{}>", n)))
             }
-            Expr::Str(_) | Expr::Num(_) => self.eval(e),
+            Expr::Str(_) | Expr::Num(_) | Expr::Bool(_) | Expr::Null => self.eval(e),
             Expr::Plus(a, b) => {
                 let sa = self.eval_in_scope(a, locals)?;
                 let sb = self.eval_in_scope(b, locals)?;
@@ -479,6 +507,16 @@ impl Vm {
                 if name == "now" && argv.is_empty() { return Ok(Value::Str(iso_now())); }
                 self.call_function(name, &argv)
             }
+            Expr::ListLit(items) => {
+                let mut out = Vec::new();
+                for it in items { out.push(self.eval_in_scope(it, locals)?); }
+                Ok(Value::List(out))
+            }
+            Expr::DictLit(pairs) => {
+                let mut map = HashMap::new();
+                for (k, ve) in pairs { map.insert(k.clone(), self.eval_in_scope(ve, locals)?); }
+                Ok(Value::Dict(map))
+            }
         }
     }
 
@@ -490,7 +528,7 @@ impl Vm {
                 if let Some(v) = self.globals.get(n) { return Ok(v.clone()); }
                 Ok(Value::Str(format!("<{}>", n)))
             }
-            Expr::Str(_) | Expr::Num(_) => self.eval(e),
+            Expr::Str(_) | Expr::Num(_) | Expr::Bool(_) | Expr::Null => self.eval(e),
             Expr::Plus(a, b) => {
                 let sa = self.eval_in_scope_with_capture(a, locals, captured)?;
                 let sb = self.eval_in_scope_with_capture(b, locals, captured)?;
@@ -542,6 +580,16 @@ impl Vm {
                 if name == "now" && argv.is_empty() { return Ok(Value::Str(iso_now())); }
                 self.call_function(name, &argv)
             }
+            Expr::ListLit(items) => {
+                let mut out = Vec::new();
+                for it in items { out.push(self.eval_in_scope_with_capture(it, locals, captured)?); }
+                Ok(Value::List(out))
+            }
+            Expr::DictLit(pairs) => {
+                let mut map = HashMap::new();
+                for (k, ve) in pairs { map.insert(k.clone(), self.eval_in_scope_with_capture(ve, locals, captured)?); }
+                Ok(Value::Dict(map))
+            }
         }
     }
 }
@@ -568,16 +616,20 @@ fn dump_expr(e: &Expr) -> String {
     match e {
         Expr::Str(s) => s.clone(),
         Expr::Num(n) => format_number(*n),
+        Expr::Bool(b) => if *b { "True".to_string() } else { "False".to_string() },
+    Expr::Null => "None".to_string(),
         Expr::Ident(x) => x.clone(),
-        Expr::Plus(a, b) => format!("{}{}", dump_expr(a), dump_expr(b)),
-        Expr::And(a, b) => format!("({} AND {})", dump_expr(a), dump_expr(b)),
-        Expr::Or(a, b) => format!("({} OR {})", dump_expr(a), dump_expr(b)),
-        Expr::Not(a) => format!("(NOT {})", dump_expr(a)),
+        Expr::Plus(a, b) => format!("{} plus {}", dump_expr(a), dump_expr(b)),
+        Expr::And(a, b) => format!("{} And {}", dump_expr(a), dump_expr(b)),
+        Expr::Or(a, b) => format!("{} Or {}", dump_expr(a), dump_expr(b)),
+        Expr::Not(a) => format!("Not {}", dump_expr(a)),
         Expr::Cmp(op, l, r) => {
             let sym = match op { CmpOp::Lt => "<", CmpOp::Le => "<=", CmpOp::Gt => ">", CmpOp::Ge => ">=", CmpOp::Eq => "=", CmpOp::Ne => "!=", };
-            format!("({} {} {})", dump_expr(l), sym, dump_expr(r))
+            format!("{} {} {}", dump_expr(l), sym, dump_expr(r))
         }
-        Expr::Call { name, args } => format!("{}({})", name, args.iter().map(dump_expr).collect::<Vec<_>>().join(",")),
+        Expr::Call { name, args } => if args.is_empty() { name.clone() } else { format!("{} with {}", name, args.iter().map(dump_expr).collect::<Vec<_>>().join(", ")) },
+        Expr::ListLit(items) => format!("List contains {}", items.iter().map(dump_expr).collect::<Vec<_>>().join(", ")),
+        Expr::DictLit(pairs) => pairs.iter().map(|(k, v)| format!("\"{}\" set to {}", k, dump_expr(v))).collect::<Vec<_>>().join(", "),
     }
 }
 
@@ -600,8 +652,15 @@ fn to_string(v: &Value) -> String {
     match v {
         Value::Str(s) => s.clone(),
         Value::Num(n) => format_number(*n),
+        Value::Bool(b) => if *b { "True".to_string() } else { "False".to_string() },
+    Value::Null => "None".to_string(),
         Value::Func(f) => format!("<function {}>", f.name),
         Value::List(xs) => format!("[{}]", xs.iter().map(|x| to_string(x)).collect::<Vec<_>>().join(", ")),
+        Value::Dict(m) => {
+            let mut parts: Vec<String> = Vec::new();
+            for (k, v) in m.iter() { parts.push(format!("\"{}\": {}", k, to_string(v))); }
+            format!("{{{}}}", parts.join(", "))
+        }
     }
 }
 
@@ -672,6 +731,7 @@ fn builtin_length(args: &[Value]) -> Result<Value> {
     match &args[0] {
         Value::List(xs) => Ok(Value::Num(xs.len() as f64)),
         Value::Str(s) => Ok(Value::Num(s.chars().count() as f64)),
+        Value::Dict(m) => Ok(Value::Num(m.len() as f64)),
         _ => Ok(Value::Num(0.0)),
     }
 }
@@ -697,5 +757,49 @@ impl Vm {
         self.loaded_modules.insert(key);
         self.base_dir = prev_base;
         Ok(())
+    }
+
+    fn import_system(&mut self, name: &str) -> Result<()> {
+        if self.loaded_system.contains(name) { return Ok(()); }
+        // Resolve stdlib path
+        let file_name = format!("{}.poh", name);
+        if let Some(path) = self.find_stdlib_module(&file_name) {
+            let canon = fs::canonicalize(&path).unwrap_or(path.clone());
+            let src = fs::read_to_string(&canon)?;
+            let program = crate::parser::parse(&src)?;
+            // Execute with base_dir set to stdlib module dir
+            let prev_base = self.base_dir.clone();
+            self.base_dir = canon.parent().unwrap_or(Path::new(".")).to_path_buf();
+            self.loading_stack.push(format!("<system:{}>", name));
+            self.execute(&program)?;
+            self.loading_stack.pop();
+            self.base_dir = prev_base;
+            self.loaded_system.insert(name.to_string());
+            Ok(())
+        } else {
+            // Backward-compatible: if not found, treat as no-op stub
+            self.loaded_system.insert(name.to_string());
+            Ok(())
+        }
+    }
+
+    fn find_stdlib_module(&self, file_name: &str) -> Option<PathBuf> {
+        // 1) Env override
+        if let Ok(root) = std::env::var("POHLANG_STDLIB") {
+            let p = PathBuf::from(root).join(file_name);
+            if p.exists() { return Some(p); }
+        }
+        // 2) Search from base_dir upwards for Interpreter/stdlib/<file>
+        let mut cur: Option<&Path> = Some(self.base_dir.as_path());
+        while let Some(dir) = cur {
+            let cand = dir.join("Interpreter").join("stdlib").join(file_name);
+            if cand.exists() { return Some(cand); }
+            cur = dir.parent();
+        }
+        // 3) Try CWD fallback
+        let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let cand = cwd.join("Interpreter").join("stdlib").join(file_name);
+        if cand.exists() { return Some(cand); }
+        None
     }
 }

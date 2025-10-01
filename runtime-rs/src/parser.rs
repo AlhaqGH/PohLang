@@ -53,6 +53,32 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
         if t == "End" { *i += 1; break; }
         if t.is_empty() { *i += 1; continue; }
 
+        // Define function (inline): "Define function name with parameter(s) ... as <expr>"
+        if let Some(rest) = t.strip_prefix("Define function ") {
+            let (name, after_name) = split_ident(rest).ok_or_else(|| anyhow!("[file: Line {}: Col 1] Expected function name", *i+1))?;
+            let after_name = after_name.trim_start();
+            let after_with = after_name.strip_prefix("with ").ok_or_else(|| anyhow!("[file: Line {}: Col 1] Expected 'with'", *i+1))?;
+            let after_with = after_with.strip_prefix("parameters ").unwrap_or(after_with);
+            let after_with = after_with.strip_prefix("parameter ").unwrap_or(after_with);
+            if let Some((params_str, body_str)) = split_once_word(after_with, " as ") {
+                let params = parse_params(params_str)?;
+                let body = parse_expr(body_str.trim()).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
+                prog.push(Stmt::FuncInline { name, params, body });
+                *i += 1; continue;
+            } else {
+                return Err(anyhow!("[file: Line {}: Col 1] Expected 'as <expr>'", *i+1));
+            }
+        }
+
+        // Call statement: "Call name with a and b" (alias of Use)
+        if let Some(rest) = t.strip_prefix("Call ") {
+            let (name, after_name) = split_ident(rest).ok_or_else(|| anyhow!("[file: Line {}: Col 1] Expected function name", *i+1))?;
+            let after_with = after_name.trim_start().strip_prefix("with ").unwrap_or("");
+            let args = if after_with.is_empty() { vec![] } else { parse_arg_list_multi(after_with, true)? };
+            prog.push(Stmt::Use { name, args });
+            *i += 1; continue;
+        }
+
         // Write
         if let Some(rest) = t.strip_prefix("Write ") {
             let expr = parse_expr(rest).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
@@ -182,7 +208,7 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
             let (name, after_name) = split_ident(rest).ok_or_else(|| anyhow!("[file: Line {}: Col 1] Expected function name", *i+1))?;
             let after_name = after_name.trim_start();
             let after_with = after_name.strip_prefix("with ").unwrap_or("");
-            let args = if after_with.is_empty() { vec![] } else { parse_arg_list(after_with)? };
+            let args = if after_with.is_empty() { vec![] } else { parse_arg_list_multi(after_with, true)? };
             prog.push(Stmt::Use { name, args });
             *i += 1; continue;
         }
@@ -209,10 +235,31 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         if stops.iter().any(|s| t == *s) { break; }
 
         // Delegate one statement parse similar to parse_block
+        // Define function (inline)
+        if let Some(rest) = t.strip_prefix("Define function ") {
+            let (name, after_name) = split_ident(rest).ok_or_else(|| anyhow!("Expected function name"))?;
+            let after_with = after_name.trim_start().strip_prefix("with ").ok_or_else(|| anyhow!("Expected 'with'"))?;
+            let after_with = after_with.strip_prefix("parameters ").unwrap_or(after_with);
+            let after_with = after_with.strip_prefix("parameter ").unwrap_or(after_with);
+            if let Some((params_str, body_str)) = split_once_word(after_with, " as ") {
+                let params = parse_params(params_str)?;
+                let body = parse_expr(body_str.trim())?;
+                out.push(Stmt::FuncInline { name, params, body });
+                *i += 1; continue;
+            } else { return Err(anyhow!("Expected 'as <expr>'")); }
+        }
         // Write
         if let Some(rest) = t.strip_prefix("Write ") {
             let expr = parse_expr(rest)?;
             out.push(Stmt::Write(expr));
+            *i += 1; continue;
+        }
+        // Call statement (alias of Use)
+        if let Some(rest) = t.strip_prefix("Call ") {
+            let (name, after_name) = split_ident(rest).ok_or_else(|| anyhow!("Expected function name"))?;
+            let after_with = after_name.trim_start().strip_prefix("with ").unwrap_or("");
+            let args = if after_with.is_empty() { vec![] } else { parse_arg_list_multi(after_with, true)? };
+            out.push(Stmt::Use { name, args });
             *i += 1; continue;
         }
         // Set
@@ -307,7 +354,7 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         if let Some(rest) = t.strip_prefix("Use ") {
             let (name, after_name) = split_ident(rest).ok_or_else(|| anyhow!("Expected function name"))?;
             let after_with = after_name.trim_start().strip_prefix("with ").unwrap_or("");
-            let args = if after_with.is_empty() { vec![] } else { parse_arg_list(after_with)? };
+            let args = if after_with.is_empty() { vec![] } else { parse_arg_list_multi(after_with, true)? };
             out.push(Stmt::Use { name, args });
             *i += 1; continue;
         }
@@ -374,38 +421,47 @@ fn parse_param_item(s: &str) -> Result<Param> {
         }}
         return Err(anyhow!("Invalid parameter default: {}", s));
     }
+    if let Some(idx) = s.find(" defaulting to ") {
+        let name = s[..idx].trim();
+        let expr_str = &s[idx + " defaulting to ".len()..];
+        if let Some((n, rest)) = split_ident(name) { if rest.trim().is_empty() {
+            let def = parse_expr(expr_str.trim())?;
+            return Ok(Param { name: n, default: Some(def) });
+        }}
+        return Err(anyhow!("Invalid parameter default: {}", s));
+    }
     if let Some((n, rest)) = split_ident(s) { if rest.trim().is_empty() {
         return Ok(Param { name: n, default: None });
     }}
     Err(anyhow!("Invalid parameter: {}", s))
 }
 
-fn parse_arg_list(s: &str) -> Result<Vec<Expr>> {
-    // split by commas not in strings or parens
-    let mut args = Vec::new();
-    let mut buf = String::new();
-    let mut depth = 0i32;
-    let mut in_str = false;
-    let mut prev = '\0';
-    for ch in s.chars() {
-        match ch {
-            '"' => { in_str = !in_str; buf.push(ch); }
-            '(' if !in_str => { depth += 1; buf.push(ch); }
-            ')' if !in_str => { depth -= 1; buf.push(ch); }
-            ',' if !in_str && depth == 0 => {
-                let e = parse_expr(buf.trim())?; args.push(e); buf.clear();
-            }
-            _ => { let _ = prev; buf.push(ch); }
+fn parse_arg_list(s: &str) -> Result<Vec<Expr>> { parse_arg_list_multi(s, false) }
+
+fn parse_arg_list_multi(s: &str, allow_and: bool) -> Result<Vec<Expr>> {
+    // Split by commas (always) and optionally by " and " at top level
+    let mut parts: Vec<String> = split_top_level(s, ",");
+    if allow_and {
+        let mut expanded = Vec::new();
+        for p in parts.into_iter() {
+            let sub = split_top_level(&p, " and ");
+            for item in sub { if !item.trim().is_empty() { expanded.push(item); } }
         }
+        parts = expanded;
     }
-    if !buf.trim().is_empty() { args.push(parse_expr(buf.trim())?); }
+    let mut args = Vec::new();
+    for p in parts {
+        let t = p.trim();
+        if t.is_empty() { continue; }
+        args.push(parse_expr(t)?);
+    }
     Ok(args)
 }
 
 pub fn parse_expr(s: &str) -> Result<Expr> { parse_or(s) }
 
 fn parse_or(s: &str) -> Result<Expr> {
-    let parts = split_top_level(s, " Or ");
+    let parts = split_top_level_multi(s, &[" Or ", " or "]);
     if parts.len() > 1 {
         let mut it = parts.into_iter();
         let mut e = parse_and(it.next().unwrap().trim())?;
@@ -416,7 +472,7 @@ fn parse_or(s: &str) -> Result<Expr> {
 }
 
 fn parse_and(s: &str) -> Result<Expr> {
-    let parts = split_top_level(s, " And ");
+    let parts = split_top_level_multi(s, &[" And ", " and "]);
     if parts.len() > 1 {
         let mut it = parts.into_iter();
         let mut e = parse_not(it.next().unwrap().trim())?;
@@ -429,12 +485,17 @@ fn parse_and(s: &str) -> Result<Expr> {
 fn parse_not(s: &str) -> Result<Expr> {
     let st = s.trim_start();
     if let Some(rest) = st.strip_prefix("Not ") { return Ok(Expr::Not(Box::new(parse_not(rest)?))); }
+    if let Some(rest) = st.strip_prefix("not ") { return Ok(Expr::Not(Box::new(parse_not(rest)?))); }
     parse_cmp(st)
 }
 
 fn parse_cmp(s: &str) -> Result<Expr> {
     // Recognize comparisons at top-level, not inside strings or parens; prefer longest match
     let cmps = [
+        (" is not ", CmpOp::Ne),
+        (" Is Not ", CmpOp::Ne),
+        (" is ", CmpOp::Eq),
+        (" Is ", CmpOp::Eq),
         (" Greater Or Equal ", CmpOp::Ge),
         (" Less Or Equal ", CmpOp::Le),
         (" greater or equal ", CmpOp::Ge),
@@ -498,6 +559,38 @@ fn split_top_level(s: &str, delim: &str) -> Vec<String> {
     out
 }
 
+fn split_top_level_multi(s: &str, delims: &[&str]) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut buf = String::new();
+    let mut in_str = false;
+    let mut depth = 0i32;
+    let mut i = 0;
+    while i < s.len() {
+        let ch = s[i..].chars().next().unwrap();
+        if ch == '"' { in_str = !in_str; buf.push(ch); i += ch.len_utf8(); continue; }
+        if !in_str {
+            if ch == '(' { depth += 1; buf.push(ch); i += 1; continue; }
+            if ch == ')' { depth -= 1; buf.push(ch); i += 1; continue; }
+            if depth == 0 {
+                let mut matched = None;
+                for d in delims {
+                    if s[i..].starts_with(d) { matched = Some(*d); break; }
+                }
+                if let Some(d) = matched {
+                    out.push(buf.trim().to_string());
+                    buf.clear();
+                    i += d.len();
+                    continue;
+                }
+            }
+        }
+        buf.push(ch);
+        i += ch.len_utf8();
+    }
+    if !buf.trim().is_empty() { out.push(buf.trim().to_string()); }
+    out
+}
+
 fn split_once_top_level<'a>(s: &'a str, pat: &str) -> Option<(&'a str, &'a str)> {
     let mut in_str = false;
     let mut depth = 0i32;
@@ -534,8 +627,8 @@ fn parse_term(s: &str) -> Result<Expr> {
     // Booleans
     if s.eq_ignore_ascii_case("True") { return Ok(Expr::Bool(true)); }
     if s.eq_ignore_ascii_case("False") { return Ok(Expr::Bool(false)); }
-    // Null
-    if s.eq_ignore_ascii_case("Null") || s.eq_ignore_ascii_case("Nothing") { return Ok(Expr::Null); }
+    // Null/None
+    if s.eq_ignore_ascii_case("Null") || s.eq_ignore_ascii_case("Nothing") || s == "None" { return Ok(Expr::Null); }
     // List literal: legacy form "List contains <exprs>"
     if let Some(rest) = s.strip_prefix("List contains ") {
         let items = if rest.trim().is_empty() { vec![] } else { parse_arg_list(rest)? };
@@ -565,6 +658,14 @@ fn parse_term(s: &str) -> Result<Expr> {
     }
     // Number
     if let Ok(n) = s.parse::<f64>() { return Ok(Expr::Num(n)); }
+    // Phrasal call: name with args
+    if let Some((name, after)) = split_ident(s) {
+        let after = after.trim_start();
+        if let Some(rest) = after.strip_prefix("with ") {
+            let args = if rest.trim().is_empty() { vec![] } else { parse_arg_list(rest)? };
+            return Ok(Expr::Call { name, args });
+        }
+    }
     // Call form: name(args)
     if let Some(idx) = s.find('(') {
         if s.ends_with(')') {
