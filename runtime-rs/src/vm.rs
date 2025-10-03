@@ -4,6 +4,20 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::fs;
 
+fn enhance_error(msg: &str) -> String {
+    if msg.contains("out of range") {
+        format!("{}.\nHint: Check array bounds. Use negative indexing (-1) for last element", msg)
+    } else if msg.contains("not found") {
+        format!("{}.\nHint: Verify the key exists in the dictionary or check for typos", msg)
+    } else if msg.contains("division by zero") {
+        format!("{}.\nHint: Ensure denominator is not zero before dividing", msg)
+    } else if msg.contains("not defined") {
+        format!("{}.\nHint: Make sure the function is defined before calling it", msg)
+    } else {
+        msg.to_string()
+    }
+}
+
 #[derive(Clone, Debug)]
 enum Value {
     Str(String),
@@ -267,14 +281,18 @@ impl Vm {
                         let actual_idx = if idx < 0 { len + idx } else { idx };
                         
                         if actual_idx < 0 || actual_idx >= len {
-                            return Err(anyhow!("List index out of range: {} (list length: {})", idx, len));
+                            let msg = format!("List index out of range: {} (list length: {})", idx, len);
+                            return Err(anyhow!("{}", enhance_error(&msg)));
                         }
                         Ok(items[actual_idx as usize].clone())
                     }
                     (Value::Dict(map), Value::Str(key)) => {
                         map.get(key)
                             .cloned()
-                            .ok_or_else(|| anyhow!("Key not found in dictionary: \"{}\"", key))
+                            .ok_or_else(|| {
+                                let msg = format!("Key not found in dictionary: \"{}\"", key);
+                                anyhow!("{}", enhance_error(&msg))
+                            })
                     }
                     (Value::Str(s), Value::Num(n)) => {
                         let idx = *n as i32;

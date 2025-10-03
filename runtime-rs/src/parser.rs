@@ -1,5 +1,38 @@
 use anyhow::{anyhow, Result};
 
+fn suggest_fix(error_msg: &str, context: &str) -> String {
+    let suggestions = vec![
+        ("Expected 'with'", "Hint: Function definitions use 'Define function name with parameter as expression'"),
+        ("Expected function name", "Hint: Function name must be a valid identifier (letters, numbers, underscore)"),
+        ("Expected 'as <expr>'", "Hint: Inline functions need 'as' followed by an expression"),
+        ("Expected variable name", "Hint: Variable names must start with a letter or underscore"),
+        ("Could not parse expression", "Hint: Check for unmatched brackets [], braces {}, or parentheses ()"),
+        ("Empty expression", "Hint: Expressions cannot be empty. Provide a value, variable, or operation"),
+        ("Unsupported statement", "Hint: Valid statements: Write, Set, Ask for, If, Repeat, While, Make, Use, Import"),
+        ("out of range", "Hint: Check array bounds. Use negative indexing (-1) for last element"),
+        ("not found", "Hint: Verify the key exists in the dictionary or check for typos"),
+        ("division by zero", "Hint: Ensure denominator is not zero before dividing"),
+    ];
+    
+    for (pattern, suggestion) in suggestions {
+        if error_msg.contains(pattern) {
+            return format!("{}.\n{}", error_msg, suggestion);
+        }
+    }
+    
+    // If context is provided and looks like incomplete syntax, add context-specific hint
+    if !context.is_empty() {
+        if context.contains("Set ") && !context.contains(" to ") {
+            return format!("{}.\nHint: Set statements require 'to': Set variable to value", error_msg);
+        }
+        if context.contains("If ") && !context.contains(" Write ") {
+            return format!("{}.\nHint: Inline If needs: If condition Write expression Otherwise expression", error_msg);
+        }
+    }
+    
+    error_msg.to_string()
+}
+
 #[derive(Debug, Clone)]
 pub enum Expr {
     Str(String),
@@ -271,7 +304,8 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
             *i += 1; continue;
         }
 
-        return Err(anyhow!("[file: Line {}: Col 1] Unsupported statement", *i+1));
+        let error_msg = format!("[file: Line {}: Col 1] Unsupported statement", *i+1);
+        return Err(anyhow!("{}", suggest_fix(&error_msg, t)));
     }
     Ok(prog)
 }
@@ -978,7 +1012,8 @@ fn parse_term(s: &str) -> Result<Expr> {
     if let Some((id, rest)) = split_ident(s) {
         if rest.trim().is_empty() { return Ok(Expr::Ident(id)); }
     }
-    Err(anyhow!("Could not parse expression: {}", s))
+    let error_msg = format!("Could not parse expression: {}", s);
+    Err(anyhow!("{}", suggest_fix(&error_msg, s)))
 }
 
 fn extract_quoted(s: &str) -> Option<String> {
