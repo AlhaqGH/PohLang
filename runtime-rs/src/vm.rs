@@ -171,6 +171,36 @@ impl Vm {
                     (x, y) => Ok(Value::Str(format!("{}{}", to_string(&x), to_string(&y))))
                 }
             }
+            Expr::Minus(a, b) => {
+                let sa = self.eval(a)?;
+                let sb = self.eval(b)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na - nb)),
+                    _ => Err(anyhow!("Cannot subtract non-numeric values"))
+                }
+            }
+            Expr::Times(a, b) => {
+                let sa = self.eval(a)?;
+                let sb = self.eval(b)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na * nb)),
+                    _ => Err(anyhow!("Cannot multiply non-numeric values"))
+                }
+            }
+            Expr::DividedBy(a, b) => {
+                let sa = self.eval(a)?;
+                let sb = self.eval(b)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => {
+                        if nb == 0.0 {
+                            Err(anyhow!("Division by zero"))
+                        } else {
+                            Ok(Value::Num(na / nb))
+                        }
+                    }
+                    _ => Err(anyhow!("Cannot divide non-numeric values"))
+                }
+            }
             Expr::And(a, b) => {
                 let la = self.truthy(&self.eval(a)?)?;
                 if !la { return Ok(Value::Num(0.0)); }
@@ -417,6 +447,36 @@ impl Vm {
                     (x, y) => Ok(Value::Str(format!("{}{}", to_string(&x), to_string(&y))))
                 }
             }
+            Expr::Minus(a, b) => {
+                let sa = self.eval_in_frame(a, frame)?;
+                let sb = self.eval_in_frame(b, frame)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na - nb)),
+                    _ => Err(anyhow!("Cannot subtract non-numeric values"))
+                }
+            }
+            Expr::Times(a, b) => {
+                let sa = self.eval_in_frame(a, frame)?;
+                let sb = self.eval_in_frame(b, frame)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na * nb)),
+                    _ => Err(anyhow!("Cannot multiply non-numeric values"))
+                }
+            }
+            Expr::DividedBy(a, b) => {
+                let sa = self.eval_in_frame(a, frame)?;
+                let sb = self.eval_in_frame(b, frame)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => {
+                        if nb == 0.0 {
+                            Err(anyhow!("Division by zero"))
+                        } else {
+                            Ok(Value::Num(na / nb))
+                        }
+                    }
+                    _ => Err(anyhow!("Cannot divide non-numeric values"))
+                }
+            }
             Expr::And(a, b) => {
                 let la = self.truthy(&self.eval_in_frame(a, frame).unwrap_or(Value::Num(0.0)))?;
                 if !la { return Ok(Value::Num(0.0)); }
@@ -493,6 +553,36 @@ impl Vm {
                     (x, y) => Ok(Value::Str(format!("{}{}", to_string(&x), to_string(&y))))
                 }
             }
+            Expr::Minus(a, b) => {
+                let sa = self.eval_in_scope(a, locals)?;
+                let sb = self.eval_in_scope(b, locals)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na - nb)),
+                    _ => Err(anyhow!("Cannot subtract non-numeric values"))
+                }
+            }
+            Expr::Times(a, b) => {
+                let sa = self.eval_in_scope(a, locals)?;
+                let sb = self.eval_in_scope(b, locals)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na * nb)),
+                    _ => Err(anyhow!("Cannot multiply non-numeric values"))
+                }
+            }
+            Expr::DividedBy(a, b) => {
+                let sa = self.eval_in_scope(a, locals)?;
+                let sb = self.eval_in_scope(b, locals)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => {
+                        if nb == 0.0 {
+                            Err(anyhow!("Division by zero"))
+                        } else {
+                            Ok(Value::Num(na / nb))
+                        }
+                    }
+                    _ => Err(anyhow!("Cannot divide non-numeric values"))
+                }
+            }
             Expr::And(a, b) => {
                 let la = self.truthy(&self.eval_in_scope(a, locals).unwrap_or(Value::Num(0.0)))?;
                 if !la { return Ok(Value::Num(0.0)); }
@@ -564,6 +654,36 @@ impl Vm {
                 match (sa, sb) {
                     (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na + nb)),
                     (x, y) => Ok(Value::Str(format!("{}{}", to_string(&x), to_string(&y))))
+                }
+            }
+            Expr::Minus(a, b) => {
+                let sa = self.eval_in_scope_with_capture(a, locals, captured)?;
+                let sb = self.eval_in_scope_with_capture(b, locals, captured)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na - nb)),
+                    _ => Err(anyhow!("Cannot subtract non-numeric values"))
+                }
+            }
+            Expr::Times(a, b) => {
+                let sa = self.eval_in_scope_with_capture(a, locals, captured)?;
+                let sb = self.eval_in_scope_with_capture(b, locals, captured)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => Ok(Value::Num(na * nb)),
+                    _ => Err(anyhow!("Cannot multiply non-numeric values"))
+                }
+            }
+            Expr::DividedBy(a, b) => {
+                let sa = self.eval_in_scope_with_capture(a, locals, captured)?;
+                let sb = self.eval_in_scope_with_capture(b, locals, captured)?;
+                match (sa, sb) {
+                    (Value::Num(na), Value::Num(nb)) => {
+                        if nb == 0.0 {
+                            Err(anyhow!("Division by zero"))
+                        } else {
+                            Ok(Value::Num(na / nb))
+                        }
+                    }
+                    _ => Err(anyhow!("Cannot divide non-numeric values"))
                 }
             }
             Expr::And(a, b) => {
@@ -652,9 +772,12 @@ fn dump_expr(e: &Expr) -> String {
         Expr::Str(s) => s.clone(),
         Expr::Num(n) => format_number(*n),
         Expr::Bool(b) => if *b { "True".to_string() } else { "False".to_string() },
-    Expr::Null => "None".to_string(),
+        Expr::Null => "None".to_string(),
         Expr::Ident(x) => x.clone(),
         Expr::Plus(a, b) => format!("{} plus {}", dump_expr(a), dump_expr(b)),
+        Expr::Minus(a, b) => format!("{} minus {}", dump_expr(a), dump_expr(b)),
+        Expr::Times(a, b) => format!("{} times {}", dump_expr(a), dump_expr(b)),
+        Expr::DividedBy(a, b) => format!("{} divided by {}", dump_expr(a), dump_expr(b)),
         Expr::And(a, b) => format!("{} And {}", dump_expr(a), dump_expr(b)),
         Expr::Or(a, b) => format!("{} Or {}", dump_expr(a), dump_expr(b)),
         Expr::Not(a) => format!("Not {}", dump_expr(a)),

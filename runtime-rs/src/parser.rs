@@ -8,6 +8,9 @@ pub enum Expr {
     Null,
     Ident(String),
     Plus(Box<Expr>, Box<Expr>),
+    Minus(Box<Expr>, Box<Expr>),
+    Times(Box<Expr>, Box<Expr>),
+    DividedBy(Box<Expr>, Box<Expr>),
     Call { name: String, args: Vec<Expr> },
     And(Box<Expr>, Box<Expr>),
     Or(Box<Expr>, Box<Expr>),
@@ -125,29 +128,16 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
             }
         }
 
-        // Decrease name by expr -> desugar to Set name to name plus (-expr)
+        // Decrease name by expr -> desugar to Set name to name minus expr
         if let Some(rest) = t.strip_prefix("Decrease ") {
             if let Some((name, after)) = split_ident(rest) {
                 let after = after.trim_start();
                 let amount_str = after.strip_prefix("by ").unwrap_or(after);
                 let amount = parse_expr(amount_str).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
-                // Desugar: Decrease x by 5 -> Set x to x plus (-5)
-                // We need to negate the amount. For simplicity, wrap it in a subtraction-like construct.
-                // Since we don't have a Minus expr yet, we'll use a negative amount when it's a number,
-                // or create a temporary subtraction for complex expressions
-                let neg_amount = match &amount {
-                    Expr::Num(n) => Expr::Num(-n),
-                    _ => {
-                        // For non-numeric expressions, we'll need to multiply by -1
-                        // But since multiplication isn't implemented, let's create a workaround
-                        // using Plus with negative: x - y = x + (-y)
-                        // We'll add a Negate helper or just document this limitation
-                        return Err(anyhow!("[file: Line {}: Col 1] Decrease with non-numeric expressions not yet supported", *i+1));
-                    }
-                };
-                let value = Expr::Plus(
+                // Desugar: Decrease x by 5 -> Set x to x minus 5
+                let value = Expr::Minus(
                     Box::new(Expr::Ident(name.clone())),
-                    Box::new(neg_amount)
+                    Box::new(amount)
                 );
                 prog.push(Stmt::Set { name, value });
                 *i += 1; continue;
@@ -353,21 +343,15 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                 *i += 1; continue;
             }
         }
-        // Decrease name by expr -> desugar to Set name to name plus (-expr)
+        // Decrease name by expr -> desugar to Set name to name minus expr
         if let Some(rest) = t.strip_prefix("Decrease ") {
             if let Some((name, after)) = split_ident(rest) {
                 let after = after.trim_start();
                 let amount_str = after.strip_prefix("by ").unwrap_or(after);
                 let amount = parse_expr(amount_str)?;
-                let neg_amount = match &amount {
-                    Expr::Num(n) => Expr::Num(-n),
-                    _ => {
-                        return Err(anyhow!("Decrease with non-numeric expressions not yet supported"));
-                    }
-                };
-                let value = Expr::Plus(
+                let value = Expr::Minus(
                     Box::new(Expr::Ident(name.clone())),
-                    Box::new(neg_amount)
+                    Box::new(amount)
                 );
                 out.push(Stmt::Set { name, value });
                 *i += 1; continue;
@@ -622,14 +606,135 @@ fn parse_cmp(s: &str) -> Result<Expr> {
 }
 
 fn parse_add(s: &str) -> Result<Expr> {
-    let parts = split_top_level(s, " plus ");
-    let mut it = parts.into_iter();
-    let mut expr = parse_term(it.next().unwrap_or_default().trim())?;
-    for part in it {
-        let rhs = parse_term(part.trim())?;
-        expr = Expr::Plus(Box::new(expr), Box::new(rhs));
+    // Handle addition and subtraction (left-to-right)
+    let plus_parts = split_top_level(s, " plus ");
+    let minus_parts = split_top_level(s, " minus ");
+    
+    // If we have both operators, we need to handle them in order
+    // For simplicity, we'll process left-to-right by finding the first occurrence
+    if plus_parts.len() > 1 || minus_parts.len() > 1 {
+        // Find which operator comes first
+        let mut tokens: Vec<(usize, bool, String)> = Vec::new(); // (position, is_plus, text)
+        let mut pos = 0;
+        let bytes = s.as_bytes();
+        let mut in_str = false;
+        let mut depth = 0;
+        let mut buf = String::new();
+        
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] == b'"' { in_str = !in_str; buf.push('"'); i += 1; continue; }
+            if !in_str {
+                if bytes[i] == b'(' { depth += 1; buf.push('('); i += 1; continue; }
+                if bytes[i] == b')' { depth -= 1; buf.push(')'); i += 1; continue; }
+                if depth == 0 {
+                    if s[i..].starts_with(" plus ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, true, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " plus ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                    if s[i..].starts_with(" minus ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, false, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " minus ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                }
+            }
+            buf.push(s[i..].chars().next().unwrap());
+            i += s[i..].chars().next().unwrap().len_utf8();
+        }
+        if !buf.trim().is_empty() {
+            tokens.push((pos, true, buf.trim().to_string())); // Last token, operator doesn't matter
+        }
+        
+        if tokens.len() > 1 {
+            let mut expr = parse_mult(tokens[0].2.trim())?;
+            for i in 1..tokens.len() {
+                let rhs = parse_mult(tokens[i].2.trim())?;
+                if tokens[i-1].1 { // Previous token marked as plus
+                    expr = Expr::Plus(Box::new(expr), Box::new(rhs));
+                } else {
+                    expr = Expr::Minus(Box::new(expr), Box::new(rhs));
+                }
+            }
+            return Ok(expr);
+        }
     }
-    Ok(expr)
+    
+    parse_mult(s)
+}
+
+fn parse_mult(s: &str) -> Result<Expr> {
+    // Handle multiplication and division (left-to-right, higher precedence than +/-)
+    let times_parts = split_top_level(s, " times ");
+    let div_parts = split_top_level(s, " divided by ");
+    
+    if times_parts.len() > 1 || div_parts.len() > 1 {
+        // Find which operator comes first
+        let mut tokens: Vec<(usize, bool, String)> = Vec::new(); // (position, is_times, text)
+        let mut pos = 0;
+        let bytes = s.as_bytes();
+        let mut in_str = false;
+        let mut depth = 0;
+        let mut buf = String::new();
+        
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] == b'"' { in_str = !in_str; buf.push('"'); i += 1; continue; }
+            if !in_str {
+                if bytes[i] == b'(' { depth += 1; buf.push('('); i += 1; continue; }
+                if bytes[i] == b')' { depth -= 1; buf.push(')'); i += 1; continue; }
+                if depth == 0 {
+                    if s[i..].starts_with(" times ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, true, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " times ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                    if s[i..].starts_with(" divided by ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, false, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " divided by ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                }
+            }
+            buf.push(s[i..].chars().next().unwrap());
+            i += s[i..].chars().next().unwrap().len_utf8();
+        }
+        if !buf.trim().is_empty() {
+            tokens.push((pos, true, buf.trim().to_string())); // Last token, operator doesn't matter
+        }
+        
+        if tokens.len() > 1 {
+            let mut expr = parse_term(tokens[0].2.trim())?;
+            for i in 1..tokens.len() {
+                let rhs = parse_term(tokens[i].2.trim())?;
+                if tokens[i-1].1 { // Previous token marked as times
+                    expr = Expr::Times(Box::new(expr), Box::new(rhs));
+                } else {
+                    expr = Expr::DividedBy(Box::new(expr), Box::new(rhs));
+                }
+            }
+            return Ok(expr);
+        }
+    }
+    
+    parse_term(s)
 }
 
 fn split_top_level(s: &str, delim: &str) -> Vec<String> {

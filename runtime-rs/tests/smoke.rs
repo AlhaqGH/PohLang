@@ -214,3 +214,47 @@ fn increase_decrease_desugar_works() {
     cmd.arg("--run").arg(path.to_str().unwrap());
     cmd.assert().success();
 }
+
+#[test]
+fn arithmetic_operators_work() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set a to 10 plus 5").unwrap();
+    writeln!(f, "Write a").unwrap();
+    writeln!(f, "Set b to 10 minus 5").unwrap();
+    writeln!(f, "Write b").unwrap();
+    writeln!(f, "Set c to 10 times 5").unwrap();
+    writeln!(f, "Write c").unwrap();
+    writeln!(f, "Set d to 10 divided by 5").unwrap();
+    writeln!(f, "Write d").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success();
+}
+
+#[test]
+fn arithmetic_precedence_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set result to 10 plus 5 times 2").unwrap();
+    writeln!(f, "Write result").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success();
+}
+
+#[test]
+fn decrease_with_variables_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set x to 100").unwrap();
+    writeln!(f, "Set y to 10").unwrap();
+    writeln!(f, "Decrease x by y").unwrap();
+    writeln!(f, "Write x").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success();
+}

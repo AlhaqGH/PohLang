@@ -1,0 +1,58 @@
+Write "Testing arithmetic operators:"
+Write ""
+
+Write "Addition: 10 plus 5"
+Set result to 10 plus 5
+Write result
+
+Write "Subtraction: 10 minus 5"
+Set result to 10 minus 5
+Write result
+
+Write "Multiplication: 10 times 5"
+Set result to 10 times 5
+Write result
+
+Write "Division: 10 divided by 5"
+Set result to 10 divided by 5
+Write result
+
+Write "Division by 2: 10 divided by 2"
+Set result to 10 divided by 2
+Write result
+
+Write ""
+Write "Complex expressions:"
+
+Write "Mixed: 10 plus 5 minus 3"
+Set result to 10 plus 5 minus 3
+Write result
+
+Write "Precedence: 10 plus 5 times 2"
+Set result to 10 plus 5 times 2
+Write result
+
+Write "Precedence: 10 times 5 plus 2"
+Set result to 10 times 5 plus 2
+Write result
+
+Write ""
+Write "With variables:"
+Set x to 10
+Set y to 3
+Write "x = 10, y = 3"
+Write "x plus y"
+Write x plus y
+Write "x minus y"
+Write x minus y
+Write "x times y"
+Write x times y
+Write "x divided by y"
+Write x divided by y
+
+Write ""
+Write "Decrease with variables (now supported!):"
+Set counter to 100
+Write counter
+Decrease counter by y
+Write counter
