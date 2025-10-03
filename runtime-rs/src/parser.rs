@@ -896,12 +896,91 @@ fn split_once_top_level<'a>(s: &'a str, pat: &str) -> Option<(&'a str, &'a str)>
 #[derive(Debug, Clone)]
 pub enum CmpOp { Lt, Le, Gt, Ge, Eq, Ne }
 
+// Helper: parse a comma/" and " separated list of expressions at top level.
+fn parse_items_comma_or_and(s: &str) -> Result<Vec<Expr>> {
+    let parts = split_top_level_multi(s, &[",", " and "]);
+    let mut out = Vec::new();
+    for p in parts {
+        let t = p.trim();
+        if t.is_empty() { continue; }
+        out.push(parse_expr(t)?);
+    }
+    Ok(out)
+}
+
 fn parse_term(s: &str) -> Result<Expr> {
     let s = s.trim();
     if s.is_empty() { return Err(anyhow!("Empty expression")); }
     
+    // Phrasal list literals (immutable/mutable): Make a (mutable) list of 1, 2 and 3
+    if let Some(rest) = s.strip_prefix("Make a mutable list of ") {
+        let items = if rest.trim().is_empty() { vec![] } else { parse_items_comma_or_and(rest)? };
+        // TODO: track mutability; for now, same ListLit representation.
+        return Ok(Expr::ListLit(items));
+    }
+    if let Some(rest) = s.strip_prefix("Make a list of ") {
+        let items = if rest.trim().is_empty() { vec![] } else { parse_items_comma_or_and(rest)? };
+        return Ok(Expr::ListLit(items));
+    }
+    
+    // Phrasal dictionary literals (immutable/mutable): Make a (mutable) dictionary with "a" as 1 and "b" as 2
+    if let Some(rest) = s.strip_prefix("Make a mutable dictionary with ") {
+        let mut pairs = Vec::new();
+        let mut r = rest.trim();
+        while !r.is_empty() {
+            // split key and remainder by ' as ' (or legacy ' set to ')
+            let (kpart, after_key) = if let Some((k, a)) = split_once_top_level(r, " as ") {
+                (k, a)
+            } else if let Some((k, a)) = split_once_top_level(r, " set to ") {
+                (k, a)
+            } else {
+                return Err(anyhow!("Expected 'as' in dictionary literal item"));
+            };
+            let kstr = extract_quoted(kpart.trim()).ok_or_else(|| anyhow!("Expected quoted key in dictionary literal"))?;
+            // find next delimiter (either ' and ' or ',') at top level to terminate the value expression
+            let (vpart, rest_after_val) = if let Some((v, after)) = split_once_top_level(after_key, " and ") {
+                (v.trim(), Some(after))
+            } else if let Some((v, after)) = split_once_top_level(after_key, ",") {
+                (v.trim(), Some(after))
+            } else {
+                (after_key.trim(), None)
+            };
+            let vexpr = parse_expr(vpart)?;
+            pairs.push((kstr, vexpr));
+            r = match rest_after_val { Some(a) => a.trim(), None => "" };
+        }
+        // TODO: track mutability; for now, same DictLit representation.
+        return Ok(Expr::DictLit(pairs));
+    }
+    if let Some(rest) = s.strip_prefix("Make a dictionary with ") {
+        let mut pairs = Vec::new();
+        let mut r = rest.trim();
+        while !r.is_empty() {
+            let (kpart, after_key) = if let Some((k, a)) = split_once_top_level(r, " as ") {
+                (k, a)
+            } else if let Some((k, a)) = split_once_top_level(r, " set to ") {
+                (k, a)
+            } else {
+                return Err(anyhow!("Expected 'as' in dictionary literal item"));
+            };
+            let kstr = extract_quoted(kpart.trim()).ok_or_else(|| anyhow!("Expected quoted key in dictionary literal"))?;
+            let (vpart, rest_after_val) = if let Some((v, after)) = split_once_top_level(after_key, " and ") {
+                (v.trim(), Some(after))
+            } else if let Some((v, after)) = split_once_top_level(after_key, ",") {
+                (v.trim(), Some(after))
+            } else {
+                (after_key.trim(), None)
+            };
+            let vexpr = parse_expr(vpart)?;
+            pairs.push((kstr, vexpr));
+            r = match rest_after_val { Some(a) => a.trim(), None => "" };
+        }
+        return Ok(Expr::DictLit(pairs));
+    }
+
     // Modern list literal: [1, 2, 3]
     if s.starts_with('[') && s.ends_with(']') {
+        eprintln!("Warning: Symbolic list literal '[]' is legacy. Prefer: Make a list of ...");
         let inner = s[1..s.len()-1].trim();
         let items = if inner.is_empty() { vec![] } else { parse_arg_list(inner)? };
         return Ok(Expr::ListLit(items));
@@ -909,6 +988,7 @@ fn parse_term(s: &str) -> Result<Expr> {
     
     // Modern dictionary literal: {key: value, key2: value2}
     if s.starts_with('{') && s.ends_with('}') {
+        eprintln!("Warning: Symbolic dictionary literal '{}' is legacy. Prefer: Make a dictionary with ...", "{}");
         let inner = s[1..s.len()-1].trim();
         let mut pairs = Vec::new();
         if !inner.is_empty() {
@@ -964,11 +1044,13 @@ fn parse_term(s: &str) -> Result<Expr> {
     if s.eq_ignore_ascii_case("Null") || s.eq_ignore_ascii_case("Nothing") || s == "None" { return Ok(Expr::Null); }
     // List literal: legacy form "List contains <exprs>"
     if let Some(rest) = s.strip_prefix("List contains ") {
+        eprintln!("Warning: Legacy 'List contains' is deprecated. Prefer: Make a list of ...");
         let items = if rest.trim().is_empty() { vec![] } else { parse_arg_list(rest)? };
         return Ok(Expr::ListLit(items));
     }
     // Dictionary literal: legacy form "Dictionary contains \"k\" set to v, ..."
     if let Some(rest) = s.strip_prefix("Dictionary contains ") {
+        eprintln!("Warning: Legacy 'Dictionary contains' is deprecated. Prefer: Make a dictionary with ...");
         let mut pairs = Vec::new();
         // split rest by commas at top-level
         let parts = split_top_level(rest, ",");
