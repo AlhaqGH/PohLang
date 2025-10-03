@@ -57,6 +57,21 @@ impl Vm {
                     let v = self.eval(e)?;
                     println!("{}", to_string(&v));
                 }
+                Stmt::AskFor { var_name } => {
+                    use std::io::{self, BufRead};
+                    let stdin = io::stdin();
+                    let mut line = String::new();
+                    stdin.lock().read_line(&mut line)?;
+                    // Trim newline
+                    let input = line.trim_end().to_string();
+                    // Try to parse as number, otherwise store as string
+                    let value = if let Ok(n) = input.parse::<f64>() {
+                        Value::Num(n)
+                    } else {
+                        Value::Str(input)
+                    };
+                    self.globals.insert(var_name.clone(), value);
+                }
                 Stmt::IfInline { cond, then_write, else_write } => {
                     let c = self.truthy(&self.eval(cond)?)?;
                     if c {
@@ -288,6 +303,20 @@ impl Vm {
                 Stmt::Write(e) => {
                     if let Ok(v) = self.eval_in_frame(e, frame) {
                         println!("{}", to_string(&v));
+                    }
+                }
+                Stmt::AskFor { var_name } => {
+                    use std::io::{self, BufRead};
+                    let stdin = io::stdin();
+                    let mut line = String::new();
+                    if stdin.lock().read_line(&mut line).is_ok() {
+                        let input = line.trim_end().to_string();
+                        let value = if let Ok(n) = input.parse::<f64>() {
+                            Value::Num(n)
+                        } else {
+                            Value::Str(input)
+                        };
+                        frame.locals.insert(var_name.clone(), value);
                     }
                 }
                 Stmt::Set { name, value } => {
@@ -597,6 +626,7 @@ impl Vm {
 pub fn compile(prog: &Program) -> Vec<u8> {
     // Extremely small placeholder bytecode: lines of opcodes in UTF-8
     // WRITE\t<text>\n
+    // ASK\t<var_name>\n
     let mut out = Vec::new();
     for stmt in prog {
         match stmt {
@@ -604,6 +634,11 @@ pub fn compile(prog: &Program) -> Vec<u8> {
                 out.extend_from_slice(b"WRITE\t");
                 let s = dump_expr(e);
                 out.extend_from_slice(s.as_bytes());
+                out.push(b'\n');
+            }
+            Stmt::AskFor { var_name } => {
+                out.extend_from_slice(b"ASK\t");
+                out.extend_from_slice(var_name.as_bytes());
                 out.push(b'\n');
             }
             _ => {}

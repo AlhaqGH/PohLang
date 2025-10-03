@@ -8,13 +8,17 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 **Goal**: The Rust runtime (`pohlangc`) can execute all core language features that the Python interpreter supports.
 
+**Progress**: ~65% complete
+
 **Tasks**:
 - [x] Parser for all statement types (Write, Set, If, Repeat, While, Make, Use, Import)
 - [x] VM execution for core statements and expressions
 - [x] Inline and block functions with closures and default parameters
 - [x] Local file imports
-- [ ] `Ask for <var>` input statement
+- [x] `Ask for <var>` input statement ✅ **COMPLETED** (2025-01-XX)
 - [ ] `Increase`/`Decrease` desugaring
+- [ ] `minus` operator for subtraction
+- [ ] `divided by` operator for division
 - [ ] Collection literals: lists `[1, 2, 3]`, dictionaries (if needed)
 - [ ] Enhanced error messages with line/column info and suggestions
 - [ ] Run all Python test cases (`tests_python/`) via a test harness

@@ -20,6 +20,7 @@ pub enum Expr {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Write(Expr),
+    AskFor { var_name: String },
     IfInline { cond: Expr, then_write: Expr, else_write: Option<Expr> },
     IfBlock { cond: Expr, then_body: Program, else_body: Option<Program> },
     FuncInline { name: String, params: Vec<Param>, body: Expr },
@@ -84,6 +85,17 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
             let expr = parse_expr(rest).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
             prog.push(Stmt::Write(expr));
             *i += 1; continue;
+        }
+
+        // Ask for
+        if let Some(rest) = t.strip_prefix("Ask for ") {
+            if let Some((var_name, rest_after)) = split_ident(rest) {
+                if rest_after.trim().is_empty() {
+                    prog.push(Stmt::AskFor { var_name });
+                    *i += 1; continue;
+                }
+            }
+            return Err(anyhow!("[file: Line {}: Col 1] Expected variable name after 'Ask for'", *i+1));
         }
 
         // Set name to expr
@@ -253,6 +265,16 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
             let expr = parse_expr(rest)?;
             out.push(Stmt::Write(expr));
             *i += 1; continue;
+        }
+        // Ask for
+        if let Some(rest) = t.strip_prefix("Ask for ") {
+            if let Some((var_name, rest_after)) = split_ident(rest) {
+                if rest_after.trim().is_empty() {
+                    out.push(Stmt::AskFor { var_name });
+                    *i += 1; continue;
+                }
+            }
+            return Err(anyhow!("Expected variable name after 'Ask for'"));
         }
         // Call statement (alias of Use)
         if let Some(rest) = t.strip_prefix("Call ") {

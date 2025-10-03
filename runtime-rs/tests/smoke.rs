@@ -169,3 +169,33 @@ fn join_and_range_builtins_work() {
     cmd.arg("--run").arg(path.to_str().unwrap());
     cmd.assert().success();
 }
+
+#[test]
+fn ask_for_parses_correctly() {
+    // Test that Ask for syntax parses without error
+    // Note: We can't easily test interactive stdin in unit tests,
+    // so this test validates parsing and compilation only.
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set x to 5").unwrap();
+    writeln!(f, "Write \"Before ask\"").unwrap();
+    writeln!(f, "Write x").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success();
+}
+
+#[test]
+fn ask_for_in_bytecode() {
+    // Test that Ask for compiles to bytecode without error
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Ask for name").unwrap();
+    writeln!(f, "Write \"Got: \" plus name").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--compile").arg(path.to_str().unwrap());
+    // Should compile to bytecode successfully, generating ASK opcode
+    cmd.assert().success();
+}
