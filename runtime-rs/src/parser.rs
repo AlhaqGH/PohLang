@@ -747,8 +747,8 @@ fn split_top_level(s: &str, delim: &str) -> Vec<String> {
     while i < bytes.len() {
         if bytes[i] == b'"' { in_str = !in_str; buf.push('"'); i += 1; continue; }
         if !in_str {
-            if bytes[i] == b'(' { depth += 1; buf.push('('); i += 1; continue; }
-            if bytes[i] == b')' { depth -= 1; buf.push(')'); i += 1; continue; }
+            if bytes[i] == b'(' || bytes[i] == b'[' || bytes[i] == b'{' { depth += 1; buf.push(bytes[i] as char); i += 1; continue; }
+            if bytes[i] == b')' || bytes[i] == b']' || bytes[i] == b'}' { depth -= 1; buf.push(bytes[i] as char); i += 1; continue; }
             if depth == 0 {
                 if s[i..].starts_with(delim) {
                     out.push(buf.trim().to_string());
@@ -775,8 +775,8 @@ fn split_top_level_multi(s: &str, delims: &[&str]) -> Vec<String> {
         let ch = s[i..].chars().next().unwrap();
         if ch == '"' { in_str = !in_str; buf.push(ch); i += ch.len_utf8(); continue; }
         if !in_str {
-            if ch == '(' { depth += 1; buf.push(ch); i += 1; continue; }
-            if ch == ')' { depth -= 1; buf.push(ch); i += 1; continue; }
+            if ch == '(' || ch == '[' || ch == '{' { depth += 1; buf.push(ch); i += 1; continue; }
+            if ch == ')' || ch == ']' || ch == '}' { depth -= 1; buf.push(ch); i += 1; continue; }
             if depth == 0 {
                 let mut matched = None;
                 for d in delims {
@@ -806,8 +806,8 @@ fn split_once_top_level<'a>(s: &'a str, pat: &str) -> Option<(&'a str, &'a str)>
         let ch = s[i..].chars().next().unwrap();
         if ch == '"' { in_str = !in_str; i += ch.len_utf8(); continue; }
         if !in_str {
-            if ch == '(' { depth += 1; i += 1; continue; }
-            if ch == ')' { depth -= 1; i += 1; continue; }
+            if ch == '(' || ch == '[' || ch == '{' { depth += 1; i += 1; continue; }
+            if ch == ')' || ch == ']' || ch == '}' { depth -= 1; i += 1; continue; }
             if depth == 0 && s[i..].starts_with(pat) {
                 let (l, r) = s.split_at(i);
                 let r = &r[pat.len()..];
@@ -825,6 +825,59 @@ pub enum CmpOp { Lt, Le, Gt, Ge, Eq, Ne }
 fn parse_term(s: &str) -> Result<Expr> {
     let s = s.trim();
     if s.is_empty() { return Err(anyhow!("Empty expression")); }
+    
+    // Modern list literal: [1, 2, 3]
+    if s.starts_with('[') && s.ends_with(']') {
+        let inner = s[1..s.len()-1].trim();
+        let items = if inner.is_empty() { vec![] } else { parse_arg_list(inner)? };
+        return Ok(Expr::ListLit(items));
+    }
+    
+    // Modern dictionary literal: {key: value, key2: value2}
+    if s.starts_with('{') && s.ends_with('}') {
+        let inner = s[1..s.len()-1].trim();
+        let mut pairs = Vec::new();
+        if !inner.is_empty() {
+            let parts = split_top_level(inner, ",");
+            for part in parts {
+                let p = part.trim();
+                // split by colon at top level
+                if let Some(idx) = p.find(':') {
+                    // Check if this colon is at top level (not inside parens/strings)
+                    let mut in_str = false;
+                    let mut depth = 0i32;
+                    let mut colon_idx = None;
+                    for (i, ch) in p.char_indices() {
+                        if ch == '"' { in_str = !in_str; continue; }
+                        if !in_str {
+                            if ch == '(' || ch == '[' || ch == '{' { depth += 1; }
+                            else if ch == ')' || ch == ']' || ch == '}' { depth -= 1; }
+                            else if ch == ':' && depth == 0 { colon_idx = Some(i); break; }
+                        }
+                    }
+                    if let Some(cidx) = colon_idx {
+                        let kpart = p[..cidx].trim();
+                        let vpart = p[cidx+1..].trim();
+                        let vexpr = parse_expr(vpart)?;
+                        // Key can be a quoted string or an identifier
+                        if let Some(k) = extract_quoted(kpart) {
+                            pairs.push((k, vexpr));
+                        } else if kpart.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                            pairs.push((kpart.to_string(), vexpr));
+                        } else {
+                            return Err(anyhow!("Dictionary key must be string literal or identifier"));
+                        }
+                    } else {
+                        return Err(anyhow!("Expected ':' in dictionary literal item"));
+                    }
+                } else {
+                    return Err(anyhow!("Expected ':' in dictionary literal item"));
+                }
+            }
+        }
+        return Ok(Expr::DictLit(pairs));
+    }
+    
     // String literal
     if (s.starts_with('"') && s.ends_with('"') && s.len() >= 2) || (s.starts_with('\'') && s.ends_with('\'') && s.len() >= 2) {
         let quote = s.chars().next().unwrap();

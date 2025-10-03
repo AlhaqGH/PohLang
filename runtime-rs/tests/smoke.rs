@@ -187,6 +187,72 @@ fn ask_for_parses_correctly() {
 }
 
 #[test]
+fn modern_list_syntax_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set nums to [1, 2, 3]").unwrap();
+    writeln!(f, "Write nums").unwrap();
+    writeln!(f, "Set empty to []").unwrap();
+    writeln!(f, "Write empty").unwrap();
+    writeln!(f, "Set nested to [[1, 2], [3, 4]]").unwrap();
+    writeln!(f, "Write nested").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success().stdout(predicates::str::contains("[1, 2, 3]"))
+        .stdout(predicates::str::contains("[]"))
+        .stdout(predicates::str::contains("[[1, 2], [3, 4]]"));
+}
+
+#[test]
+fn modern_dict_syntax_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set person to {{name: \"Alice\", age: 30}}").unwrap();
+    writeln!(f, "Write person").unwrap();
+    writeln!(f, "Set config to {{\"host\": \"localhost\", \"port\": 8080}}").unwrap();
+    writeln!(f, "Write config").unwrap();
+    writeln!(f, "Set empty to {{}}").unwrap();
+    writeln!(f, "Write empty").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success().stdout(predicates::str::contains("Alice"))
+        .stdout(predicates::str::contains("localhost"))
+        .stdout(predicates::str::contains("{}"));
+}
+
+#[test]
+fn collections_with_expressions() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set calculated to [5 plus 5, 10 times 2, 30 divided by 3]").unwrap();
+    writeln!(f, "Write calculated").unwrap();
+    writeln!(f, "Set math to {{sum: 10 plus 5, product: 10 times 5}}").unwrap();
+    writeln!(f, "Write math").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success().stdout(predicates::str::contains("[10, 20, 10]"))
+        .stdout(predicates::str::contains("sum"));
+}
+
+#[test]
+fn legacy_collection_syntax_still_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set nums to List contains 1, 2, 3").unwrap();
+    writeln!(f, "Write nums").unwrap();
+    writeln!(f, "Set dict to Dictionary contains \"x\" set to 5, \"y\" set to 10").unwrap();
+    writeln!(f, "Write dict").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success().stdout(predicates::str::contains("[1, 2, 3]"))
+        .stdout(predicates::str::contains("5"));
+}
+
+#[test]
 fn ask_for_in_bytecode() {
     // Test that Ask for compiles to bytecode without error
     let mut f = NamedTempFile::new().unwrap();
