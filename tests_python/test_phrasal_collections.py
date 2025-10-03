@@ -31,11 +31,11 @@ class TestPhrasalCollections(unittest.TestCase):
         Set xs to it
         Write Take the 3 item from xs
         """.strip()
-        with pytest.raises(RuntimeErrorPoh) as ei:
+        with self.assertRaises(RuntimeErrorPoh) as ei:
             run(prog)
-        msg = str(ei.value)
-        assert "Index 3 is out of range for the list." in msg
-        assert msg.startswith("[") and "]" in msg  # prefixed
+        msg = str(ei.exception)
+        self.assertIn("Index 3 is out of range for the list.", msg)
+        self.assertTrue(msg.startswith("[") and "]" in msg)  # prefixed
 
 
     def test_set_nth_type_errors(self):
@@ -43,18 +43,18 @@ class TestPhrasalCollections(unittest.TestCase):
         Set xs to 123
         Set the 1 item in xs to 5
         """.strip()
-        with pytest.raises(RuntimeErrorPoh) as ei:
+        with self.assertRaises(RuntimeErrorPoh) as ei:
             run(prog)
-        assert "expects a list" in str(ei.value)
+        self.assertIn("expects a list", str(ei.exception))
 
         prog2 = """
         Make a mutable list of 1,2,3
         Set xs to it
         Set the a item in xs to 5
         """.strip()
-        with pytest.raises(RuntimeErrorPoh) as ei2:
+        with self.assertRaises(RuntimeErrorPoh) as ei2:
             run(prog2)
-        assert "Index must be a number" in str(ei2.value)
+        self.assertIn("Index must be a number", str(ei2.exception))
 
 
     def test_remove_last_errors_and_ok(self):
@@ -70,9 +70,9 @@ class TestPhrasalCollections(unittest.TestCase):
         Set xs to 5
         Remove the last item from xs
         """.strip()
-        with pytest.raises(RuntimeErrorPoh) as ei:
+        with self.assertRaises(RuntimeErrorPoh) as ei:
             run(prog2)
-        assert "expects a list" in str(ei.value)
+        self.assertIn("expects a list", str(ei.exception))
 
 
     def test_dict_make_keys_values_contains_and_take_value(self):
@@ -87,10 +87,10 @@ class TestPhrasalCollections(unittest.TestCase):
         out = run(prog)
 
         # keys/values order for dict is insertion order in Python 3.7+
-        assert out[0] == "['a', 'b']"
-        assert out[1] == "[1, 2]"
-        assert out[2] == "True"
-        assert out[3] == "2"
+        self.assertEqual(out[0], "['a', 'b']")
+        self.assertEqual(out[1], "[1, 2]")
+        self.assertEqual(out[2], "True")
+        self.assertEqual(out[3], "2")
 
 
 if __name__ == '__main__':
