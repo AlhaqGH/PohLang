@@ -21,8 +21,8 @@ pub enum Expr {
 pub enum Stmt {
     Write(Expr),
     AskFor { var_name: String },
-    IfInline { cond: Expr, then_write: Expr, else_write: Option<Expr> },
-    IfBlock { cond: Expr, then_body: Program, else_body: Option<Program> },
+    IfInline { cond: Expr, then_write: Expr, otherwise_write: Option<Expr> },
+    IfBlock { cond: Expr, then_body: Program, otherwise_body: Option<Program> },
     FuncInline { name: String, params: Vec<Param>, body: Expr },
     FuncBlock { name: String, params: Vec<Param>, body: Program },
     WhileBlock { cond: Expr, body: Program },
@@ -116,28 +116,28 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
                 let lc = rest;
                 let (cond_str, after_cond) = split_once_word(lc, " Write ")
                     .ok_or_else(|| anyhow!("[file: Line {}: Col 1] Expected 'Write' after condition", *i+1))?;
-                let (then_str, else_part) = split_once_word(after_cond, " Otherwise ").unwrap_or((after_cond, ""));
+                let (then_str, otherwise_part) = split_once_word(after_cond, " Otherwise ").unwrap_or((after_cond, ""));
                 let then_expr = parse_expr(then_str.trim()).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
                 let cond_expr = parse_expr(cond_str.trim()).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
-                let else_expr = if !else_part.trim().is_empty() {
-                    let esp = else_part.trim();
+                let otherwise_expr = if !otherwise_part.trim().is_empty() {
+                    let esp = otherwise_part.trim();
                     let esp = if let Some(x) = esp.strip_prefix("Write ") { x } else { esp };
                     Some(parse_expr(esp.trim()).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?)
                 } else { None };
-                prog.push(Stmt::IfInline { cond: cond_expr, then_write: then_expr, else_write: else_expr });
+                prog.push(Stmt::IfInline { cond: cond_expr, then_write: then_expr, otherwise_write: otherwise_expr });
                 *i += 1; continue;
             } else {
                 // Block If
                 let cond_expr = parse_expr(rest.trim()).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
                 *i += 1; // consume If line
                 let then_body = parse_until_keywords(lines, i, &["Otherwise", "End"])?;
-                let mut else_body = None;
+                let mut otherwise_body = None;
                 if *i < lines.len() {
                     let t2 = lines[*i].trim();
                     if t2 == "Otherwise" {
                         *i += 1; // consume Otherwise
                         let eb = parse_until_keywords(lines, i, &["End"]) ?;
-                        else_body = Some(eb);
+                        otherwise_body = Some(eb);
                     }
                 }
                 // expect End
@@ -149,7 +149,7 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
                 } else {
                     return Err(anyhow!("[file: Line {}: Col 1] Expected 'End' before EOF", *i));
                 }
-                prog.push(Stmt::IfBlock { cond: cond_expr, then_body, else_body });
+                prog.push(Stmt::IfBlock { cond: cond_expr, then_body, otherwise_body });
                 continue;
             }
         }
@@ -298,15 +298,15 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         if let Some(rest) = t.strip_prefix("If ") { if t.contains(" Write ") {
             let lc = rest;
             let (cond_str, after_cond) = split_once_word(lc, " Write ").ok_or_else(|| anyhow!("Expected 'Write' after condition"))?;
-            let (then_str, else_part) = split_once_word(after_cond, " Otherwise ").unwrap_or((after_cond, ""));
+            let (then_str, otherwise_part) = split_once_word(after_cond, " Otherwise ").unwrap_or((after_cond, ""));
             let then_expr = parse_expr(then_str.trim())?;
             let cond_expr = parse_expr(cond_str.trim())?;
-            let else_expr = if !else_part.trim().is_empty() {
-                let esp = else_part.trim();
+            let otherwise_expr = if !otherwise_part.trim().is_empty() {
+                let esp = otherwise_part.trim();
                 let esp = if let Some(x) = esp.strip_prefix("Write ") { x } else { esp };
                 Some(parse_expr(esp.trim())?)
             } else { None };
-            out.push(Stmt::IfInline { cond: cond_expr, then_write: then_expr, else_write: else_expr });
+            out.push(Stmt::IfInline { cond: cond_expr, then_write: then_expr, otherwise_write: otherwise_expr });
             *i += 1; continue; }
         }
         // Block If
@@ -314,13 +314,13 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
             let cond_expr = parse_expr(rest.trim())?;
             *i += 1;
             let then_body = parse_until_keywords(lines, i, &["Otherwise", "End"]) ?;
-            let mut else_body = None;
+            let mut otherwise_body = None;
             if *i < lines.len() && lines[*i].trim() == "Otherwise" {
                 *i += 1;
-                else_body = Some(parse_until_keywords(lines, i, &["End"]) ?);
+                otherwise_body = Some(parse_until_keywords(lines, i, &["End"]) ?);
             }
             if *i < lines.len() && lines[*i].trim() == "End" { *i += 1; } else { return Err(anyhow!("Expected 'End'")); }
-            out.push(Stmt::IfBlock { cond: cond_expr, then_body: then_body, else_body });
+            out.push(Stmt::IfBlock { cond: cond_expr, then_body: then_body, otherwise_body });
             continue;
         }
         // Import statements inside blocks

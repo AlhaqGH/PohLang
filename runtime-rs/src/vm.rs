@@ -72,19 +72,19 @@ impl Vm {
                     };
                     self.globals.insert(var_name.clone(), value);
                 }
-                Stmt::IfInline { cond, then_write, else_write } => {
+                Stmt::IfInline { cond, then_write, otherwise_write } => {
                     let c = self.truthy(&self.eval(cond)?)?;
                     if c {
                         let v = self.eval(then_write)?;
                         println!("{}", to_string(&v));
-                    } else if let Some(e) = else_write {
+                    } else if let Some(e) = otherwise_write {
                         let v = self.eval(e)?;
                         println!("{}", to_string(&v));
                     }
                 }
-                Stmt::IfBlock { cond, then_body, else_body } => {
+                Stmt::IfBlock { cond, then_body, otherwise_body } => {
                     let c = self.truthy(&self.eval(cond)?)?;
-                    if c { self.execute(then_body)?; } else if let Some(eb) = else_body { self.execute(eb)?; }
+                    if c { self.execute(then_body)?; } else if let Some(eb) = otherwise_body { self.execute(eb)?; }
                 }
                 Stmt::FuncInline { name, params, body } => {
                     let f = Func { name: name.clone(), params: params.clone(), body: body.clone(), captured: vec![self.globals.clone()] };
@@ -324,18 +324,18 @@ impl Vm {
                         frame.locals.insert(name.clone(), v);
                     }
                 }
-                Stmt::IfInline { cond, then_write, else_write } => {
+                Stmt::IfInline { cond, then_write, otherwise_write } => {
                     if let Ok(c) = self.truthy(&self.eval_in_frame(cond, frame).unwrap_or(Value::Num(0.0))) {
                         if c {
                             if let Ok(v) = self.eval_in_frame(then_write, frame) { println!("{}", to_string(&v)); }
-                        } else if let Some(e) = else_write {
+                        } else if let Some(e) = otherwise_write {
                             if let Ok(v) = self.eval_in_frame(e, frame) { println!("{}", to_string(&v)); }
                         }
                     }
                 }
-                Stmt::IfBlock { cond, then_body, else_body } => {
+                Stmt::IfBlock { cond, then_body, otherwise_body } => {
                     if let Ok(c) = self.truthy(&self.eval_in_frame(cond, frame).unwrap_or(Value::Num(0.0))) {
-                        let cf = if c { self.exec_block_with_frame(then_body, frame) } else if let Some(eb) = else_body { self.exec_block_with_frame(eb, frame) } else { ControlFlow::Continue };
+                        let cf = if c { self.exec_block_with_frame(then_body, frame) } else if let Some(eb) = otherwise_body { self.exec_block_with_frame(eb, frame) } else { ControlFlow::Continue };
                         if let ControlFlow::Return(_) = cf { return cf; }
                     }
                 }
