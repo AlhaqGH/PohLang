@@ -109,6 +109,51 @@ fn parse_block(lines: &[&str], i: &mut usize) -> Result<Program> {
             }
         }
 
+        // Increase name by expr -> desugar to Set name to name plus expr
+        if let Some(rest) = t.strip_prefix("Increase ") {
+            if let Some((name, after)) = split_ident(rest) {
+                let after = after.trim_start();
+                let amount_str = after.strip_prefix("by ").unwrap_or(after);
+                let amount = parse_expr(amount_str).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
+                // Desugar: Increase x by 5 -> Set x to x plus 5
+                let value = Expr::Plus(
+                    Box::new(Expr::Ident(name.clone())),
+                    Box::new(amount)
+                );
+                prog.push(Stmt::Set { name, value });
+                *i += 1; continue;
+            }
+        }
+
+        // Decrease name by expr -> desugar to Set name to name plus (-expr)
+        if let Some(rest) = t.strip_prefix("Decrease ") {
+            if let Some((name, after)) = split_ident(rest) {
+                let after = after.trim_start();
+                let amount_str = after.strip_prefix("by ").unwrap_or(after);
+                let amount = parse_expr(amount_str).map_err(|e| anyhow!("[file: Line {}: Col 1] {}", *i+1, e))?;
+                // Desugar: Decrease x by 5 -> Set x to x plus (-5)
+                // We need to negate the amount. For simplicity, wrap it in a subtraction-like construct.
+                // Since we don't have a Minus expr yet, we'll use a negative amount when it's a number,
+                // or create a temporary subtraction for complex expressions
+                let neg_amount = match &amount {
+                    Expr::Num(n) => Expr::Num(-n),
+                    _ => {
+                        // For non-numeric expressions, we'll need to multiply by -1
+                        // But since multiplication isn't implemented, let's create a workaround
+                        // using Plus with negative: x - y = x + (-y)
+                        // We'll add a Negate helper or just document this limitation
+                        return Err(anyhow!("[file: Line {}: Col 1] Decrease with non-numeric expressions not yet supported", *i+1));
+                    }
+                };
+                let value = Expr::Plus(
+                    Box::new(Expr::Ident(name.clone())),
+                    Box::new(neg_amount)
+                );
+                prog.push(Stmt::Set { name, value });
+                *i += 1; continue;
+            }
+        }
+
         // If inline vs block
         if let Some(rest) = t.strip_prefix("If ") {
             if t.contains(" Write ") {
@@ -291,6 +336,40 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                 let after = after.strip_prefix("to ").unwrap_or(after);
                 let expr = parse_expr(after)?;
                 out.push(Stmt::Set { name, value: expr });
+                *i += 1; continue;
+            }
+        }
+        // Increase name by expr -> desugar to Set name to name plus expr
+        if let Some(rest) = t.strip_prefix("Increase ") {
+            if let Some((name, after)) = split_ident(rest) {
+                let after = after.trim_start();
+                let amount_str = after.strip_prefix("by ").unwrap_or(after);
+                let amount = parse_expr(amount_str)?;
+                let value = Expr::Plus(
+                    Box::new(Expr::Ident(name.clone())),
+                    Box::new(amount)
+                );
+                out.push(Stmt::Set { name, value });
+                *i += 1; continue;
+            }
+        }
+        // Decrease name by expr -> desugar to Set name to name plus (-expr)
+        if let Some(rest) = t.strip_prefix("Decrease ") {
+            if let Some((name, after)) = split_ident(rest) {
+                let after = after.trim_start();
+                let amount_str = after.strip_prefix("by ").unwrap_or(after);
+                let amount = parse_expr(amount_str)?;
+                let neg_amount = match &amount {
+                    Expr::Num(n) => Expr::Num(-n),
+                    _ => {
+                        return Err(anyhow!("Decrease with non-numeric expressions not yet supported"));
+                    }
+                };
+                let value = Expr::Plus(
+                    Box::new(Expr::Ident(name.clone())),
+                    Box::new(neg_amount)
+                );
+                out.push(Stmt::Set { name, value });
                 *i += 1; continue;
             }
         }

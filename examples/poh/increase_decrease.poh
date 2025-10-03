@@ -1,0 +1,11 @@
+Set x to 10
+Write x
+
+Increase x by 5
+Write x
+
+Decrease x by 3
+Write x
+
+Increase x by 2
+Write x

@@ -199,3 +199,18 @@ fn ask_for_in_bytecode() {
     // Should compile to bytecode successfully, generating ASK opcode
     cmd.assert().success();
 }
+
+#[test]
+fn increase_decrease_desugar_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set x to 10").unwrap();
+    writeln!(f, "Increase x by 5").unwrap();
+    writeln!(f, "Write x").unwrap();
+    writeln!(f, "Decrease x by 3").unwrap();
+    writeln!(f, "Write x").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success();
+}
