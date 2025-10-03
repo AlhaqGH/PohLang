@@ -18,6 +18,7 @@ pub enum Expr {
     Cmp(CmpOp, Box<Expr>, Box<Expr>),
     ListLit(Vec<Expr>),
     DictLit(Vec<(String, Expr)>),
+    Index(Box<Expr>, Box<Expr>), // collection[index]
 }
 
 #[derive(Debug, Clone)]
@@ -721,9 +722,9 @@ fn parse_mult(s: &str) -> Result<Expr> {
         }
         
         if tokens.len() > 1 {
-            let mut expr = parse_term(tokens[0].2.trim())?;
+            let mut expr = parse_postfix(tokens[0].2.trim())?;
             for i in 1..tokens.len() {
-                let rhs = parse_term(tokens[i].2.trim())?;
+                let rhs = parse_postfix(tokens[i].2.trim())?;
                 if tokens[i-1].1 { // Previous token marked as times
                     expr = Expr::Times(Box::new(expr), Box::new(rhs));
                 } else {
@@ -731,6 +732,45 @@ fn parse_mult(s: &str) -> Result<Expr> {
                 }
             }
             return Ok(expr);
+        }
+    }
+    
+    parse_postfix(s)
+}
+
+fn parse_postfix(s: &str) -> Result<Expr> {
+    let s = s.trim();
+    // Check for indexing: expr[index]
+    // Find the rightmost '[' at depth 0 (not inside strings or nested brackets/parens)
+    let mut in_str = false;
+    let mut depth = 0i32;
+    let mut last_bracket = None;
+    
+    for (i, ch) in s.char_indices() {
+        if ch == '"' { in_str = !in_str; continue; }
+        if !in_str {
+            if ch == '(' || ch == '[' || ch == '{' {
+                if depth == 0 && ch == '[' {
+                    last_bracket = Some(i);
+                }
+                depth += 1;
+            } else if ch == ')' || ch == ']' || ch == '}' {
+                depth -= 1;
+            }
+        }
+    }
+    
+    // If we found a '[' at top level and the expression ends with ']'
+    if let Some(bracket_pos) = last_bracket {
+        if s.ends_with(']') && bracket_pos > 0 {
+            let base = &s[..bracket_pos];
+            let index_expr = &s[bracket_pos + 1..s.len() - 1];
+            
+            // Recursively parse both parts
+            let base_expr = parse_postfix(base.trim())?;
+            let index = parse_expr(index_expr.trim())?;
+            
+            return Ok(Expr::Index(Box::new(base_expr), Box::new(index)));
         }
     }
     

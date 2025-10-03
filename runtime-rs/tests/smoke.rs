@@ -187,6 +187,94 @@ fn ask_for_parses_correctly() {
 }
 
 #[test]
+fn list_indexing_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set nums to [10, 20, 30, 40]").unwrap();
+    writeln!(f, "Write nums[0]").unwrap();
+    writeln!(f, "Write nums[2]").unwrap();
+    writeln!(f, "Write nums[-1]").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success()
+        .stdout(predicates::str::contains("10"))
+        .stdout(predicates::str::contains("30"))
+        .stdout(predicates::str::contains("40"));
+}
+
+#[test]
+fn dict_indexing_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set person to {{name: \"Bob\", age: 25}}").unwrap();
+    writeln!(f, "Write person[\"name\"]").unwrap();
+    writeln!(f, "Write person[\"age\"]").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success()
+        .stdout(predicates::str::contains("Bob"))
+        .stdout(predicates::str::contains("25"));
+}
+
+#[test]
+fn nested_indexing_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set matrix to [[1, 2], [3, 4]]").unwrap();
+    writeln!(f, "Write matrix[0][1]").unwrap();
+    writeln!(f, "Write matrix[1][0]").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success()
+        .stdout(predicates::str::contains("2"))
+        .stdout(predicates::str::contains("3"));
+}
+
+#[test]
+fn string_indexing_works() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set word to \"Hello\"").unwrap();
+    writeln!(f, "Write word[0]").unwrap();
+    writeln!(f, "Write word[-1]").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().success()
+        .stdout(predicates::str::contains("H"))
+        .stdout(predicates::str::contains("o"));
+}
+
+#[test]
+fn index_out_of_bounds_error() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set nums to [1, 2, 3]").unwrap();
+    writeln!(f, "Write nums[10]").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().failure()
+        .stderr(predicates::str::contains("out of range"));
+}
+
+#[test]
+fn dict_key_not_found_error() {
+    let mut f = NamedTempFile::new().unwrap();
+    writeln!(f, "Set data to {{x: 1}}").unwrap();
+    writeln!(f, "Write data[\"missing\"]").unwrap();
+    let path = f.into_temp_path();
+
+    let mut cmd = Command::cargo_bin("pohlangc").unwrap();
+    cmd.arg("--run").arg(path.to_str().unwrap());
+    cmd.assert().failure()
+        .stderr(predicates::str::contains("not found"));
+}
+
+#[test]
 fn modern_list_syntax_works() {
     let mut f = NamedTempFile::new().unwrap();
     writeln!(f, "Set nums to [1, 2, 3]").unwrap();

@@ -8,7 +8,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 **Goal**: The Rust runtime (`pohlangc`) can execute all core language features that the Python interpreter supports.
 
-**Progress**: ~80% complete
+**Progress**: ~85% complete
 
 **Tasks**:
 - [x] Parser for all statement types (Write, Set, If, Repeat, While, Make, Use, Import)
@@ -21,7 +21,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 - [x] `times` operator for multiplication ✅ **COMPLETED** (2025-01-XX)
 - [x] `divided by` operator for division ✅ **COMPLETED** (2025-01-XX)
 - [x] Modern collection literals: `[1, 2, 3]` lists, `{key: value}` dictionaries ✅ **COMPLETED** (2025-01-XX)
-- [ ] Collection indexing: `list[0]`, `dict["key"]`
+- [x] Collection indexing: `list[0]`, `dict["key"]`, negative indexing, nested indexing ✅ **COMPLETED** (2025-01-XX)
 - [ ] Enhanced error messages with line/column info and suggestions
 - [ ] Run all Python test cases (`tests_python/`) via a test harness
 

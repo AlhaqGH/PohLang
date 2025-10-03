@@ -255,6 +255,41 @@ impl Vm {
                 for (k, ve) in pairs { map.insert(k.clone(), self.eval(ve)?); }
                 Ok(Value::Dict(map))
             }
+            Expr::Index(base, index) => {
+                let base_val = self.eval(base)?;
+                let index_val = self.eval(index)?;
+                
+                match (&base_val, &index_val) {
+                    (Value::List(items), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let len = items.len() as i32;
+                        // Support negative indexing
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("List index out of range: {} (list length: {})", idx, len));
+                        }
+                        Ok(items[actual_idx as usize].clone())
+                    }
+                    (Value::Dict(map), Value::Str(key)) => {
+                        map.get(key)
+                            .cloned()
+                            .ok_or_else(|| anyhow!("Key not found in dictionary: \"{}\"", key))
+                    }
+                    (Value::Str(s), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let chars: Vec<char> = s.chars().collect();
+                        let len = chars.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("String index out of range: {} (string length: {})", idx, len));
+                        }
+                        Ok(Value::Str(chars[actual_idx as usize].to_string()))
+                    }
+                    _ => Err(anyhow!("Cannot index {:?} with {:?}", base_val, index_val))
+                }
+            }
         }
     }
 
@@ -534,6 +569,40 @@ impl Vm {
                 for (k, ve) in pairs { map.insert(k.clone(), self.eval_in_frame(ve, frame)?); }
                 Ok(Value::Dict(map))
             }
+            Expr::Index(base, index) => {
+                let base_val = self.eval_in_frame(base, frame)?;
+                let index_val = self.eval_in_frame(index, frame)?;
+                
+                match (&base_val, &index_val) {
+                    (Value::List(items), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let len = items.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("List index out of range: {} (list length: {})", idx, len));
+                        }
+                        Ok(items[actual_idx as usize].clone())
+                    }
+                    (Value::Dict(map), Value::Str(key)) => {
+                        map.get(key)
+                            .cloned()
+                            .ok_or_else(|| anyhow!("Key not found in dictionary: \"{}\"", key))
+                    }
+                    (Value::Str(s), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let chars: Vec<char> = s.chars().collect();
+                        let len = chars.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("String index out of range: {} (string length: {})", idx, len));
+                        }
+                        Ok(Value::Str(chars[actual_idx as usize].to_string()))
+                    }
+                    _ => Err(anyhow!("Cannot index {:?} with {:?}", base_val, index_val))
+                }
+            }
         }
     }
 
@@ -635,6 +704,40 @@ impl Vm {
                 let mut map = HashMap::new();
                 for (k, ve) in pairs { map.insert(k.clone(), self.eval_in_scope(ve, locals)?); }
                 Ok(Value::Dict(map))
+            }
+            Expr::Index(base, index) => {
+                let base_val = self.eval_in_scope(base, locals)?;
+                let index_val = self.eval_in_scope(index, locals)?;
+                
+                match (&base_val, &index_val) {
+                    (Value::List(items), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let len = items.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("List index out of range: {} (list length: {})", idx, len));
+                        }
+                        Ok(items[actual_idx as usize].clone())
+                    }
+                    (Value::Dict(map), Value::Str(key)) => {
+                        map.get(key)
+                            .cloned()
+                            .ok_or_else(|| anyhow!("Key not found in dictionary: \"{}\"", key))
+                    }
+                    (Value::Str(s), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let chars: Vec<char> = s.chars().collect();
+                        let len = chars.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("String index out of range: {} (string length: {})", idx, len));
+                        }
+                        Ok(Value::Str(chars[actual_idx as usize].to_string()))
+                    }
+                    _ => Err(anyhow!("Cannot index {:?} with {:?}", base_val, index_val))
+                }
             }
         }
     }
@@ -739,6 +842,40 @@ impl Vm {
                 for (k, ve) in pairs { map.insert(k.clone(), self.eval_in_scope_with_capture(ve, locals, captured)?); }
                 Ok(Value::Dict(map))
             }
+            Expr::Index(base, index) => {
+                let base_val = self.eval_in_scope_with_capture(base, locals, captured)?;
+                let index_val = self.eval_in_scope_with_capture(index, locals, captured)?;
+                
+                match (&base_val, &index_val) {
+                    (Value::List(items), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let len = items.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("List index out of range: {} (list length: {})", idx, len));
+                        }
+                        Ok(items[actual_idx as usize].clone())
+                    }
+                    (Value::Dict(map), Value::Str(key)) => {
+                        map.get(key)
+                            .cloned()
+                            .ok_or_else(|| anyhow!("Key not found in dictionary: \"{}\"", key))
+                    }
+                    (Value::Str(s), Value::Num(n)) => {
+                        let idx = *n as i32;
+                        let chars: Vec<char> = s.chars().collect();
+                        let len = chars.len() as i32;
+                        let actual_idx = if idx < 0 { len + idx } else { idx };
+                        
+                        if actual_idx < 0 || actual_idx >= len {
+                            return Err(anyhow!("String index out of range: {} (string length: {})", idx, len));
+                        }
+                        Ok(Value::Str(chars[actual_idx as usize].to_string()))
+                    }
+                    _ => Err(anyhow!("Cannot index {:?} with {:?}", base_val, index_val))
+                }
+            }
         }
     }
 }
@@ -788,6 +925,7 @@ fn dump_expr(e: &Expr) -> String {
         Expr::Call { name, args } => if args.is_empty() { name.clone() } else { format!("{} with {}", name, args.iter().map(dump_expr).collect::<Vec<_>>().join(", ")) },
         Expr::ListLit(items) => format!("List contains {}", items.iter().map(dump_expr).collect::<Vec<_>>().join(", ")),
         Expr::DictLit(pairs) => pairs.iter().map(|(k, v)| format!("\"{}\" set to {}", k, dump_expr(v))).collect::<Vec<_>>().join(", "),
+        Expr::Index(base, idx) => format!("{}[{}]", dump_expr(base), dump_expr(idx)),
     }
 }
 
