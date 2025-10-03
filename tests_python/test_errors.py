@@ -31,7 +31,7 @@ Use add with 1
             interp.run(src, filename="test.poh")
         msg = str(e.exception)
         self.assertTrue(msg.startswith('[test.poh: Line 3'))  # call site line
-        self.assertIn('expects 2 argument(s) but got 1', msg)
+        self.assertIn('expects at least 2 argument(s)', msg)
         self.assertIn('defined at line 1', msg)
 
     def test_type_mismatch_operator(self):
