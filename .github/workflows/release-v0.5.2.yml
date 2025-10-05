@@ -66,8 +66,6 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform.target }}
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -80,13 +78,13 @@ jobs:
 
       - name: Build release binary
         working-directory: runtime
-        run: cargo build --release --target ${{ matrix.platform.target }} --verbose
+        run: cargo build --release --verbose
 
       - name: Test release binary
         shell: bash
         working-directory: runtime
         run: |
-          BINARY_PATH="target/${{ matrix.platform.target }}/release/${{ matrix.platform.binary_name }}"
+          BINARY_PATH="target/release/${{ matrix.platform.binary_name }}"
           $BINARY_PATH --version
           VERSION_OUTPUT=$($BINARY_PATH --version)
           echo "Binary version: $VERSION_OUTPUT"
@@ -96,7 +94,7 @@ jobs:
         working-directory: runtime
         run: |
           mkdir -p ../release-artifacts
-          cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.binary_name }} ../release-artifacts/
+          cp target/release/${{ matrix.platform.binary_name }} ../release-artifacts/
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
