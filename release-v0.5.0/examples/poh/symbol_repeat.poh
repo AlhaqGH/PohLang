@@ -1,5 +1,0 @@
-Start Program
-// Example: symbol-based repeat (legacy syntax)
-Set count to 3
-Repeat count times Write "Hello"
-End Program

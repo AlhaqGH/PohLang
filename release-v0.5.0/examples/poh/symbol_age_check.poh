@@ -1,5 +1,0 @@
-Start Program
-// Example: symbol-based age check (legacy syntax may give warnings)
-Set age to 30
-If age is greater than 18 Write "Adult" Otherwise Write "Minor"
-End Program

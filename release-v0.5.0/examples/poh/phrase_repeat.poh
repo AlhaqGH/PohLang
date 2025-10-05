@@ -1,6 +1,0 @@
-Start Program
-// Example: repeat phrases
-Set count to 3
-Repeat count times Write "Hello"
-Write "Done"
-End Program
