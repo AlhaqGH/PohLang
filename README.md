@@ -1,6 +1,26 @@
 # PohLang
 
-A beginner-focused, fully phrasal (English-like) programming language designed to be a **real compiled language**—not a script on top of another runtime. PohLang is built with a standalone Rust toolchain, aiming for native executables and full independence.
+A beginner-focused, fully phrasal (English-like) programming language designed to be a **real co### 🚀 Option 2: VS Code Extension (Best IDE Experience)
+
+**For VS Code users** - Get syntax highlighting, IntelliSense, snippets, and integrated runtime without leaving VS Code.
+
+1. Install [VS Code](https://code.visualstudio.com/)
+2. Install [PohLang Hub extension](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
+3. Create a `.poh` file and start coding!
+4. Press `Ctrl+F5` to run your program
+
+**Why use the extension:**
+- ✅ **Syntax highlighting** for `.poh` files
+- ✅ **IntelliSense & completions** with parameter hints
+- ✅ **40+ code snippets** for rapid development
+- ✅ **Bundled runtime** - No separate download needed
+- ✅ **One-click execution** - Press `Ctrl+F5` to run
+- ✅ **Local VS Code support** - Works offline once installed
+- ✅ **Improved VS Code compatibility** - Native `.poh` file support
+
+**Note:** The extension includes its own copy of the PohLang runtime, so you don't need to download binaries from GitHub separately. Perfect for VS Code users who want everything in one place!
+
+### 🔧 Option 3: Using PLHub (Advanced)e**—not a script on top of another runtime. PohLang is built with a standalone Rust toolchain, aiming for native executables and full independence.
 
 [![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/pohlang.pohlang-hub?label=VS%20Code%20Extension&color=blue)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
 [![VS Code Installs](https://img.shields.io/visual-studio-marketplace/i/pohlang.pohlang-hub)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
@@ -51,20 +71,33 @@ Use greet with "Poh"
 
 ## Quick Start
 
-### 🎯 Option 1: Download Pre-built Binary (Easiest - No Rust Needed!)
+### 🎯 Option 1: Download Pre-built Binary (Recommended for End Users)
 
 **For End Users** - Just download and run! No installation of Rust, Visual Studio, or build tools required.
 
 #### Windows
+
+**One-line install (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/AlhaqGH/PohLang/main/install/install.ps1 | iex
+```
+
+Or download manually:
 1. Download the latest release: [pohlang-v0.5.2-windows-x64.zip](https://github.com/AlhaqGH/PohLang/releases/latest)
 2. Extract the zip file
 3. Open PowerShell or Command Prompt in the extracted folder
 4. Run: `.\pohlang.exe --run examples\hello.poh`
 
-Or download the **SDK bundle** for a complete package with examples and documentation:
-- [pohlang-sdk-v0.5.2-windows-x64.zip](https://github.com/AlhaqGH/PohLang/releases/latest)
+SDK bundle: [pohlang-sdk-v0.5.2-windows-x64.zip](https://github.com/AlhaqGH/PohLang/releases/latest)
 
 #### Linux
+
+**One-line install:**
+```bash
+curl -sSL https://raw.githubusercontent.com/AlhaqGH/PohLang/main/install/install.sh | bash
+```
+
+Or download manually:
 ```bash
 # Download and extract
 wget https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-v0.5.2-linux-x64.tar.gz
@@ -80,6 +113,13 @@ sudo mv pohlang /usr/local/bin/
 SDK bundle: [pohlang-sdk-v0.5.2-linux-x64.tar.gz](https://github.com/AlhaqGH/PohLang/releases/latest)
 
 #### macOS
+
+**One-line install:**
+```bash
+curl -sSL https://raw.githubusercontent.com/AlhaqGH/PohLang/main/install/install.sh | bash
+```
+
+Or download manually:
 ```bash
 # Download and extract
 curl -L https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-v0.5.2-macos-x64.tar.gz -o pohlang.tar.gz
