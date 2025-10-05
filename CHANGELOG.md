@@ -5,6 +5,57 @@ All notable changes to PohLang will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-10-05 - Parser Fix for Multi-line If Statements
+
+### Overview
+Patch release fixing a critical parser issue with multi-line If statements that use phrasal comparison operators. This issue affected v0.5.0 and prevented proper parsing of natural language conditionals in block form.
+
+### Fixed
+- **Parser Issue**: Multi-line If statements with phrasal comparisons now work correctly
+  - Added full support for " is greater than ", " is less than ", etc. in comparison expressions
+  - Added " is greater than or equal to " and " is less than or equal to " patterns
+  - Added " is equal to " and " is not equal to " explicit patterns
+  - Fixed "End If" keyword recognition (previously only accepted "End")
+  - Proper operator precedence: longer patterns matched first to avoid premature matching
+
+**Examples that now work:**
+```pohlang
+# ✅ Works in v0.5.1 (failed in v0.5.0)
+If temperature is greater than 20
+    Write "It's warm!"
+Otherwise
+    Write "It's cool!"
+End If
+
+# ✅ Works in v0.5.1 (failed in v0.5.0)
+If age is less than 18
+    Write "Minor"
+Otherwise
+    Write "Adult"
+End If
+
+# ✅ All phrasal comparisons now supported in multi-line blocks:
+# - is greater than
+# - is less than
+# - is greater than or equal to
+# - is less than or equal to
+# - is equal to
+# - is not equal to
+```
+
+### Testing
+- ✅ All 50 tests passing (6 functions + 7 phrasals + 37 smoke tests)
+- ✅ `examples/poh/if_block_greeting.poh` - Now works
+- ✅ `examples/poh/phrase_age_check.poh` - Now works
+- ✅ All multi-line If variations tested and verified
+
+### Notes
+- **Backward Compatible**: All v0.5.0 programs that worked continue to work in v0.5.1
+- **No Breaking Changes**: This is a pure bug fix release
+- **Recommended Upgrade**: All v0.5.0 users should upgrade to v0.5.1
+
+---
+
 ## [0.5.0] - 2025-10-05 - Phase 1 Complete: Production-Ready Release
 
 ### Overview

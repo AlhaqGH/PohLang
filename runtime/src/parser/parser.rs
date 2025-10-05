@@ -264,16 +264,21 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         if let Some(rest) = t.strip_prefix("If ") {
             let cond_expr = parse_expr(rest.trim())?;
             *i += 1;
-            let then_body = parse_until_keywords(lines, i, &["Otherwise", "End"])?;
+            let then_body = parse_until_keywords(lines, i, &["Otherwise", "End If", "End"])?;
             let mut otherwise_body = None;
             if *i < lines.len() && lines[*i].trim() == "Otherwise" {
                 *i += 1;
-                otherwise_body = Some(parse_until_keywords(lines, i, &["End"])?);
+                otherwise_body = Some(parse_until_keywords(lines, i, &["End If", "End"])?);
             }
-            if *i < lines.len() && lines[*i].trim() == "End" {
-                *i += 1;
+            if *i < lines.len() {
+                let end_line = lines[*i].trim();
+                if end_line == "End If" || end_line == "End" {
+                    *i += 1;
+                } else {
+                    return Err(anyhow!("Expected 'End If' or 'End', found '{}'", end_line));
+                }
             } else {
-                return Err(anyhow!("Expected 'End'"));
+                return Err(anyhow!("Expected 'End If' or 'End'"));
             }
             out.push(Stmt::IfBlock {
                 cond: cond_expr,
@@ -623,11 +628,22 @@ fn parse_not(s: &str) -> Result<Expr> {
 
 fn parse_cmp(s: &str) -> Result<Expr> {
     // Recognize comparisons at top-level, not inside strings or parens; prefer longest match
+    // Order matters: check longer patterns first to avoid premature matching
     let cmps = [
-        (" is not ", CmpOp::Ne),
-        (" Is Not ", CmpOp::Ne),
-        (" is ", CmpOp::Eq),
-        (" Is ", CmpOp::Eq),
+        // Full phrasal forms with "is" (longest patterns first)
+        (" is greater than or equal to ", CmpOp::Ge),
+        (" is less than or equal to ", CmpOp::Le),
+        (" Is Greater Than Or Equal To ", CmpOp::Ge),
+        (" Is Less Than Or Equal To ", CmpOp::Le),
+        (" is not equal to ", CmpOp::Ne),
+        (" Is Not Equal To ", CmpOp::Ne),
+        (" is equal to ", CmpOp::Eq),
+        (" Is Equal To ", CmpOp::Eq),
+        (" is greater than ", CmpOp::Gt),
+        (" is less than ", CmpOp::Lt),
+        (" Is Greater Than ", CmpOp::Gt),
+        (" Is Less Than ", CmpOp::Lt),
+        // Shorter forms without "is"
         (" Greater Or Equal ", CmpOp::Ge),
         (" Less Or Equal ", CmpOp::Le),
         (" greater or equal ", CmpOp::Ge),
@@ -640,6 +656,12 @@ fn parse_cmp(s: &str) -> Result<Expr> {
         (" not equals ", CmpOp::Ne),
         (" Equals ", CmpOp::Eq),
         (" equals ", CmpOp::Eq),
+        // Basic "is" (shortest, check last)
+        (" is not ", CmpOp::Ne),
+        (" Is Not ", CmpOp::Ne),
+        (" is ", CmpOp::Eq),
+        (" Is ", CmpOp::Eq),
+        // Symbol form
         (" = ", CmpOp::Eq),
     ];
     for (pat, op) in cmps.iter() {

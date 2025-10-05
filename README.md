@@ -20,6 +20,7 @@ Think of it like:
 - **PohLang Rust Runtime**: v0.5.0 (**Phase 1 Complete** ✅)
 - **Core Language**: Phase 1 Production-Ready
 - **Test Coverage**: 50 passing tests (100% core features)
+- ⚠️ **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for v0.5.0 issues and workarounds
 
 ## Goals
 - Use plain-language statements: `Write "Hello"`, `Set count to 5`, `Repeat 3 ... End`.
