@@ -97,22 +97,22 @@ jobs:
             exit 1
           fi
 
-      - name: Create release archive
+      - name: Prepare binary for upload
         shell: bash
+        working-directory: runtime
         run: |
-          cd runtime/target/${{ matrix.platform.target }}/release
+          mkdir -p ../release-artifacts
           if [ "${{ matrix.platform.os }}" = "windows-latest" ]; then
-            7z a ../../../../${{ matrix.platform.name }}.zip pohlang.exe
+            cp target/${{ matrix.platform.target }}/release/pohlang.exe ../release-artifacts/${{ matrix.platform.name }}
           else
-            tar czf ../../../../${{ matrix.platform.name }}.tar.gz pohlang
+            cp target/${{ matrix.platform.target }}/release/pohlang ../release-artifacts/${{ matrix.platform.name }}
           fi
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform.name }}
-          path: |
-            runtime/${{ matrix.platform.name }}.*
+          name: binary-${{ matrix.platform.os }}
+          path: release-artifacts/${{ matrix.platform.name }}
           retention-days: 7
 
   create-release:
@@ -130,7 +130,38 @@ jobs:
           path: artifacts
 
       - name: Display artifact structure
-        run: ls -R artifacts
+        run: |
+          echo "Artifacts downloaded:"
+          ls -la artifacts/
+          find artifacts/ -type f
+
+      - name: Package binaries
+        run: |
+          mkdir -p release-packages
+          
+          # Windows
+          if [ -f artifacts/binary-windows-latest/pohlang-windows-x64.exe ]; then
+            cd artifacts/binary-windows-latest
+            zip ../../release-packages/pohlang-v0.5.0-windows-x64.zip pohlang-windows-x64.exe
+            cd ../..
+          fi
+          
+          # Linux
+          if [ -f artifacts/binary-ubuntu-latest/pohlang-linux-x64 ]; then
+            cd artifacts/binary-ubuntu-latest
+            tar czf ../../release-packages/pohlang-v0.5.0-linux-x64.tar.gz pohlang-linux-x64
+            cd ../..
+          fi
+          
+          # macOS
+          if [ -f artifacts/binary-macos-latest/pohlang-macos-x64 ]; then
+            cd artifacts/binary-macos-latest
+            tar czf ../../release-packages/pohlang-v0.5.0-macos-x64.tar.gz pohlang-macos-x64
+            cd ../..
+          fi
+          
+          echo "Packaged files:"
+          ls -lh release-packages/
 
       - name: Extract version
         id: version
@@ -249,7 +280,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/**/*
+            release-packages/*.zip
+            release-packages/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
