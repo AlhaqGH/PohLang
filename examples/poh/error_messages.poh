@@ -1,3 +1,4 @@
+Start Program
 Write "=== PohLang Enhanced Error Messages Demo ==="
 Write ""
 
@@ -32,3 +33,4 @@ Write "Hint: Check for unmatched brackets [], braces {}, or parentheses ()"
 Write ""
 
 Write "These hints help developers quickly identify and fix issues!"
+End Program

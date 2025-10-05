@@ -1,3 +1,4 @@
+Start Program
 Write "=== List Indexing ==="
 
 Set numbers to [10, 20, 30, 40, 50]
@@ -59,3 +60,4 @@ Write "Total for 3 apples: " plus total_apples
 
 Write ""
 Write "Done! All indexing operations work."
+End Program

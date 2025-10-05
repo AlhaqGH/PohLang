@@ -1,3 +1,4 @@
+Start Program
 Set x to 10
 Write x
 
@@ -9,3 +10,4 @@ Write x
 
 Increase x by 2
 Write x
+End Program

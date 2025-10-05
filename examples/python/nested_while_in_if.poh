@@ -1,3 +1,0 @@
-// moved from Interpreter/examples
-Set n to 2
-If n is greater than 1 Write "ok"

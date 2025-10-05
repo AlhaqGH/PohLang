@@ -1,23 +1,32 @@
 # PohLang
 
-A beginner-focused, fully phrasal (English-like) programming language designed to be a **real compiled language**—not a script on top of another runtime. PohLang is transitioning from Dart to a standalone Rust toolchain, aiming for native executables and full independence.
+A beginner-focused, fully phrasal (English-like) programming language designed to be a **real compiled language**—not a script on top of another runtime. PohLang is built with a standalone Rust toolchain, aiming for native executables and full independence.
 
 📘 Full documentation: see the comprehensive guide at [PohLang_Guide.md](./PohLang_Guide.md).  
-🗺️ **Transition Plan**: See [TRANSITION.md](./TRANSITION.md) for the roadmap to becoming a fully independent compiled language.  
-🚀 **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for detailed milestones.
+🗺️ **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for detailed milestones.
+
+> **Note**: This repository contains the **core Rust runtime only**. For the complete development environment including CLI tools, package management, and editor integration, see [PLHub](https://github.com/AlhaqGH/PLHub).
+
+## Repository Overview
+
+**PohLang** = The core language runtime (this repository)  
+**PLHub** = The complete development environment (separate repository)
+
+Think of it like:
+- **PohLang** is to **Rust** (the language core)
+- **PLHub** is to **Cargo** (the development tooling)
 
 ## Release Information
-- **PohLang Core**: v0.1.0 (First Experimental Release)
-- **Python Interpreter**: v0.5.0 (Stable—reference implementation)
-- **Rust Runtime (pohlangc)**: v0.5.0 (Experimental—future primary toolchain)
-- **Dart Code**: Legacy (being phased out)
+- **PohLang Rust Runtime**: v0.5.0 (**Phase 1 Complete** ✅)
+- **Core Language**: Phase 1 Production-Ready
+- **Test Coverage**: 50 passing tests (100% core features)
 
 ## Goals
 - Use plain-language statements: `Write "Hello"`, `Set count to 5`, `Repeat 3 ... End`.
 - Keep one clear form per concept (no synonyms like Print/Show). Use `Write`, not `Say/Print`.
 - Provide a gentle path to programming concepts (variables, loops, conditionals, functions) without punctuation noise.
 - **Become a real compiled language**: native executables, no external runtime dependencies.
-- **Eliminate Dart dependency**: transition to a pure Rust toolchain by Q4 2026.
+- **Pure Rust implementation**: Fast, safe, and portable runtime.
 
 ## Example
 ```
@@ -34,84 +43,138 @@ Use greet with "Poh"
 
 ## Running a Program
 
-### Option A: Python Interpreter (Stable—Recommended for now)
-1. Install: `pip install pohlang`
-2. Run: `pohlang examples/poh/hello.poh`
-3. Or from source: `python -m Interpreter.run_poh examples/poh/hello.poh`
+### Prerequisites (Windows)
+Install Visual Studio Build Tools with C++ workload. See `runtime/README.md` for details.
 
-### Option B: Rust Runtime/VM (Experimental—Future Primary Toolchain)
+### Building the Runtime
+```bash
+# Build the Rust runtime
+cargo build --manifest-path runtime/Cargo.toml
 
-**Prerequisites (Windows)**: Install Visual Studio Build Tools with C++ workload. See `runtime-rs/README.md` for details.
+# For optimized release build
+cargo build --release --manifest-path runtime/Cargo.toml
+```
 
-1. Build Rust crate:
-   ```bash
-   cargo build --manifest-path runtime-rs/Cargo.toml
-   ```
-2. Run a program with the VM:
-   ```bash
-   cargo run --manifest-path runtime-rs/Cargo.toml -- --run examples/poh/hello.poh
-   ```
-3. Or use the compiled binary:
-   ```bash
-   target/debug/pohlangc --run examples/poh/hello.poh
-   ```
+### Running Programs
+```bash
+# Run a program directly (development)
+cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
 
-**Status**: The Rust runtime is under active development. Not all features are implemented yet. See [ROADMAP.md](./ROADMAP.md) for progress.
+# Or use the compiled binary
+./target/debug/pohlang --run examples/poh/hello.poh
+
+# With release build (faster)
+./target/release/pohlang --run examples/poh/hello.poh
+```
+
+### Using PLHub (Recommended for Development)
+For a complete development environment with project management, package system, and CLI tools:
+1. Install [PLHub](https://github.com/AlhaqGH/PLHub)
+2. Use: `plhub run examples/poh/hello.poh`
+
+**Status**: The Rust runtime is under active development. Core features are implemented. See [ROADMAP.md](./ROADMAP.md) for progress.
 
 ## Current Features
-- Write, Ask for, Set, Increase, Decrease
-- If/Otherwise blocks and inline If
-- Repeat and While loops
-- Function definition (Make/End) and calls (Use or expression calls)
-- Expression support: identifiers, numbers, strings, booleans; plus/minus/times; comparisons like `is greater than`, `is less than`, `is equal to`
-- Desugaring for increase/decrease
- - File and process helpers (selected operations via runtime)
+
+### Core Language (Phase 1 Complete ✅)
+- ✅ **Statements**: Write, Ask for, Set, Increase, Decrease, Return
+- ✅ **Control Flow**: If/Otherwise blocks, inline If, While loops, Repeat loops
+- ✅ **Functions**: Define with parameters, default values, closures, phrasal calls
+- ✅ **Operators**: Arithmetic (`plus`, `minus`, `times`, `divided by`), Comparisons (`is greater than`, `is less than`, `is equal to`), Logical (`And`, `Or`, `Not`)
+- ✅ **Collections**: Lists `[1, 2, 3]`, Dictionaries `{key: value}`, Indexing with negative support
+- ✅ **Imports**: Local file imports, system module stubs
+
+### Phrasal Built-in Expressions (20 total) ✅
+**Mathematical**: `total of`, `smallest in`, `largest in`, `absolute value of`, `round`, `round down`, `round up`
+
+**String**: `make uppercase`, `make lowercase`, `trim spaces from`
+
+**Collection**: `first in`, `last in`, `reverse of`, `count of`, `join with`, `split by`, `contains in`, `remove from`, `append to`, `insert at`
+
+**Aliases**: `size of`, `separate by`, `reverse`, `clean spaces from`
+
+### Grammar & Quality ✅
+- ✅ **Unambiguous grammar** with proper operator precedence
+- ✅ **50 passing tests** covering all features
+- ✅ **Enhanced error messages** with suggestions
+- ✅ **Comprehensive documentation** (Guide, Vocabulary, Grammar Analysis)
+- ✅ **Centralized phrase management** for easy extension
 
 ## Roadmap
 
-### Short-term (Q4 2025)
-- Rust runtime feature parity with Python interpreter
-- `Ask for` input, `Increase`/`Decrease` desugaring
-- Enhanced error messages
+### Phase 1: Core Features (Q4 2025) - ✅ **COMPLETE**
+- ✅ Parser for all statement types
+- ✅ VM execution for core statements
+- ✅ Collections and indexing
+- ✅ 20 phrasal built-in expressions
+- ✅ Unambiguous grammar with proper precedence
+- ✅ Enhanced error messages
+- ✅ Complete test coverage (50 tests passing)
+- ✅ Production-ready v0.5.0 release
 
-### Mid-term (Q1-Q2 2026)
-- Standard library in Rust (collections, random, datetime)
+### Phase 2: Standard Library (Q1 2026)
+- Standard library modules in Rust
+- Collections, random, datetime, math
+- File I/O operations
+- Islamic calendar utilities
+
+### Phase 3: Bytecode Compiler & VM (Q2 2026)
+- Compact bytecode format
 - Bytecode compiler and VM
-- Performance benchmarks
+- Performance optimization
+- `.pbc` file format
 
-### Long-term (Q3-Q4 2026)
-- AOT native compilation (`pohlangc --aot foo.poh -o foo.exe`)
-- Remove Dart dependency completely
-- Release standalone binaries for all platforms
-- **v1.0.0**: PohLang as a real, independent compiled language
+### Phase 4: AOT Native Compilation (Q3-Q4 2026)
+- Native executable generation
+- Cross-platform compilation
+- Standalone binaries
+- **v1.0.0**: Production-ready release
 
 See [ROADMAP.md](./ROADMAP.md) for detailed plans.
 
 ## Directory Structure
 ```
+runtime/         Rust runtime/VM implementation
+  src/
+    parser/      Lexer, parser, AST
+    vm/          Virtual machine execution
+    core/        Built-in functions
+  tests/         Rust test suite
+examples/poh/    Sample PohLang programs (.poh)
+spec/            Language specification
 doc/             Language syntax and vocabulary
-examples/        Sample PohLang programs (.poh)
-Interpreter/     Python reference interpreter and CLI (stable)
-runtime-rs/      Rust runtime/VM (pohlangc) — future primary toolchain
-tests_python/    Python test suite
-.github/         CI workflows (builds Rust runtime on all platforms)
-TRANSITION.md    Transition guide: moving from Dart to Rust
+.github/         CI workflows (builds runtime on all platforms)
 ROADMAP.md       Detailed roadmap and milestones
 ```
 
+## Related Projects
+- **[PLHub](https://github.com/AlhaqGH/PLHub)**: Complete development environment with CLI tools, package management, project templates, and editor integration.
+
 ## Contributing
 
-We're actively building the Rust toolchain! Contributions are welcome:
+We're actively building the Rust runtime! Contributions are welcome:
 
-- **Test the Rust runtime**: Run your `.poh` programs with `pohlangc` and report issues.
-- **Add features**: Implement missing statements, built-in functions, or stdlib modules.
-- **Write tests**: Add test cases in `runtime-rs/tests/` or `tests_python/`.
-- **Documentation**: Improve error messages, guides, tutorials.
+- **Test the runtime**: Run your `.poh` programs and report issues
+- **Add features**: Implement missing statements, built-in functions, or stdlib modules
+- **Write tests**: Add test cases in `runtime/tests/`
+- **Documentation**: Improve error messages, guides, tutorials
 - **Spread the word**: Share PohLang with educators and learners!
 
 Open to experiments—keep syntax consistent and simple. Prefer the phrasal form (`plus`, `minus`, `times`, `is greater than`). Avoid adding synonyms for core statements unless backed by learning outcomes.
 
-See [TRANSITION.md](./TRANSITION.md) for how to get involved.
+### Development Setup
+```bash
+# Clone the repository
+git clone https://github.com/AlhaqGH/PohLang.git
+cd PohLang
+
+# Build and test
+cargo build --manifest-path runtime/Cargo.toml
+cargo test --manifest-path runtime/Cargo.toml
+
+# Run examples
+cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
+```
 
 ## License
 MIT

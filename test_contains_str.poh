@@ -1,0 +1,4 @@
+Start Program
+Set txt to "hello"
+Write contains 'el' in txt
+End Program

@@ -1,0 +1,7 @@
+Start Program
+Write "Hello from PohLang!"
+Write "Testing the Rust runtime"
+Set x to 10 plus 5
+Write "10 plus 5 equals:"
+Write x
+End Program

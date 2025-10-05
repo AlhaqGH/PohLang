@@ -1,2 +1,4 @@
+Start Program
 // Example: if/otherwise greeting
 If 5 is greater than 3 Write "Hello" Otherwise Write "Bye"
+End Program

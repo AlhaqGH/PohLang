@@ -1,0 +1,85 @@
+Start Program
+
+Write "PohLang Operator Precedence Test Suite"
+Write "========================================"
+
+# Test 1: Multiplication before addition
+Write "Test 1: 10 plus 5 times 2"
+Set test1 to 10 plus 5 times 2
+Write test1
+Write "Expected: 20 (not 30)"
+
+# Test 2: Division before subtraction  
+Write "Test 2: 20 minus 10 divided by 2"
+Set test2 to 20 minus 10 divided by 2
+Write test2
+Write "Expected: 15 (not 5)"
+
+# Test 3: Parentheses override precedence
+Write "Test 3: (10 plus 5) times 2"
+Set test3 to (10 plus 5) times 2
+Write test3
+Write "Expected: 30"
+
+# Test 4: Multiple operations left-to-right
+Write "Test 4: 100 divided by 10 divided by 2"
+Set test4 to 100 divided by 10 divided by 2
+Write test4
+Write "Expected: 5"
+
+# Test 5: Mixed operations
+Write "Test 5: 10 plus 20 times 2 minus 5"
+Set test5 to 10 plus 20 times 2 minus 5
+Write test5
+Write "Expected: 45"
+
+# Test 6: Comparison after arithmetic
+If 5 plus 3 is greater than 6
+    Write "Test 6: 5 plus 3 is greater than 6 = True"
+End If
+
+# Test 7: Logical AND before OR
+Set a to True
+Set b to False  
+Set c to True
+If b Or a And c
+    Write "Test 7: False Or (True And True) = True"
+End If
+
+# Test 8: NOT before AND
+If Not b And a
+    Write "Test 8: (Not False) And True = True"
+End If
+
+# Test 9: Comparison before AND
+Set x to 10
+Set y to 5
+If x is greater than 8 And y is less than 10
+    Write "Test 9: (10 > 8) And (5 < 10) = True"
+End If
+
+# Test 10: Phrasal expressions in arithmetic
+Set nums to [1, 2, 3]
+Set test10 to count of nums times 10
+Write "Test 10: count of [1,2,3] times 10"
+Write test10
+Write "Expected: 30"
+
+# Test 11: Nested phrasal expressions
+Set text to "hello world"
+Set test11 to count of make uppercase text
+Write "Test 11: count of make uppercase text"
+Write test11
+Write "Expected: 11"
+
+# Test 12: Indexing has highest precedence
+Set items to [10, 20, 30]
+Set test12 to items[1] plus 5
+Write "Test 12: items[1] plus 5"
+Write test12
+Write "Expected: 25"
+
+Write "========================================"
+Write "All precedence tests completed!"
+
+End Program

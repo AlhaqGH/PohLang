@@ -1,0 +1,618 @@
+# PohLang Grammar & Syntax Roadmap (Phases 1 – 3)
+
+This document captures the canonical syntax for the first three phases of the
+PohLang language. Phase 1 reflects what is currently implemented in the Rust
+runtime; Phase 2 and Phase 3 describe the upcoming extensions so engineers have
+a single reference while building and reviewing features.
+
+If you are contributing parser or runtime changes, read the Phase 1 section
+carefully and treat the Phase 2/3 sections as the authoritative source for the
+next milestones.
+
+---
+
+## Phase Overview
+
+| Phase | Timeline | Focus |
+| ----- | -------- | ----- |
+| 1     | ✅ 2025  | Core statements, functions, modern collections, Start/End wrapper |
+| 2     | Q1 2026  | Standard-library modules (`Import system "…"`), richer built‑ins |
+| 3     | Q2 2026  | Bytecode toolchain, in-language compile directives |
+
+---
+
+## Phase 1 — Canonical Grammar (Implemented)
+
+### Program Skeleton
+
+```poh
+Start Program
+        <statements>
+End Program
+```
+
+`Start Program`/`End Program` are mandatory wrappers (parser enforces them).
+
+### Statement Summary
+
+| Category        | Canonical Forms |
+| --------------- | --------------- |
+| Output          | `Write <expression>` |
+| Input           | `Ask for <name> [expect <Type>] [with "Prompt"]` |
+| Assignment      | `Set <name> to <expression>` |
+| Mutation sugar  | `Increase <name> [by <expression>]`, `Decrease <name> [by <expression>]` |
+| Collections     | List / dict literals (`[1, 2]`, `{key: value}`) and indexing (`value[0]`) |
+| Flow control    | `If … Otherwise … End`, `While … End`, `Repeat <n> times … End` |
+| Functions       | Inline `Make name with params Write <expr>` and block `Make name with params … End` |
+| Calls           | `Use name with arg [and arg…]`, expression calls `name(arg, …)` |
+| Imports         | `Import "path.poh"`, `Import system "module"` |
+| Misc            | `Return <expression>` inside function bodies |
+
+### Tokens
+
+```
+digit       = "0" .. "9" ;
+letter      = ? any ASCII letter ? ;
+integer     = digit , { digit } ;
+number      = integer ;                     // Phase 1 supports integers only
+identifier  = letter , { letter | digit | "_" } ;
+string      = '"' , { any-char-except '"' } , '"' ;
+newline     = %x0A | %x0D %x0A ;
+ws          = " " | '\t' ;
+ws1         = ws , { ws } ;                 // at least one space or tab
+ws*         = { ws } ;                     // helper shorthand: zero or more spaces/tabs
+separator   = newline , { ws | newline } | ";" ;
+
+// Helper rules
+argument-sep = ws1 , "and" , ws1 ;
+
+type-name   = "Number" | "String" ;
+```
+
+### Phase 1 EBNF
+
+```
+program        = opt-bom , program-header , { statement , separator } , program-footer ;
+opt-bom        = /* optional UTF‑8 BOM handled by loader */ ;
+program-header = "Start Program" , separator ;
+program-footer = "End Program" ;
+
+statement =
+            write-stmt
+        | set-stmt
+        | ask-stmt
+        | inc-dec-stmt
+        | import-stmt
+        | system-import-stmt
+        | if-stmt
+        | while-stmt
+        | repeat-stmt
+        | make-inline-stmt
+        | make-block-stmt
+        | use-stmt
+        | return-stmt
+        | expr-stmt
+        ;
+
+write-stmt     = "Write" , ws1 , expression ;
+set-stmt       = "Set" , ws1 , identifier , ws1 , "to" , ws1 , expression ;
+
+ask-stmt = "Ask for" , ws1 , identifier , [ ws1 , ask-tail ] , [ ws1 , ask-tail ] ;
+ask-tail = ( "expect" , ws1 , type-name ) | ( "with" , ws1 , string ) ;
+
+inc-dec-stmt =
+            "Increase" , ws1 , identifier , [ ws1 , "by" , ws1 , expression ]
+        | "Decrease" , ws1 , identifier , [ ws1 , "by" , ws1 , expression ]
+        ;
+
+import-stmt        = "Import" , ws1 , string ;
+system-import-stmt = "Import system" , ws1 , string ;
+
+if-stmt =
+        "If" , ws1 , condition , separator ,
+                { statement , separator }
+        , [ "Otherwise" , separator , { statement , separator } ]
+        , "End If"
+        ;
+
+while-stmt =
+        "While" , ws1 , condition , separator ,
+                { statement , separator }
+        , "End While"
+        ;
+
+repeat-stmt =
+        "Repeat" , ws1 , expression , ws1 , "times" , separator ,
+                { statement , separator }
+        , "End Repeat"
+        ;
+
+make-inline-stmt =
+        "Make" , ws1 , identifier , ws1 , "with" , ws1 , param-header , ws1 ,
+        "Write" , ws1 , expression ;
+
+make-block-stmt =
+        "Make" , ws1 , identifier , ws1 , "with" , ws1 , param-header , separator ,
+                { statement , separator }
+        , "End"
+        ;
+
+param-header =
+    param-entry , { "," , ws* , param-entry }
+        | /* empty → "Make name with" allowed but discouraged */
+        ;
+
+param-entry = identifier , [ ws1 , "set to" , ws1 , expression ] ;
+
+use-stmt =
+        "Use" , ws1 , identifier , [ ws1 , "with" , ws1 , call-args-phrase ] ;
+
+call-args-phrase = expression , { argument-sep , expression } ;
+
+return-stmt = "Return" , ws1 , expression ;
+
+expr-stmt = call-expression ;
+
+condition = expression ;
+
+expression   = logical-or ;
+logical-or   = logical-and , { ws1 , "Or" , ws1 , logical-and } ;
+logical-and  = logical-not , { ws1 , "And" , ws1 , logical-not } ;
+logical-not  = [ "Not" , ws1 ] , comparison ;
+comparison   = additive , { ws1 , comparator , ws1 , additive } ;
+comparator   =
+            "is equal to"
+        | "is not equal to"
+        | "is less than"
+        | "is greater than"
+        | "is at most"
+        | "is at least"
+        ;
+
+additive        = multiplicative , { ws1 , ( "plus" | "minus" ) , ws1 , multiplicative } ;
+multiplicative  = unary , { ws1 , ( "times" | "divided by" ) , ws1 , unary } ;
+
+unary =
+            postfix
+        | ( "-" | "+" ) , ws* , postfix
+        ;
+
+postfix = primary , { index-access | call-suffix } ;
+
+index-access = ws* , "[" , expression , "]" ;
+call-suffix  = ws* , "(" , [ argument-list ] , ")" ;
+
+argument-list = expression , { "," , ws* , expression } ;
+
+primary =
+            number
+        | string
+        | list-literal
+        | dict-literal
+        | identifier
+        | "(" , expression , ")"
+        ;
+
+list-literal = "[" , [ expression , { "," , ws* , expression } ] , "]" ;
+dict-literal = "{" , [ dict-pair , { "," , ws* , dict-pair } ] , "}" ;
+dict-pair    = ( identifier | string ) , ws* , ":" , ws* , expression ;
+```
+
+### Notes & Edge Cases
+
+- `Repeat` accepts any numeric expression (evaluated at runtime).
+- Negative indexing (`list[-1]`) is handled during VM execution.
+- Inline `Make` returns the last expression implicitly; block forms use `Return`.
+- Imports are idempotent; the runtime caches modules per absolute path.
+
+---
+
+## Phase 2 — Standard Library & Module Grammar (Planned)
+
+Phase 2 focuses on extending the import system and standard library while
+preserving Phase 1 syntax. Parser updates required:
+
+### New Grammar Additions
+
+```
+system-import-stmt =
+        "Import system" , ws1 , string ,
+                [ ws1 , "as" , ws1 , identifier ] ,
+                [ ws1 , "exposing" , ws1 , exposure-list ]
+        ;
+
+exposure-list = identifier , { "," , ws* , identifier } ;
+
+qualified-identifier = identifier , { "::" , identifier } ;
+
+call-expression = qualified-identifier , "(" , [ argument-list ] , ")" ;
+```
+
+- Module-qualified names (e.g. `collections::head(list)`) become legal
+    expressions. The runtime resolves the module namespace created by `Import
+    system`.
+- Selective exports (`exposing`) enable tree-shaking by importing only the
+    listed symbols into the current scope.
+
+### Module Inventory (Informational)
+
+| Module      | Highlights |
+| ----------- | ---------- |
+| `collections` | `head`, `tail`, `map`, `filter`, `reduce`, mutable helpers |
+| `random`      | `rand_int(min, max)`, `rand_float()`, `choice(list)` |
+| `datetime`    | `now_iso()`, `today_hijri()`, `format(date, pattern)` |
+| `math`        | `abs`, `sqrt`, `pow`, `sin`, `cos` |
+| `file`        | `read_text(path)`, `write_text(path, data)` |
+| `process`     | `run(cmd, args)`, `exit(code)` |
+| `islamic`     | `prayer_times(city)`, `qibla(direction)` |
+
+> Parser impact: no new statement forms beyond the aliased system import and
+> double-colon qualified identifiers. All other additions are runtime-level.
+
+### Validation Requirements
+
+- Reject duplicate aliases (two modules using the same `as` identifier).
+- Emit a friendly error if a module symbol is called without being exposed or
+    qualified.
+- Maintain backward compatibility: unqualified calls (e.g. `join(nums, ",")`)
+    still work when the module exposes `join` globally.
+
+---
+
+## Phase 3 — Bytecode & Compilation Grammar (Planned)
+
+Phase 3 introduces in-language directives for bytecode workflows to complement
+the CLI flags. These statements are **no-ops in Phase 1 & 2** and should be
+gated behind a feature flag until the bytecode backend lands.
+
+### New Statements
+
+```
+compile-stmt = "Compile to" , ws1 , string , [ ws1 , "with" , ws1 , compile-options ] ;
+compile-options = option-entry , { "," , ws* , option-entry } ;
+option-entry = "debug" | "optimize" | ( "entry" , ws1 , identifier ) ;
+
+emit-bytecode-stmt = "Emit bytecode to" , ws1 , string ;
+
+load-bytecode-stmt = "Load bytecode" , ws1 , string ;
+
+statement = ... | compile-stmt | emit-bytecode-stmt | load-bytecode-stmt ;
+```
+
+- `Compile to "app.pbc"` schedules the program for compilation at runtime.
+- `Emit bytecode to "app.pbc"` flushes the current compiled artifact.
+- `Load bytecode "lib.pbc"` imports a precompiled chunk (maps to
+    `pohlang --run-bytecode`).
+
+### Semantic Expectations
+
+- The directives may appear only at the top level. Parser should raise an error
+    if they are nested in blocks.
+- Placeholders for options (`debug`, `optimize`, `entry`) are defined now so we
+    can reserve keywords and avoid breaking changes later.
+- When the bytecode VM is not available, the runtime should emit a descriptive
+    runtime error rather than panic.
+
+---
+
+## Change Log for Implementers
+
+- **2025‑10‑05**: Synchronized grammar with the Rust runtime, added Phase 2 and
+    Phase 3 roadmaps.
+- Earlier revisions are archived under `spec/old-syntax.md`.
+
+---
+
+Questions? Ping the language steering channel or open a docs issue so we keep
+the spec and implementation in lockstep.
+
+# PohLang Phase 1 **Formal Grammar (EBNF)** (for parser and compiler implementers).
+
+---
+
+## ✅ Vocabulary (Phase 1 Canonical)
+
+### Core Statements
+
+#### **Write**
+
+```poh
+Write <expression>
+```
+
+➡ Prints the value of an expression.
+Example:
+
+```poh
+Write "Hello World"
+Write x plus 5
+```
+
+#### **Set**
+
+```poh
+Set <var> to <expression>
+```
+
+➡ Assigns a value to a variable.
+Example:
+
+```poh
+Set x to 10
+Set name to "Alice"
+```
+
+#### **Ask for**
+
+```poh
+Ask for <var>
+Ask for <var> expect Number
+Ask for <var> with "Enter text:"
+```
+
+➡ Reads input from the user.
+Examples:
+
+```poh
+Ask for age expect Number
+Ask for name with "Enter your name:"
+```
+
+#### **Increase / Decrease**
+
+```poh
+Increase <var> by <expression>
+Decrease <var> by <expression>
+```
+
+➡ Shortcut for arithmetic updates.
+Examples:
+
+```poh
+Increase count by 1
+Decrease score by 5
+```
+
+#### **Math Operators**
+
+```
+plus       → +
+minus      → -
+times      → *
+divided by → /
+```
+
+➡ Only these 4 are allowed in Phase 1.
+Example:
+
+```poh
+Set total to 10 plus 20
+Set result to total divided by 2
+```
+
+---
+
+### Control Flow
+
+#### **If Block**
+
+```poh
+If <condition>
+    <statements>
+End If
+```
+
+With Else:
+
+```poh
+If <condition>
+    <statements>
+Else
+    <statements>
+End If
+```
+
+#### **While Loop**
+
+```poh
+While <condition>
+    <statements>
+End While
+```
+
+#### **Repeat Loop**
+
+```poh
+Repeat <expression> times
+    <statements>
+End Repeat
+```
+
+➡ The count expression must evaluate to a number.
+
+---
+
+### Functions
+
+#### **Block Function**
+
+```poh
+Function <name>(<params>)
+    <statements>
+    Return <expression>
+End Function
+```
+
+➡ Call with:
+
+```poh
+<name>(args...)
+```
+
+Examples:
+
+```poh
+Function greet(name)
+    Write "Hello " plus name
+End Function
+
+Write greet("Alice")
+
+Function square(x)
+    Return x times x
+End Function
+
+Write square(4)
+```
+
+---
+
+### Program Structure
+
+```poh
+Start Program
+    <statements>
+End Program
+```
+
+Example:
+
+```poh
+Start Program
+    Set count to 1
+    Repeat 5 times
+        Write "Loop " plus count
+        Increase count by 1
+    End Repeat
+End Program
+```
+
+---
+
+### 🚫 Not Allowed in Phase 1
+
+* No inline/anonymous functions.
+* No closures.
+* No lists, maps, or advanced collections.
+* No `Try / Catch`.
+* No synonyms (`print`, `display`, `output` → only `Write`).
+
+---
+
+## 🛠️ Formal Grammar (EBNF)
+/* PohLang Phase 1 — Formal Grammar (EBNF)
+   Authoritative Phase 1 syntax for parser implementation
+   Notes:
+   - Statements separated by newlines or semicolon ;
+   - Blocks use explicit terminators: End If, End While, End Repeat, End Function, End Program
+   - Keywords are canonical phrasal forms (case-insensitive)
+   - Fully phrasal comparisons and control flow
+*/
+
+########################
+# 1. Lexical tokens
+########################
+digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+integer     = digit , { digit } ;
+identifier  = letter , { letter | digit | "_" } ;
+letter      = ? any ASCII letter ? ;
+string      = '"' , { any-character-except-quote } , '"' ;
+newline     = %x0A | %x0D %x0A ;   /* LF or CRLF */
+ws          = ( " " | "\t" | newline ) ;
+sep         = ws | ";" ;            /* statement separator */
+
+########################
+# 2. Literals
+########################
+NumberLiteral = integer ;
+StringLiteral = string ;
+
+########################
+# 3. Program structure
+########################
+program        = opt-bom , program-header , { statement , separator } , program-footer ;
+program-header = "Start Program" , separator ;
+program-footer = "End Program" ;
+separator      = ( newline , { ws } ) | ";" ;
+opt-bom        = /* optional BOM handled by lexer */ ;
+
+########################
+# 4. Top-level statements
+########################
+statement
+    = write-stmt
+    | set-stmt
+    | ask-stmt
+    | inc-dec-stmt
+    | if-stmt
+    | while-stmt
+    | repeat-stmt
+    | function-def
+    | function-call-stmt
+    | return-stmt
+    ;
+
+write-stmt   = "Write" , ws1 , expression ;
+set-stmt     = "Set" , ws1 , identifier , ws1 , "to" , ws1 , expression ;
+ask-stmt     = "Ask for" , ws1 , identifier , [ ws1 , ask-constraints ] ;
+ask-constraints = ( "expect" , ws1 , type-name ) | ( "with" , ws1 , StringLiteral ) ;
+inc-dec-stmt = ( "Increase" , ws1 , identifier , [ ws1 , "by" , ws1 , expression ] )
+             | ( "Decrease" , ws1 , identifier , [ ws1 , "by" , ws1 , expression ] ) ;
+function-call-stmt = function-call ;
+function-call = identifier , "(" , [ argument-list ] , ")" ;
+argument-list = expression , { "," , ws* , expression } ;
+return-stmt  = "Return" , ws1 , expression ;
+
+########################
+# 5. Control flow
+########################
+if-stmt
+    = "If" , ws1 , condition , separator
+      , { statement , separator }
+      , [ "Otherwise" , separator , { statement , separator } ]
+      , "End If"
+    ;
+
+while-stmt
+    = "While" , ws1 , condition , separator
+      , { statement , separator }
+      , "End While"
+    ;
+
+repeat-stmt
+    = "Repeat" , ws1 , NumberLiteral , ws1 , "times" , separator
+      , { statement , separator }
+      , "End Repeat"
+    ;
+
+########################
+# 6. Functions
+########################
+function-def
+    = "Function" , ws1 , identifier , "(" , [ param-list ] , ")" , separator
+      , { statement , separator }
+      , "End Function"
+    ;
+
+param-list = identifier , { "," , ws* , identifier } ;
+
+########################
+# 7. Expressions & operators
+########################
+expression   = equality ;
+equality     = comparison , { ( ws1 , ("is equal to" | "is not equal to") , ws1 ) , comparison } ;
+comparison   = additive , { ( ws1 , ("is less than" | "is greater than" | "is at most" | "is at least") , ws1 ) , additive } ;
+additive     = multiplicative , { ( ws1 , ("plus" | "minus") , ws1 ) , multiplicative } ;
+multiplicative = primary , { ( ws1 , ("times" | "divided by") , ws1 ) , primary } ;
+
+primary
+    = NumberLiteral
+    | StringLiteral
+    | function-call
+    | identifier
+    | "(" , expression , ")"
+    ;
+
+condition = expression ;
+
+type-name = "Number" | "String" ;

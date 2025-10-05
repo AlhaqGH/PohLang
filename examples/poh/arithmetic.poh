@@ -1,3 +1,4 @@
+Start Program
 Write "Testing arithmetic operators:"
 Write ""
 
@@ -56,3 +57,4 @@ Set counter to 100
 Write counter
 Decrease counter by y
 Write counter
+End Program
