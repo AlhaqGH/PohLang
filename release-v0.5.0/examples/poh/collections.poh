@@ -1,0 +1,57 @@
+Start Program
+Write "=== Modern List Syntax ==="
+
+Set numbers to [1, 2, 3, 4, 5]
+Write numbers
+
+Set empty to []
+Write empty
+
+Set mixed to ["hello", 42, "world", 100]
+Write mixed
+
+Set matrix to [[1, 2], [3, 4]]
+Write matrix
+
+Write ""
+Write "=== Modern Dictionary Syntax ==="
+
+Set person to {name: "Alice", age: 30}
+Write person
+
+Set empty_dict to {}
+Write empty_dict
+
+Set config to {"host": "localhost", "port": 8080}
+Write config
+
+Set data to {id: 123, "full_name": "Bob Smith", active: True}
+Write data
+
+Write ""
+Write "=== Legacy List Syntax (still supported) ==="
+
+Set old_style_list to List contains 10, 20, 30
+Write old_style_list
+
+Write ""
+Write "=== Legacy Dictionary Syntax (still supported) ==="
+
+Set old_style_dict to Dictionary contains "x" set to 5, "y" set to 10
+Write old_style_dict
+
+Write ""
+Write "=== Collections in Expressions ==="
+
+Set nums to [10, 20, 30]
+Write nums
+
+Set calculated to [5 plus 5, 10 times 2, 30 divided by 3]
+Write calculated
+
+Set math to {sum: 10 plus 5, product: 10 times 5}
+Write math
+
+Write ""
+Write "Done! Both modern and legacy syntax work."
+End Program

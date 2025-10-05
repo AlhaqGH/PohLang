@@ -1,0 +1,5 @@
+Start Program
+Write "What is your name?"
+Ask for name
+Write "Hello " plus name
+End Program

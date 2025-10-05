@@ -1,0 +1,40 @@
+Start Program
+# Collection phrasal built-in functions
+
+# first in - gets first element
+Set numbers to Make a list of 1, 2, 3, 4, 5
+Write "List: " plus numbers
+Write "First element: " plus first in numbers
+
+# last in - gets last element
+Write "Last element: " plus last in numbers
+
+# reverse of - reverses list or string
+Write "Reversed list: " plus reverse of numbers
+
+# String operations
+Set word to "PohLang"
+Write ""
+Write "Word: " plus word
+Write "First char: " plus first in word
+Write "Last char: " plus last in word
+Write "Reversed: " plus reverse of word
+
+# Combined with other operations
+Set fruits to Make a list of "apple", "banana", "cherry"
+Write ""
+Write "Fruits: " plus fruits
+Write "First: " plus first in fruits
+Write "Last: " plus last in fruits
+Write "Reversed: " plus reverse of fruits
+Write "First uppercase: " plus make uppercase first in fruits
+Write "Last uppercase: " plus make uppercase last in fruits
+
+# Length with new functions
+Write ""
+Write "Length of numbers: " plus length(numbers)
+Set first_num to first in numbers
+Set last_num to last in numbers
+Set sum_result to first_num plus last_num
+Write "First + last: " plus first_num plus " + " plus last_num plus " = " plus sum_result
+End Program

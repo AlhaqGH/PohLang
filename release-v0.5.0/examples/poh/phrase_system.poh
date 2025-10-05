@@ -1,0 +1,8 @@
+Start Program
+// Example: system phrases
+Write file "temp.txt" with "Hello File"
+Open file "temp.txt"
+Write file "temp.txt" with "!"  # overwrite
+Append file "temp.txt" with "++"
+List files in "."
+End Program

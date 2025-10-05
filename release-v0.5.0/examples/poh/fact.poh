@@ -1,0 +1,9 @@
+Start Program
+Make fact with n
+    If n is 0
+        Return 1
+    End
+    Return n times fact(n minus 1)
+End
+Write fact(6)
+End Program

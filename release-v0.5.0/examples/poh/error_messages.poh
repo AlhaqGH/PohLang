@@ -1,0 +1,36 @@
+Start Program
+Write "=== PohLang Enhanced Error Messages Demo ==="
+Write ""
+
+Write "This file demonstrates the improved error messages."
+Write "Each section shows a common error with a helpful hint."
+Write ""
+
+Write "Example 1: Out of bounds array access"
+Write "Try: Set nums to [1, 2, 3]"
+Write "     Write nums[10]"
+Write "Error: List index out of range: 10 (list length: 3)"
+Write "Hint: Check array bounds. Use negative indexing (-1) for last element"
+Write ""
+
+Write "Example 2: Missing dictionary key"
+Write "Try: Set data to {x: 1, y: 2}"
+Write "     Write data[\"z\"]"
+Write "Error: Key not found in dictionary: \"z\""
+Write "Hint: Verify the key exists in the dictionary or check for typos"
+Write ""
+
+Write "Example 3: Unsupported statement"
+Write "Try: Print \"hello\""
+Write "Error: Unsupported statement"
+Write "Hint: Valid statements: Write, Set, Ask for, If, Repeat, While, Make, Use, Import"
+Write ""
+
+Write "Example 4: Invalid expression"
+Write "Try: Set x to [1, 2, 3"
+Write "Error: Could not parse expression"
+Write "Hint: Check for unmatched brackets [], braces {}, or parentheses ()"
+Write ""
+
+Write "These hints help developers quickly identify and fix issues!"
+End Program
