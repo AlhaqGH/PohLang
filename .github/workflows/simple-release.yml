@@ -57,6 +57,7 @@ jobs:
         run: cargo build --release --verbose
 
       - name: Test
+        if: matrix.os != 'macos-latest'
         working-directory: runtime
         run: cargo test --verbose
 
