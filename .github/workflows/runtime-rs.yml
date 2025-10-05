@@ -32,7 +32,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build
-        run: cargo build --manifest-path runtime-rs/Cargo.toml --verbose
+        run: cargo build --manifest-path runtime/Cargo.toml --verbose
 
       - name: Test
-        run: cargo test --manifest-path runtime-rs/Cargo.toml --verbose
+        run: cargo test --manifest-path runtime/Cargo.toml --verbose
