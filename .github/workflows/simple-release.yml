@@ -1,0 +1,62 @@
+name: Simple Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.5.2)'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    name: Build and Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: pohlang
+            asset: pohlang-v${{ github.event.inputs.tag }}-linux-x64.tar.gz
+          - os: windows-latest
+            binary: pohlang.exe
+            asset: pohlang-v${{ github.event.inputs.tag }}-windows-x64.zip
+          - os: macos-latest
+            binary: pohlang
+            asset: pohlang-v${{ github.event.inputs.tag }}-macos-x64.tar.gz
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        working-directory: runtime
+        run: cargo build --release --verbose
+
+      - name: Test
+        working-directory: runtime
+        run: cargo test --verbose
+
+      - name: Package Linux/macOS
+        if: matrix.os != 'windows-latest'
+        working-directory: runtime
+        run: |
+          tar czf ../${{ matrix.asset }} -C target/release ${{ matrix.binary }}
+
+      - name: Package Windows
+        if: matrix.os == 'windows-latest'
+        working-directory: runtime
+        run: |
+          Compress-Archive -Path target/release/${{ matrix.binary }} -DestinationPath ../${{ matrix.asset }}
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          files: ${{ matrix.asset }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
