@@ -656,12 +656,18 @@ fn parse_cmp(s: &str) -> Result<Expr> {
         (" not equals ", CmpOp::Ne),
         (" Equals ", CmpOp::Eq),
         (" equals ", CmpOp::Eq),
-        // Basic "is" (shortest, check last)
+        // Basic "is" (check before symbolic to prefer phrasal)
         (" is not ", CmpOp::Ne),
         (" Is Not ", CmpOp::Ne),
         (" is ", CmpOp::Eq),
         (" Is ", CmpOp::Eq),
-        // Symbol form
+        // Symbolic operators (check after phrasal forms)
+        (" >= ", CmpOp::Ge),
+        (" <= ", CmpOp::Le),
+        (" != ", CmpOp::Ne),
+        (" == ", CmpOp::Eq),
+        (" > ", CmpOp::Gt),
+        (" < ", CmpOp::Lt),
         (" = ", CmpOp::Eq),
     ];
     for (pat, op) in cmps.iter() {
@@ -676,12 +682,14 @@ fn parse_cmp(s: &str) -> Result<Expr> {
 
 fn parse_add(s: &str) -> Result<Expr> {
     // Handle addition and subtraction (left-to-right)
+    // Support both phrasal (plus/minus) and symbolic (+/-)
     let plus_parts = split_top_level(s, " plus ");
     let minus_parts = split_top_level(s, " minus ");
+    let sym_plus_parts = split_top_level(s, " + ");
+    let sym_minus_parts = split_top_level(s, " - ");
 
-    // If we have both operators, we need to handle them in order
-    // For simplicity, we'll process left-to-right by finding the first occurrence
-    if plus_parts.len() > 1 || minus_parts.len() > 1 {
+    // If we have any operators, process them in order
+    if plus_parts.len() > 1 || minus_parts.len() > 1 || sym_plus_parts.len() > 1 || sym_minus_parts.len() > 1 {
         // Find which operator comes first
         let mut tokens: Vec<(usize, bool, String)> = Vec::new(); // (position, is_plus, text)
         let mut pos = 0;
@@ -699,19 +707,20 @@ fn parse_add(s: &str) -> Result<Expr> {
                 continue;
             }
             if !in_str {
-                if bytes[i] == b'(' {
+                if bytes[i] == b'(' || bytes[i] == b'[' || bytes[i] == b'{' {
                     depth += 1;
-                    buf.push('(');
+                    buf.push(bytes[i] as char);
                     i += 1;
                     continue;
                 }
-                if bytes[i] == b')' {
+                if bytes[i] == b')' || bytes[i] == b']' || bytes[i] == b'}' {
                     depth -= 1;
-                    buf.push(')');
+                    buf.push(bytes[i] as char);
                     i += 1;
                     continue;
                 }
                 if depth == 0 {
+                    // Check phrasal operators first (longer patterns)
                     if s[i..].starts_with(" plus ") {
                         if !buf.trim().is_empty() {
                             tokens.push((pos, true, buf.trim().to_string()));
@@ -727,6 +736,25 @@ fn parse_add(s: &str) -> Result<Expr> {
                         }
                         buf.clear();
                         i += " minus ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                    // Check symbolic operators
+                    if s[i..].starts_with(" + ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, true, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " + ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                    if s[i..].starts_with(" - ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, false, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " - ".len();
                         pos = tokens.len();
                         continue;
                     }
@@ -759,10 +787,15 @@ fn parse_add(s: &str) -> Result<Expr> {
 
 fn parse_mult(s: &str) -> Result<Expr> {
     // Handle multiplication and division (left-to-right, higher precedence than +/-)
+    // Support both phrasal (times/divided by) and symbolic (*/)
     let times_parts = split_top_level(s, " times ");
     let div_parts = split_top_level(s, " divided by ");
+    let sym_mult_parts = split_top_level(s, " * ");
+    let sym_div_parts = split_top_level(s, " / ");
 
-    if times_parts.len() > 1 || div_parts.len() > 1 {
+    if times_parts.len() > 1 || div_parts.len() > 1
+        || sym_mult_parts.len() > 1 || sym_div_parts.len() > 1
+    {
         // Find which operator comes first
         let mut tokens: Vec<(usize, bool, String)> = Vec::new(); // (position, is_times, text)
         let mut pos = 0;
@@ -780,19 +813,29 @@ fn parse_mult(s: &str) -> Result<Expr> {
                 continue;
             }
             if !in_str {
-                if bytes[i] == b'(' {
+                if bytes[i] == b'(' || bytes[i] == b'[' || bytes[i] == b'{' {
                     depth += 1;
-                    buf.push('(');
+                    buf.push(bytes[i] as char);
                     i += 1;
                     continue;
                 }
-                if bytes[i] == b')' {
+                if bytes[i] == b')' || bytes[i] == b']' || bytes[i] == b'}' {
                     depth -= 1;
-                    buf.push(')');
+                    buf.push(bytes[i] as char);
                     i += 1;
                     continue;
                 }
                 if depth == 0 {
+                    // Check phrasal operators first (longer patterns)
+                    if s[i..].starts_with(" divided by ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, false, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " divided by ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
                     if s[i..].starts_with(" times ") {
                         if !buf.trim().is_empty() {
                             tokens.push((pos, true, buf.trim().to_string()));
@@ -802,12 +845,22 @@ fn parse_mult(s: &str) -> Result<Expr> {
                         pos = tokens.len();
                         continue;
                     }
-                    if s[i..].starts_with(" divided by ") {
+                    // Check symbolic operators
+                    if s[i..].starts_with(" * ") {
+                        if !buf.trim().is_empty() {
+                            tokens.push((pos, true, buf.trim().to_string()));
+                        }
+                        buf.clear();
+                        i += " * ".len();
+                        pos = tokens.len();
+                        continue;
+                    }
+                    if s[i..].starts_with(" / ") {
                         if !buf.trim().is_empty() {
                             tokens.push((pos, false, buf.trim().to_string()));
                         }
                         buf.clear();
-                        i += " divided by ".len();
+                        i += " / ".len();
                         pos = tokens.len();
                         continue;
                     }

@@ -49,11 +49,15 @@ It mirrors the grammar file and highlights how the lexicon grows in Phases 2 an
 
 | Category | Vocabulary |
 | -------- | ---------- |
-| Arithmetic | `plus`, `minus`, `times`, `divided by` |
-| Comparisons | `is equal to`, `is not equal to`, `is greater than`, `is less than`, `is at least`, `is at most` |
+| Arithmetic (Phrasal) | `plus`, `minus`, `times`, `divided by` |
+| Arithmetic (Symbolic) | `+`, `-`, `*`, `/` |
+| Comparisons (Phrasal) | `is equal to`, `is not equal to`, `is greater than`, `is less than`, `is at least`, `is at most` |
+| Comparisons (Symbolic) | `==`, `!=`, `>`, `<`, `>=`, `<=` |
 | Logic | `And`, `Or`, `Not` (case-insensitive) |
 | Collections | `[expr, ...]`, `{key: value, ...}` |
 | Indexing | `<expr>[index]` with optional negatives |
+
+**Note:** Both phrasal and symbolic forms are fully supported and can be mixed in the same program.
 
 ### Built-in Functions
 
@@ -267,23 +271,27 @@ This document captures the **official Phase 1 vocabulary** for PohLang. It is th
 
 ### Operators
 
-| Operator       | Phrase       | Notes                      |
-| -------------- | ------------ | -------------------------- |
-| Addition       | `plus`       | `Set x to 3 plus 2`        |
-| Subtraction    | `minus`      | `Set x to 5 minus 2`       |
-| Multiplication | `times`      | `Set x to 4 times 2`       |
-| Division       | `divided by` | `Set x to 10 divided by 2` |
+| Operator       | Phrasal Form | Symbolic Form | Notes                      |
+| -------------- | ------------ | ------------- | -------------------------- |
+| Addition       | `plus`       | `+`           | `Set x to 3 plus 2` or `Set x to 3 + 2` |
+| Subtraction    | `minus`      | `-`           | `Set x to 5 minus 2` or `Set x to 5 - 2` |
+| Multiplication | `times`      | `*`           | `Set x to 4 times 2` or `Set x to 4 * 2` |
+| Division       | `divided by` | `/`           | `Set x to 10 divided by 2` or `Set x to 10 / 2` |
+
+**Note:** Both phrasal and symbolic forms work identically. Mix them freely!
 
 ### Comparisons
 
-| Comparison            | Phrase            |
-| --------------------- | ----------------- |
-| Equal                 | `is equal to`     |
-| Not equal             | `is not equal to` |
-| Less than             | `is less than`    |
-| Greater than          | `is greater than` |
-| Less than or equal    | `is at most`      |
-| Greater than or equal | `is at least`     |
+| Comparison            | Phrasal Form      | Symbolic Form | Notes |
+| --------------------- | ----------------- | ------------- | ----- |
+| Equal                 | `is equal to`     | `==`          | Both forms: `If x is equal to 5` or `If x == 5` |
+| Not equal             | `is not equal to` | `!=`          | Both forms: `If x is not equal to 5` or `If x != 5` |
+| Less than             | `is less than`    | `<`           | Both forms: `If age is less than 18` or `If age < 18` |
+| Greater than          | `is greater than` | `>`           | Both forms: `If score is greater than 90` or `If score > 90` |
+| Less than or equal    | `is at most`      | `<=`          | Both forms: `If x is at most 10` or `If x <= 10` |
+| Greater than or equal | `is at least`     | `>=`          | Both forms: `If y is at least 5` or `If y >= 5` |
+
+**Note:** Symbolic operators like `>`, `<`, `>=`, `<=`, `==`, `!=` are fully supported alongside phrasal forms.
 
 ### Logical Connectors
 

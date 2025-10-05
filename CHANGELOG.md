@@ -5,6 +5,94 @@ All notable changes to PohLang will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-10-05 - Symbolic Operators Support
+
+### Overview
+Feature release adding support for symbolic operators alongside existing phrasal operators. PohLang now supports both natural English-like phrasal syntax AND traditional symbolic operators, giving users flexibility in writing style.
+
+### Added
+- **Symbolic Arithmetic Operators**: Full support for traditional mathematical symbols
+  - `+` (addition) works alongside `plus`
+  - `-` (subtraction) works alongside `minus`
+  - `*` (multiplication) works alongside `times`
+  - `/` (division) works alongside `divided by`
+
+- **Symbolic Comparison Operators**: Standard comparison symbols
+  - `>` (greater than) works alongside `is greater than`
+  - `<` (less than) works alongside `is less than`
+  - `>=` (greater or equal) works alongside `is greater than or equal to`
+  - `<=` (less or equal) works alongside `is less than or equal to`
+  - `==` (equal) works alongside `is equal to`
+  - `!=` (not equal) works alongside `is not equal to`
+
+### Features
+- **Both Forms Supported**: Phrasal and symbolic operators can be used interchangeably
+- **Mixed Expressions**: Combine both styles in the same program
+- **Proper Precedence**: Symbolic operators follow standard mathematical precedence
+- **Backward Compatible**: All existing phrasal programs continue to work
+
+### Examples
+
+**Arithmetic - Both Forms:**
+```pohlang
+# Phrasal form (original style)
+Set sum to a plus b
+Set product to a times b
+
+# Symbolic form (new style)
+Set sum to a + b
+Set product to a * b
+
+# Mixed form (both in same program)
+Set result to (a + b) times 2
+```
+
+**Comparisons - Both Forms:**
+```pohlang
+# Phrasal form (original style)
+If age is greater than 18
+    Write "Adult"
+End If
+
+# Symbolic form (new style)
+If age > 18
+    Write "Adult"
+End If
+
+# Mixed comparisons
+If score >= 90
+    Write "Excellent!"
+Otherwise If score > 75
+    Write "Good job!"
+End If
+```
+
+### Testing
+- ✅ All 50 tests passing (6 functions + 7 phrasals + 37 smoke tests)
+- ✅ `test_symbolic_simple.poh` - Symbolic operators verified
+- ✅ `test_both_forms.poh` - Both phrasal and symbolic forms working together
+- ✅ No regressions from v0.5.1
+
+### Technical Details
+- Parser updated to recognize symbolic operators in expressions
+- Operator precedence maintained: multiplication/division before addition/subtraction
+- Comparison operators properly integrated with control flow statements
+- Both operator forms compile to identical bytecode
+
+### Migration Notes
+- **No breaking changes** from v0.5.1
+- All existing phrasal programs work without modification
+- Symbolic operators are purely additive feature
+- Choose your preferred style or mix both freely
+
+### Design Philosophy
+PohLang now offers **flexibility without compromising clarity**:
+- **Beginners**: Use phrasal forms for maximum readability (`a plus b`)
+- **Experienced programmers**: Use symbolic forms for familiarity (`a + b`)
+- **Educational contexts**: Mix both to teach operator equivalence
+
+---
+
 ## [0.5.1] - 2025-10-05 - Parser Fix for Multi-line If Statements
 
 ### Overview

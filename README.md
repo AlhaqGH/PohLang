@@ -17,10 +17,11 @@ Think of it like:
 - **PLHub** is to **Cargo** (the development tooling)
 
 ## Release Information
-- **PohLang Rust Runtime**: v0.5.0 (**Phase 1 Complete** ✅)
+- **PohLang Rust Runtime**: v0.5.2 (**Phase 1 Complete** ✅)
 - **Core Language**: Phase 1 Production-Ready
 - **Test Coverage**: 50 passing tests (100% core features)
-- ⚠️ **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for v0.5.0 issues and workarounds
+- **New in v0.5.2**: Symbolic operators (+, -, *, /, >, <, ==, etc.) alongside phrasal forms
+- ⚠️ **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for issues and workarounds
 
 ## Goals
 - Use plain-language statements: `Write "Hello"`, `Set count to 5`, `Repeat 3 ... End`.
@@ -81,7 +82,11 @@ For a complete development environment with project management, package system, 
 - ✅ **Statements**: Write, Ask for, Set, Increase, Decrease, Return
 - ✅ **Control Flow**: If/Otherwise blocks, inline If, While loops, Repeat loops
 - ✅ **Functions**: Define with parameters, default values, closures, phrasal calls
-- ✅ **Operators**: Arithmetic (`plus`, `minus`, `times`, `divided by`), Comparisons (`is greater than`, `is less than`, `is equal to`), Logical (`And`, `Or`, `Not`)
+- ✅ **Operators**: 
+  - **Phrasal forms**: `plus`, `minus`, `times`, `divided by`, `is greater than`, `is less than`, `is equal to`
+  - **Symbolic forms**: `+`, `-`, `*`, `/`, `>`, `<`, `>=`, `<=`, `==`, `!=`
+  - **Both forms work!** Mix phrasal and symbolic operators freely
+- ✅ **Logical**: `And`, `Or`, `Not`
 - ✅ **Collections**: Lists `[1, 2, 3]`, Dictionaries `{key: value}`, Indexing with negative support
 - ✅ **Imports**: Local file imports, system module stubs
 

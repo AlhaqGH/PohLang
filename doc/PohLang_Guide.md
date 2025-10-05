@@ -1,6 +1,37 @@
 # PohLang Language Guide (September 2025)
 
-This is a step‑by‑step user manual for PohLang. It teaches absolute beginners and experienced developers how to write real programs with the current language and runtime. The language is phrasal (English‑like), avoids brackets and symbols in user code, and favors clarity. Equality uses the word form “is” and the symbol “=”; no other symbols are required in everyday code.
+This is a step‑by‑step user mEquality uses "is" (or "="). Tip: You do not need brackets in PohLang code. Prefer phrasal forms like "name with a, b" and "List contains …".
+
+**Operator Flexibility:** PohLang supports BOTH phrasal and symbolic operators:
+- **Phrasal forms** (`plus`, `is greater than`) are great for beginners and readability
+- **Symbolic forms** (`+`, `>`) are familiar to experienced programmers
+- **Mix both styles** freely in the same program - use what feels natural!
+
+---
+
+## 2. Conditions and loopsality uses "is not". Logical operators can be lowercase (and, or, not):
+
+Comparisons - phrasal forms OR symbolic operators:
+
+```
+# Phrasal forms (beginner-friendly)
+If name is "Ada" Write "Welcome"
+If age is greater than 18 Write "Adult"
+If score is less than 60 Write "Failed"
+If x is greater than or equal to 10 Write "Big"
+If y is not equal to 0 Write "Non-zero"
+
+# Symbolic forms (familiar to programmers)
+If age > 18 Write "Adult"
+If score < 60 Write "Failed"
+If x >= 10 Write "Big"
+If y != 0 Write "Non-zero"
+If count == 5 Write "Five"
+
+# Mixed styles work too!
+If ok and not (name is "Bob") Write "Proceed"
+If (a + b) > 10 Write "Large sum"
+```for PohLang. It teaches absolute beginners and experienced developers how to write real programs with the current language and runtime. The language is phrasal (English‑like), avoids brackets and symbols in user code, and favors clarity. Equality uses the word form “is” and the symbol “=”; no other symbols are required in everyday code.
 
 Table of contents
 - 1. First steps (Hello World → Variables → Expressions)
@@ -30,12 +61,26 @@ Set name to "Ada"
 Write "Hi " plus name
 ```
 
-Numbers and basic math use words, not symbols:
+Numbers and basic math - you can use phrasal forms OR symbolic operators:
 
 ```
 Set a to 2
 Set b to 3
-Write a plus b          # 5
+
+# Phrasal form (beginner-friendly)
+Write a plus b           # 5
+Write a minus b          # -1
+Write a times b          # 6
+Write a divided by b     # 0.666...
+
+# Symbolic form (familiar to programmers)
+Write a + b              # 5
+Write a - b              # -1
+Write a * b              # 6
+Write a / b              # 0.666...
+
+# You can mix both styles!
+Set result to (a + b) times 2
 ```
 
 Booleans and None:
