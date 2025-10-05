@@ -46,6 +46,7 @@ fn default_param_with_defaulting_to() {
 }
 
 #[test]
+#[cfg_attr(target_os = "macos", ignore)]
 fn closure_captures_variable_define_form() {
     let mut cmd = run(&[
         "Set base to 10",

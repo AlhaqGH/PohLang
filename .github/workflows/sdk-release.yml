@@ -1,0 +1,141 @@
+name: SDK Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.5.2)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-sdk:
+    name: Build SDK (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: pohlang
+            platform: linux-x64
+          - os: windows-latest
+            binary: pohlang.exe
+            platform: windows-x64
+          - os: macos-latest
+            binary: pohlang
+            platform: macos-x64
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract tag
+        id: tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        working-directory: runtime
+        run: cargo build --release --verbose
+
+      - name: Prepare SDK structure
+        shell: bash
+        run: |
+          SDK_DIR="pohlang-sdk-${{ steps.tag.outputs.tag }}-${{ matrix.platform }}"
+          mkdir -p "${SDK_DIR}"
+          mkdir -p "${SDK_DIR}/bin"
+          mkdir -p "${SDK_DIR}/examples"
+          mkdir -p "${SDK_DIR}/doc"
+          
+          # Copy binary
+          cp runtime/target/release/${{ matrix.binary }} "${SDK_DIR}/bin/"
+          
+          # Copy examples
+          cp -r examples/poh/* "${SDK_DIR}/examples/"
+          
+          # Copy documentation
+          cp doc/PohLang_Guide.md "${SDK_DIR}/doc/"
+          cp README.md "${SDK_DIR}/"
+          cp LICENSE "${SDK_DIR}/"
+          
+          # Create a quick start guide
+          cat > "${SDK_DIR}/QUICK_START.md" << 'EOF'
+          # PohLang SDK Quick Start
+          
+          ## Installation
+          
+          1. Extract this archive to your desired location
+          2. Add the `bin` directory to your PATH, or use the full path to the binary
+          
+          ## Running Examples
+          
+          ```bash
+          # Linux/macOS
+          ./bin/pohlang --run examples/hello.poh
+          
+          # Windows
+          bin\pohlang.exe --run examples\hello.poh
+          ```
+          
+          ## Documentation
+          
+          - See `doc/PohLang_Guide.md` for the complete language guide
+          - See `README.md` for project overview
+          - Explore `examples/` for code samples
+          
+          ## Your First Program
+          
+          Create a file `myprogram.poh`:
+          
+          ```
+          Start Program
+          Write "Hello from PohLang!"
+          End Program
+          ```
+          
+          Run it:
+          
+          ```bash
+          ./bin/pohlang --run myprogram.poh
+          ```
+          EOF
+          
+          echo "SDK_DIR=${SDK_DIR}" >> $GITHUB_ENV
+
+      - name: Package SDK Linux/macOS
+        if: matrix.os != 'windows-latest'
+        run: |
+          tar czf "${SDK_DIR}.tar.gz" "${SDK_DIR}"
+          echo "ASSET_NAME=${SDK_DIR}.tar.gz" >> $GITHUB_ENV
+
+      - name: Package SDK Windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $SdkDir = $env:SDK_DIR
+          $AssetName = "${SdkDir}.zip"
+          Compress-Archive -Path $SdkDir -DestinationPath $AssetName
+          echo "ASSET_NAME=${AssetName}" >> $env:GITHUB_ENV
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: ${{ env.ASSET_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

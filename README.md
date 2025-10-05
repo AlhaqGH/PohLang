@@ -2,8 +2,13 @@
 
 A beginner-focused, fully phrasal (English-like) programming language designed to be a **real compiled language**—not a script on top of another runtime. PohLang is built with a standalone Rust toolchain, aiming for native executables and full independence.
 
+[![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/pohlang.pohlang-hub?label=VS%20Code%20Extension&color=blue)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
+[![VS Code Installs](https://img.shields.io/visual-studio-marketplace/i/pohlang.pohlang-hub)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 📘 Full documentation: see the comprehensive guide at [PohLang_Guide.md](./PohLang_Guide.md).  
-🗺️ **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for detailed milestones.
+🗺️ **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for detailed milestones.  
+🔌 **VS Code Extension**: Get the full IDE experience with [PohLang Hub](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)!
 
 > **Note**: This repository contains the **core Rust runtime only**. For the complete development environment including CLI tools, package management, and editor integration, see [PLHub](https://github.com/AlhaqGH/PLHub).
 
@@ -43,12 +48,27 @@ Make greet with who Write "Hi " plus who
 Use greet with "Poh"
 ```
 
-## Running a Program
+## Quick Start
 
-### Prerequisites (Windows)
+### 🚀 Option 1: VS Code Extension (Easiest!)
+1. Install [VS Code](https://code.visualstudio.com/)
+2. Install [PohLang Hub extension](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
+3. Create a `.poh` file and start coding!
+4. Press `Ctrl+F5` to run your program
+
+**Features included:**
+- ✅ Syntax highlighting
+- ✅ IntelliSense & completions
+- ✅ 40+ code snippets
+- ✅ Integrated runtime (no separate installation!)
+- ✅ One-click execution
+
+### 🛠️ Option 2: Build from Source
+
+#### Prerequisites (Windows)
 Install Visual Studio Build Tools with C++ workload. See `runtime/README.md` for details.
 
-### Building the Runtime
+#### Building the Runtime
 ```bash
 # Build the Rust runtime
 cargo build --manifest-path runtime/Cargo.toml
@@ -57,7 +77,7 @@ cargo build --manifest-path runtime/Cargo.toml
 cargo build --release --manifest-path runtime/Cargo.toml
 ```
 
-### Running Programs
+#### Running Programs
 ```bash
 # Run a program directly (development)
 cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
@@ -69,7 +89,7 @@ cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
 ./target/release/pohlang --run examples/poh/hello.poh
 ```
 
-### Using PLHub (Recommended for Development)
+### 🔧 Option 3: Using PLHub (Advanced)
 For a complete development environment with project management, package system, and CLI tools:
 1. Install [PLHub](https://github.com/AlhaqGH/PLHub)
 2. Use: `plhub run examples/poh/hello.poh`
