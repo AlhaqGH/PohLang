@@ -6,9 +6,10 @@ A beginner-focused, fully phrasal (English-like) programming language designed t
 [![VS Code Installs](https://img.shields.io/visual-studio-marketplace/i/pohlang.pohlang-hub)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-📘 Full documentation: see the comprehensive guide at [PohLang_Guide.md](./PohLang_Guide.md).  
-🗺️ **Roadmap**: See [ROADMAP.md](./ROADMAP.md) for detailed milestones.  
-🔌 **VS Code Extension**: Get the full IDE experience with [PohLang Hub](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)!
+📘 Full documentation: see the comprehensive guide at [PohLang_Guide.md](./doc/PohLang_Guide.md).  
+🗺️ **Roadmap**: See [ROADMAP.md](./doc/ROADMAP.md) for detailed milestones.  
+🔌 **VS Code Extension**: Get the full IDE experience with [PohLang Hub](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)!  
+📦 **Installation**: See [INSTALL.md](./INSTALL.md) for one-line install commands!
 
 > **Note**: This repository contains the **core Rust runtime only**. For the complete development environment including CLI tools, package management, and editor integration, see [PLHub](https://github.com/AlhaqGH/PLHub).
 
@@ -50,7 +51,63 @@ Use greet with "Poh"
 
 ## Quick Start
 
-### 🚀 Option 1: VS Code Extension (Easiest!)
+### 🎯 Option 1: Download Pre-built Binary (Easiest - No Rust Needed!)
+
+**For End Users** - Just download and run! No installation of Rust, Visual Studio, or build tools required.
+
+#### Windows
+1. Download the latest release: [pohlang-v0.5.2-windows-x64.zip](https://github.com/AlhaqGH/PohLang/releases/latest)
+2. Extract the zip file
+3. Open PowerShell or Command Prompt in the extracted folder
+4. Run: `.\pohlang.exe --run examples\hello.poh`
+
+Or download the **SDK bundle** for a complete package with examples and documentation:
+- [pohlang-sdk-v0.5.2-windows-x64.zip](https://github.com/AlhaqGH/PohLang/releases/latest)
+
+#### Linux
+```bash
+# Download and extract
+wget https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-v0.5.2-linux-x64.tar.gz
+tar -xzf pohlang-v0.5.2-linux-x64.tar.gz
+
+# Run PohLang
+./pohlang --run examples/hello.poh
+
+# Optional: Add to PATH for system-wide access
+sudo mv pohlang /usr/local/bin/
+```
+
+SDK bundle: [pohlang-sdk-v0.5.2-linux-x64.tar.gz](https://github.com/AlhaqGH/PohLang/releases/latest)
+
+#### macOS
+```bash
+# Download and extract
+curl -L https://github.com/AlhaqGH/PohLang/releases/download/v0.5.2/pohlang-v0.5.2-macos-x64.tar.gz -o pohlang.tar.gz
+tar -xzf pohlang.tar.gz
+
+# Run PohLang
+./pohlang --run examples/hello.poh
+
+# Optional: Add to PATH
+sudo mv pohlang /usr/local/bin/
+```
+
+SDK bundle: [pohlang-sdk-v0.5.2-macos-x64.tar.gz](https://github.com/AlhaqGH/PohLang/releases/latest)
+
+**Creating Your First Program:**
+```bash
+# Create a file called hello.poh
+echo 'Start Program
+Write "Hello from PohLang!"
+Set count to 5
+Write "Count: " plus count
+End Program' > hello.poh
+
+# Run it
+pohlang --run hello.poh
+```
+
+### 🚀 Option 2: VS Code Extension (Best for Development)
 1. Install [VS Code](https://code.visualstudio.com/)
 2. Install [PohLang Hub extension](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
 3. Create a `.poh` file and start coding!
@@ -63,21 +120,35 @@ Use greet with "Poh"
 - ✅ Integrated runtime (no separate installation!)
 - ✅ One-click execution
 
-### 🛠️ Option 2: Build from Source
+### � Option 3: Using PLHub (Advanced)
+For a complete development environment with project management, package system, and CLI tools:
+1. Install [PLHub](https://github.com/AlhaqGH/PLHub)
+2. Use: `plhub run examples/poh/hello.poh`
 
-#### Prerequisites (Windows)
-Install Visual Studio Build Tools with C++ workload. See `runtime/README.md` for details.
+---
 
-#### Building the Runtime
+## For Developers: Building from Source
+
+**⚠️ Note**: Building from source requires Rust toolchain. End users should use pre-built binaries above.
+
+### Prerequisites
+- Rust toolchain (install from [rustup.rs](https://rustup.rs/))
+- On Windows: Visual Studio Build Tools with C++ workload (see `runtime/README.md`)
+
+### Building
 ```bash
-# Build the Rust runtime
+# Clone the repository
+git clone https://github.com/AlhaqGH/PohLang.git
+cd PohLang
+
+# Build the runtime
 cargo build --manifest-path runtime/Cargo.toml
 
 # For optimized release build
 cargo build --release --manifest-path runtime/Cargo.toml
 ```
 
-#### Running Programs
+### Running
 ```bash
 # Run a program directly (development)
 cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
@@ -88,11 +159,6 @@ cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
 # With release build (faster)
 ./target/release/pohlang --run examples/poh/hello.poh
 ```
-
-### 🔧 Option 3: Using PLHub (Advanced)
-For a complete development environment with project management, package system, and CLI tools:
-1. Install [PLHub](https://github.com/AlhaqGH/PLHub)
-2. Use: `plhub run examples/poh/hello.poh`
 
 **Status**: The Rust runtime is under active development. Core features are implemented. See [ROADMAP.md](./ROADMAP.md) for progress.
 

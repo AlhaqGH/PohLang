@@ -77,42 +77,165 @@ jobs:
           cat > "${SDK_DIR}/QUICK_START.md" << 'EOF'
           # PohLang SDK Quick Start
           
-          ## Installation
+          **✅ No Installation Required!** - This package contains everything you need.
           
-          1. Extract this archive to your desired location
-          2. Add the `bin` directory to your PATH, or use the full path to the binary
+          **✅ No Rust, Visual Studio, or Build Tools** - Just extract and run!
           
-          ## Running Examples
+          ## What's Included
           
-          ```bash
-          # Linux/macOS
-          ./bin/pohlang --run examples/hello.poh
+          - `bin/` - PohLang executable (ready to use)
+          - `examples/` - Sample programs to learn from
+          - `doc/` - Complete language guide
+          - `README.md` - Project overview
+          - `LICENSE` - MIT license
           
-          # Windows
+          ## Getting Started (3 Steps)
+          
+          ### 1. Extract the Archive
+          You've already done this if you're reading this file!
+          
+          ### 2. Run Your First Program
+          
+          **Windows:**
+          ```cmd
           bin\pohlang.exe --run examples\hello.poh
           ```
           
-          ## Documentation
+          **Linux/macOS:**
+          ```bash
+          ./bin/pohlang --run examples/hello.poh
+          ```
           
-          - See `doc/PohLang_Guide.md` for the complete language guide
-          - See `README.md` for project overview
-          - Explore `examples/` for code samples
+          ### 3. Create Your Own Program
           
-          ## Your First Program
-          
-          Create a file `myprogram.poh`:
+          Create a file called `myprogram.poh`:
           
           ```
           Start Program
-          Write "Hello from PohLang!"
+          
+          Ask for name
+          Write "Hello " plus name plus "!"
+          
+          Set count to 5
+          Repeat count
+              Write "PohLang is easy!"
+          End
+          
           End Program
           ```
           
           Run it:
           
+          **Windows:**
+          ```cmd
+          bin\pohlang.exe --run myprogram.poh
+          ```
+          
+          **Linux/macOS:**
           ```bash
           ./bin/pohlang --run myprogram.poh
           ```
+          
+          ## Optional: Add to System PATH
+          
+          For convenience, you can add PohLang to your system PATH so you can run it from anywhere.
+          
+          ### Windows
+          1. Copy the full path to the `bin` folder (e.g., `C:\PohLang\bin`)
+          2. Search for "Environment Variables" in Start menu
+          3. Click "Environment Variables"
+          4. Under "User variables", select "Path" and click "Edit"
+          5. Click "New" and paste the path to the `bin` folder
+          6. Click OK on all windows
+          7. Open a new terminal and type: `pohlang --version`
+          
+          ### Linux/macOS
+          ```bash
+          # Option 1: Copy to /usr/local/bin (system-wide)
+          sudo cp bin/pohlang /usr/local/bin/
+          
+          # Option 2: Add to ~/.bashrc or ~/.zshrc
+          echo 'export PATH="$PATH:/full/path/to/pohlang-sdk/bin"' >> ~/.bashrc
+          source ~/.bashrc
+          
+          # Test it
+          pohlang --version
+          ```
+          
+          ## Explore Examples
+          
+          The `examples/` folder contains many sample programs:
+          
+          - `hello.poh` - Simple hello world
+          - `arithmetic.poh` - Math operations (both phrasal and symbolic)
+          - `collections.poh` - Lists and dictionaries
+          - `phrase_function.poh` - Function definitions
+          - `phrase_logic.poh` - If statements and conditions
+          - `phrase_repeat.poh` - Loops and repetition
+          - `string_functions.poh` - String manipulation
+          - And many more!
+          
+          Try them all:
+          ```bash
+          # Windows
+          for %f in (examples\*.poh) do bin\pohlang.exe --run %f
+          
+          # Linux/macOS
+          for f in examples/*.poh; do ./bin/pohlang --run "$f"; done
+          ```
+          
+          ## Documentation
+          
+          - **`doc/PohLang_Guide.md`** - Complete language tutorial with examples
+          - **`README.md`** - Project overview and feature list
+          - **Online**: https://github.com/AlhaqGH/PohLang
+          
+          ## Learning Resources
+          
+          1. Start with `examples/hello.poh` - Basic syntax
+          2. Read `doc/PohLang_Guide.md` - Full language guide
+          3. Try `examples/phrase_logic.poh` - Learn conditionals
+          4. Experiment with `examples/arithmetic.poh` - Math operations
+          5. Build something cool!
+          
+          ## New in v0.5.2
+          
+          - ✅ **Symbolic operators**: Now supports `+`, `-`, `*`, `/`, `>`, `<`, `==`, `!=`
+          - ✅ **Phrasal forms still work**: `plus`, `minus`, `times`, `is greater than`
+          - ✅ **Mix both styles**: Use whichever you prefer!
+          
+          ```
+          Start Program
+          
+          # Phrasal form
+          Set a to 5 plus 3
+          
+          # Symbolic form
+          Set b to 5 + 3
+          
+          # Both work!
+          Write "a: " plus a
+          Write "b: " plus b
+          
+          End Program
+          ```
+          
+          ## Need Help?
+          
+          - **Issues**: https://github.com/AlhaqGH/PohLang/issues
+          - **Discussions**: https://github.com/AlhaqGH/PohLang/discussions
+          - **VS Code Extension**: https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub
+          
+          ## What's Next?
+          
+          - Write your own programs!
+          - Share PohLang with friends learning to code
+          - Report bugs or suggest features on GitHub
+          - Check out the VS Code extension for a full IDE experience
+          
+          ---
+          
+          **Happy Coding with PohLang!** 🎉
           EOF
           
           echo "SDK_DIR=${SDK_DIR}" >> $GITHUB_ENV
