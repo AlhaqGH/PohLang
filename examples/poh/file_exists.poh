@@ -1,0 +1,10 @@
+Check if file exists at "myfile.txt"
+If it exists then
+    Write "File exists!"
+    Read file at "myfile.txt"
+    Write the result
+Otherwise
+    Write "File does not exist"
+    Write "Creating new file..."
+    Write "Hello, PohLang!" to file at "myfile.txt"
+    Write "File created successfully!"

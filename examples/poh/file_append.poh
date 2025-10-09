@@ -1,0 +1,6 @@
+Write "Line 1" to file at "log.txt"
+Append "Line 2" to file at "log.txt"
+Append "Line 3" to file at "log.txt"
+Read file at "log.txt"
+Write "Log contents:"
+Write the result

@@ -1,5 +1,6 @@
 pub mod core;
 pub mod parser;
+pub mod stdlib;
 pub mod vm;
 
 // Optional: expose a simple runtime API
