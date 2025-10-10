@@ -1419,6 +1419,63 @@ fn parse_term(s: &str) -> Result<Expr> {
         }
     }
 
+    // JSON operations
+    // parse json from <string>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_PARSE_JSON) {
+        return Ok(Expr::ParseJson(Box::new(parse_expr(rest)?)));
+    }
+    // convert to json <value>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_TO_JSON) {
+        return Ok(Expr::ToJson(Box::new(parse_expr(rest)?)));
+    }
+    // convert to pretty json <value>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_JSON_PRETTY) {
+        return Ok(Expr::ToJsonPretty(Box::new(parse_expr(rest)?)));
+    }
+    // json length of <value>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_JSON_LENGTH) {
+        return Ok(Expr::JsonLength(Box::new(parse_expr(rest)?)));
+    }
+    // new json object
+    if s.eq_ignore_ascii_case(P::P_NEW_JSON_OBJECT) {
+        return Ok(Expr::NewJsonObject);
+    }
+    // new json array
+    if s.eq_ignore_ascii_case(P::P_NEW_JSON_ARRAY) {
+        return Ok(Expr::NewJsonArray);
+    }
+    // get <key> from json <object>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_JSON_GET) {
+        if let Some((key, json)) = split_once_top_level(rest, P::P_JSON_FROM) {
+            let key_expr = parse_expr(key.trim())?;
+            let json_expr = parse_expr(json.trim())?;
+            return Ok(Expr::JsonGet(Box::new(json_expr), Box::new(key_expr)));
+        }
+    }
+    // set <key> in json <object> to <value>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_JSON_SET) {
+        if let Some((key_part, rest2)) = split_once_top_level(rest, P::P_JSON_IN) {
+            if let Some((json_part, value_part)) = split_once_top_level(rest2, P::P_JSON_TO) {
+                let key_expr = parse_expr(key_part.trim())?;
+                let json_expr = parse_expr(json_part.trim())?;
+                let value_expr = parse_expr(value_part.trim())?;
+                return Ok(Expr::JsonSet(
+                    Box::new(json_expr),
+                    Box::new(key_expr),
+                    Box::new(value_expr),
+                ));
+            }
+        }
+    }
+    // push <item> to json <array>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_JSON_PUSH) {
+        if let Some((item, json)) = split_once_top_level(rest, P::P_JSON_PUSH_TO) {
+            let item_expr = parse_expr(item.trim())?;
+            let json_expr = parse_expr(json.trim())?;
+            return Ok(Expr::JsonPush(Box::new(json_expr), Box::new(item_expr)));
+        }
+    }
+
     // String literal
     if (s.starts_with('"') && s.ends_with('"') && s.len() >= 2)
         || (s.starts_with('\'') && s.ends_with('\'') && s.len() >= 2)

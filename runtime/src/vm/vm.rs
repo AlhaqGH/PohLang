@@ -740,6 +740,153 @@ impl Vm {
                     Err(e) => bail!("Failed to move file from '{}' to '{}': {}", source, dest, e),
                 }
             }
+            // JSON operations
+            Expr::ParseJson(json_str_expr) => {
+                let json_str_val = self.eval(json_str_expr)?;
+                let json_str = match json_str_val {
+                    Value::Str(s) => s,
+                    _ => bail!("parse json from: input must be a string"),
+                };
+                match crate::stdlib::network::parse_json(&json_str) {
+                    Ok(json_value) => {
+                        // Convert serde_json::Value to our Value
+                        self.json_to_value(&json_value)
+                    }
+                    Err(e) => bail!("Failed to parse JSON: {}", e),
+                }
+            }
+            Expr::ToJson(value_expr) => {
+                let value = self.eval(value_expr)?;
+                let json_value = self.value_to_json(&value)?;
+                match crate::stdlib::network::json_stringify(&json_value) {
+                    Ok(json_str) => Ok(Value::Str(json_str)),
+                    Err(e) => bail!("Failed to convert to JSON: {}", e),
+                }
+            }
+            Expr::ToJsonPretty(value_expr) => {
+                let value = self.eval(value_expr)?;
+                let json_value = self.value_to_json(&value)?;
+                match crate::stdlib::network::json_stringify_pretty(&json_value) {
+                    Ok(json_str) => Ok(Value::Str(json_str)),
+                    Err(e) => bail!("Failed to convert to pretty JSON: {}", e),
+                }
+            }
+            Expr::JsonGet(json_expr, key_expr) => {
+                let json_val = self.eval(json_expr)?;
+                let key_val = self.eval(key_expr)?;
+                let key = match key_val {
+                    Value::Str(s) => s,
+                    _ => bail!("get from json: key must be a string"),
+                };
+                match json_val {
+                    Value::Dict(ref map) => {
+                        map.get(&key).cloned().ok_or_else(|| anyhow!("Key '{}' not found in JSON object", key))
+                    }
+                    _ => bail!("get from json: first argument must be a JSON object (dictionary)"),
+                }
+            }
+            Expr::JsonSet(json_expr, key_expr, value_expr) => {
+                let json_val = self.eval(json_expr)?;
+                let key_val = self.eval(key_expr)?;
+                let value_val = self.eval(value_expr)?;
+                let key = match key_val {
+                    Value::Str(s) => s,
+                    _ => bail!("set in json: key must be a string"),
+                };
+                match json_val {
+                    Value::Dict(mut map) => {
+                        map.insert(key, value_val);
+                        Ok(Value::Dict(map))
+                    }
+                    _ => bail!("set in json: first argument must be a JSON object (dictionary)"),
+                }
+            }
+            Expr::NewJsonObject => {
+                Ok(Value::Dict(HashMap::new()))
+            }
+            Expr::NewJsonArray => {
+                Ok(Value::List(Vec::new()))
+            }
+            Expr::JsonPush(json_expr, item_expr) => {
+                let json_val = self.eval(json_expr)?;
+                let item_val = self.eval(item_expr)?;
+                match json_val {
+                    Value::List(mut vec) => {
+                        vec.push(item_val);
+                        Ok(Value::List(vec))
+                    }
+                    _ => bail!("push to json: first argument must be a JSON array (list)"),
+                }
+            }
+            Expr::JsonLength(json_expr) => {
+                let json_val = self.eval(json_expr)?;
+                match json_val {
+                    Value::List(ref vec) => Ok(Value::Num(vec.len() as f64)),
+                    Value::Dict(ref map) => Ok(Value::Num(map.len() as f64)),
+                    _ => bail!("json length of: argument must be a JSON array or object"),
+                }
+            }
+        }
+    }
+
+    // Helper to convert serde_json::Value to our Value
+    fn json_to_value(&self, json: &serde_json::Value) -> Result<Value> {
+        use serde_json::Value as JsonValue;
+        match json {
+            JsonValue::Null => Ok(Value::Null),
+            JsonValue::Bool(b) => Ok(Value::Bool(*b)),
+            JsonValue::Number(n) => {
+                if let Some(f) = n.as_f64() {
+                    Ok(Value::Num(f))
+                } else {
+                    bail!("JSON number out of range")
+                }
+            }
+            JsonValue::String(s) => Ok(Value::Str(s.clone())),
+            JsonValue::Array(arr) => {
+                let mut values = Vec::new();
+                for item in arr {
+                    values.push(self.json_to_value(item)?);
+                }
+                Ok(Value::List(values))
+            }
+            JsonValue::Object(obj) => {
+                let mut map = HashMap::new();
+                for (k, v) in obj {
+                    map.insert(k.clone(), self.json_to_value(v)?);
+                }
+                Ok(Value::Dict(map))
+            }
+        }
+    }
+
+    // Helper to convert our Value to serde_json::Value
+    fn value_to_json(&self, value: &Value) -> Result<serde_json::Value> {
+        use serde_json::Value as JsonValue;
+        match value {
+            Value::Null => Ok(JsonValue::Null),
+            Value::Bool(b) => Ok(JsonValue::Bool(*b)),
+            Value::Num(n) => {
+                Ok(serde_json::Number::from_f64(*n)
+                    .map(JsonValue::Number)
+                    .unwrap_or(JsonValue::Null))
+            }
+            Value::Str(s) => Ok(JsonValue::String(s.clone())),
+            Value::List(vec) => {
+                let mut arr = Vec::new();
+                for item in vec {
+                    arr.push(self.value_to_json(item)?);
+                }
+                Ok(JsonValue::Array(arr))
+            }
+            Value::Dict(map) => {
+                let mut obj = serde_json::Map::new();
+                for (k, v) in map {
+                    obj.insert(k.clone(), self.value_to_json(v)?);
+                }
+                Ok(JsonValue::Object(obj))
+            }
+            Value::Func(_) => bail!("Cannot convert function to JSON"),
         }
     }
 
@@ -1344,7 +1491,17 @@ impl Vm {
             | Expr::ListDir(_)
             | Expr::ReadLines(_)
             | Expr::CopyFile(_, _)
-            | Expr::MoveFile(_, _) => self.eval(e),
+            | Expr::MoveFile(_, _)
+            // JSON operations - also delegate to eval
+            | Expr::ParseJson(_)
+            | Expr::ToJson(_)
+            | Expr::ToJsonPretty(_)
+            | Expr::JsonGet(_, _)
+            | Expr::JsonSet(_, _, _)
+            | Expr::NewJsonObject
+            | Expr::NewJsonArray
+            | Expr::JsonPush(_, _)
+            | Expr::JsonLength(_) => self.eval(e),
         }
     }
 
@@ -1619,7 +1776,17 @@ impl Vm {
             | Expr::ListDir(_)
             | Expr::ReadLines(_)
             | Expr::CopyFile(_, _)
-            | Expr::MoveFile(_, _) => self.eval(e),
+            | Expr::MoveFile(_, _)
+            // JSON operations - also delegate to eval
+            | Expr::ParseJson(_)
+            | Expr::ToJson(_)
+            | Expr::ToJsonPretty(_)
+            | Expr::JsonGet(_, _)
+            | Expr::JsonSet(_, _, _)
+            | Expr::NewJsonObject
+            | Expr::NewJsonArray
+            | Expr::JsonPush(_, _)
+            | Expr::JsonLength(_) => self.eval(e),
         }
     }
 
@@ -1930,7 +2097,17 @@ impl Vm {
             | Expr::ListDir(_)
             | Expr::ReadLines(_)
             | Expr::CopyFile(_, _)
-            | Expr::MoveFile(_, _) => self.eval(e),
+            | Expr::MoveFile(_, _)
+            // JSON operations - also delegate to eval
+            | Expr::ParseJson(_)
+            | Expr::ToJson(_)
+            | Expr::ToJsonPretty(_)
+            | Expr::JsonGet(_, _)
+            | Expr::JsonSet(_, _, _)
+            | Expr::NewJsonObject
+            | Expr::NewJsonArray
+            | Expr::JsonPush(_, _)
+            | Expr::JsonLength(_) => self.eval(e),
         }
     }
 }
@@ -2310,6 +2487,23 @@ fn dump_expr(e: &Expr) -> String {
         Expr::MoveFile(source, dest) => {
             format!("move file from {} to {}", dump_expr(source), dump_expr(dest))
         }
+        // JSON operations
+        Expr::ParseJson(s) => format!("parse json from {}", dump_expr(s)),
+        Expr::ToJson(v) => format!("convert to json {}", dump_expr(v)),
+        Expr::ToJsonPretty(v) => format!("convert to pretty json {}", dump_expr(v)),
+        Expr::JsonGet(json, key) => format!("get {} from json {}", dump_expr(key), dump_expr(json)),
+        Expr::JsonSet(json, key, val) => {
+            format!(
+                "set {} in json {} to {}",
+                dump_expr(key),
+                dump_expr(json),
+                dump_expr(val)
+            )
+        }
+        Expr::NewJsonObject => "new json object".to_string(),
+        Expr::NewJsonArray => "new json array".to_string(),
+        Expr::JsonPush(json, item) => format!("push {} to json {}", dump_expr(item), dump_expr(json)),
+        Expr::JsonLength(json) => format!("json length of {}", dump_expr(json)),
     }
 }
 

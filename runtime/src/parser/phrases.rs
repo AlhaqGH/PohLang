@@ -56,6 +56,21 @@ pub const P_COPY_FILE: &str = "copy file from "; // needs ' to '
 pub const P_COPY_TO: &str = " to ";
 pub const P_MOVE_FILE: &str = "move file from "; // needs ' to '
 
+// JSON operation phrases
+pub const P_PARSE_JSON: &str = "parse json from ";
+pub const P_TO_JSON: &str = "convert to json ";
+pub const P_JSON_PRETTY: &str = "convert to pretty json ";
+pub const P_JSON_GET: &str = "get "; // needs ' from json '
+pub const P_JSON_FROM: &str = " from json ";
+pub const P_JSON_SET: &str = "set "; // needs ' in json ' and ' to '
+pub const P_JSON_IN: &str = " in json ";
+pub const P_JSON_TO: &str = " to ";
+pub const P_NEW_JSON_OBJECT: &str = "new json object";
+pub const P_NEW_JSON_ARRAY: &str = "new json array";
+pub const P_JSON_PUSH: &str = "push "; // needs ' to json '
+pub const P_JSON_PUSH_TO: &str = " to json ";
+pub const P_JSON_LENGTH: &str = "json length of ";
+
 pub fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
     if s.len() < prefix.len() {
         return None;

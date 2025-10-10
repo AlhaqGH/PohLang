@@ -1,0 +1,22 @@
+Start Program
+Write "Testing JSON Parse..."
+
+// First create a JSON string properly using the API
+Set obj to new json object
+Set obj to set "name" in json obj to "Alice"
+Set obj to set "age" in json obj to 30
+Set json_str to convert to json obj
+
+Write "Generated JSON string:"
+Write json_str
+
+// Now parse it back
+Set parsed to parse json from json_str
+Set name to get "name" from json parsed
+Set age to get "age" from json parsed
+
+Write "Parsed values:"
+Write name
+Write age
+
+End Program

@@ -1,0 +1,47 @@
+Start Program
+// Example: Creating JSON data structures
+// This program demonstrates how to create and manipulate JSON in PohLang
+
+Write "=== JSON Creation Example ==="
+
+// Create a new JSON object
+Set person to new json object
+Set person to set "name" in json person to "Bob"
+Set person to set "age" in json person to 25
+Set person to set "active" in json person to True
+
+Write "Created person object:"
+Set person_str to convert to pretty json person
+Write person_str
+
+Write ""
+
+// Create a new JSON array
+Set scores to new json array
+Set scores to push 85 to json scores
+Set scores to push 92 to json scores
+Set scores to push 78 to json scores
+Set scores to push 95 to json scores
+
+Write "Created scores array:"
+Set scores_str to convert to json scores
+Write scores_str
+
+Write ""
+
+// Combine objects and arrays
+Set student to new json object
+Set student to set "name" in json student to "Carol"
+Set student to set "scores" in json student to scores
+
+Write "Student with scores:"
+Set student_str to convert to pretty json student
+Write student_str
+
+Write ""
+
+// Get array length
+Set num_scores to json length of scores
+Write "Number of scores:"
+Write num_scores
+End Program

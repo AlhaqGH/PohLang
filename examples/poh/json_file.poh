@@ -1,0 +1,49 @@
+Start Program
+// Example: JSON with File Operations
+// This program demonstrates reading and writing JSON files
+
+Write "=== JSON File Operations Example ==="
+
+// Create a configuration object
+Set config to new json object
+Set config to set "app_name" in json config to "PohLang Demo"
+Set config to set "version" in json config to 1
+Set config to set "debug_mode" in json config to False
+
+// Create a settings array
+Set settings to new json array
+Set settings to push "auto_save" to json settings
+Set settings to push "spell_check" to json settings
+Set config to set "enabled_features" in json config to settings
+
+// Convert to pretty JSON and save to file
+Set config_json to convert to pretty json config
+Set result to write config_json into file at "config.json"
+Write "Configuration saved to config.json"
+
+Write ""
+
+// Read the JSON file back
+Set file_content to read file at "config.json"
+Write "Reading configuration from file:"
+Write file_content
+
+Write ""
+
+// Parse and access the data
+Set loaded_config to parse json from file_content
+Set app_name to get "app_name" from json loaded_config
+Set version to get "version" from json loaded_config
+
+Write "Loaded configuration:"
+Write app_name
+Write version
+
+Write ""
+
+// Modify and save again
+Set loaded_config to set "version" in json loaded_config to 2
+Set updated_json to convert to pretty json loaded_config
+Set result2 to write updated_json into file at "config.json"
+Write "Configuration updated!"
+End Program

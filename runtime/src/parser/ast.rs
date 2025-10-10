@@ -50,6 +50,16 @@ pub enum Expr {
     ReadLines(Box<Expr>),                      // read lines from file at path
     CopyFile(Box<Expr>, Box<Expr>),            // copy file from source to dest
     MoveFile(Box<Expr>, Box<Expr>),            // move file from source to dest
+    // JSON operations
+    ParseJson(Box<Expr>),                      // parse json from string
+    ToJson(Box<Expr>),                         // convert to json string
+    ToJsonPretty(Box<Expr>),                   // convert to pretty json string
+    JsonGet(Box<Expr>, Box<Expr>),             // get key from json object
+    JsonSet(Box<Expr>, Box<Expr>, Box<Expr>),  // set key in json object to value
+    NewJsonObject,                             // new json object
+    NewJsonArray,                              // new json array
+    JsonPush(Box<Expr>, Box<Expr>),            // push item to json array
+    JsonLength(Box<Expr>),                     // json length of array/object
 }
 
 #[derive(Debug, Clone)]

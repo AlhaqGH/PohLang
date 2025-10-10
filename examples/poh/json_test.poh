@@ -1,0 +1,11 @@
+Start Program
+Write "Testing JSON operations..."
+
+// Test 1: Create and stringify
+Set obj to new json object
+Set obj to set "test" in json obj to "value"
+Set json_str to convert to json obj
+Write "Created JSON:"
+Write json_str
+
+End Program

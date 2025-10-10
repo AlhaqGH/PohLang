@@ -1,0 +1,9 @@
+{
+  "app_name": "PohLang Demo",
+  "debug_mode": false,
+  "enabled_features": [
+    "auto_save",
+    "spell_check"
+  ],
+  "version": 2.0
+}

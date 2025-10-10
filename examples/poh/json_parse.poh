@@ -1,0 +1,70 @@
+Start Program
+// Example: Parsing JSON data
+// This program demonstrates how to parse JSON strings in PohLang
+
+Write "=== JSON Parsing Example ==="
+
+// Create a JSON object programmatically, then stringify and parse it
+Set user to new json object
+Set user to set "name" in json user to "Alice"
+Set user to set "age" in json user to 30
+Set user to set "city" in json user to "Wonderland"
+Set user_json to convert to json user
+
+Write "Generated JSON string:"
+Write user_json
+
+// Parse the JSON string back
+Set parsed_user to parse json from user_json
+
+// Extract values from the JSON object
+Set name to get "name" from json parsed_user
+Set age to get "age" from json parsed_user
+Set city to get "city" from json parsed_user
+
+Write ""
+Write "User Information:"
+Write name
+Write age
+Write city
+
+Write ""
+
+// Create and parse a JSON array
+Set numbers to new json array
+Set numbers to push 10 to json numbers
+Set numbers to push 20 to json numbers
+Set numbers to push 30 to json numbers
+Set numbers to push 40 to json numbers
+Set numbers to push 50 to json numbers
+Set numbers_json to convert to json numbers
+Set parsed_numbers to parse json from numbers_json
+Set length to json length of parsed_numbers
+
+Write "Array length:"
+Write length
+
+Write ""
+
+// Create nested JSON structure
+Set users_array to new json array
+Set bob to new json object
+Set bob to set "name" in json bob to "Bob"
+Set users_array to push bob to json users_array
+Set carol to new json object
+Set carol to set "name" in json carol to "Carol"
+Set users_array to push carol to json users_array
+
+Set data to new json object
+Set data to set "users" in json data to users_array
+Set data to set "count" in json data to 2
+Set data_json to convert to json data
+
+Write "Nested JSON:"
+Write data_json
+
+Set parsed_data to parse json from data_json
+Set count to get "count" from json parsed_data
+Write "Total users:"
+Write count
+End Program
