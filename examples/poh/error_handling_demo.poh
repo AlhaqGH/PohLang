@@ -1,0 +1,66 @@
+Start Program
+
+Write "=== PohLang Error Handling Demo ==="
+
+Write ""
+Write "1. Creating custom errors:"
+Set validation_error to error of type "ValidationError" with message "Invalid email format"
+Set msg to error message of validation_error
+Set typ to error type of validation_error
+Write msg
+Write typ
+
+Write ""
+Write "2. Try/catch with error binding:"
+try this:
+    throw "Something went wrong!"
+if error as err
+    Write "Caught error:"
+    Write err
+end try
+
+Write ""
+Write "3. Type-specific error handling:"
+try this:
+    Set file_error to error of type "FileError" with message "File not found: data.txt"
+    throw file_error
+if error of type "FileError" as e
+    Write "File operation failed:"
+    Write e
+if error as e
+    Write "Other error:"
+    Write e
+end try
+
+Write ""
+Write "4. Finally block (always runs):"
+Set counter to 0
+try this:
+    Write "In try block"
+    Set counter to counter plus 1
+    throw "Test error"
+if error
+    Write "In catch block"
+    Set counter to counter plus 1
+finally:
+    Write "In finally block"
+    Set counter to counter plus 1
+end try
+Write counter
+
+Write ""
+Write "5. Successful try (no error):"
+try this:
+    Write "This won't throw"
+    Set x to 42
+if error
+    Write "This won't run"
+finally:
+    Write "Finally runs even on success"
+end try
+Write x
+
+Write ""
+Write "=== All tests passed! ==="
+
+End Program

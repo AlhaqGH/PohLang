@@ -1,0 +1,6 @@
+Start Program
+
+Set my_error to error of type "ValidationError" with message "Invalid input"
+throw my_error
+
+End Program

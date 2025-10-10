@@ -1,0 +1,13 @@
+Start Program
+
+Write "Line 3: Starting program"
+
+Set x to 10
+
+Write "Line 7: About to throw error"
+
+throw "Something went wrong on this line!"
+
+Write "Line 11: This won't execute"
+
+End Program

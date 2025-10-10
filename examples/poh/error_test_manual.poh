@@ -1,0 +1,10 @@
+Start Program
+
+Comment: Test basic error creation and operations without parsing yet
+Comment: This will be manually constructed for now
+
+Write line "Testing error operations..."
+
+Comment: We'll add proper test after parser is implemented
+
+End Program

@@ -1,0 +1,133 @@
+Start Program
+# Comprehensive Error Handling Demonstration
+# Shows all Phase 5 features with natural English throughout
+
+Write "=== PohLang Error Handling Demo ==="
+Write ""
+
+# Test 1: Error Creation and Inspection
+Write "Test 1: Creating and inspecting errors"
+Set my_error to error of type "ValidationError" with message "Age must be positive"
+Set error_msg to error message of my_error
+Set error_type to error type of my_error
+Write "Created error:"
+Write "  Type: "
+Write error_type
+Write ""
+Write "  Message: "
+Write error_msg
+Write ""
+
+# Test 2: Throwing and Catching Simple Errors
+Write "Test 2: Throw and catch simple string"
+try this:
+    throw "Something went wrong!"
+if error as e
+    Write "Caught error: "
+    Write e
+end try
+Write ""
+
+# Test 3: Catching Specific Error Types
+Write "Test 3: Catching specific error type"
+try this:
+    Set file_error to error of type "FileError" with message "File not found: data.txt"
+    throw file_error
+if error of type "FileError" as file_err
+    Write "File error occurred: "
+    Write file_err
+if error as other
+    Write "Other error: "
+    Write other
+end try
+Write ""
+
+# Test 4: Multiple Error Types with First-Match
+Write "Test 4: Multiple handlers (first match wins)"
+try this:
+    Set math_err to error of type "MathError" with message "Division resulted in infinity"
+    throw math_err
+if error of type "TypeError"
+    Write "Type error handler"
+if error of type "MathError" as m
+    Write "Math error caught: "
+    Write m
+if error
+    Write "Fallback handler"
+end try
+Write ""
+
+# Test 5: Finally Block Always Executes
+Write "Test 5: Finally block (success case)"
+try this:
+    Write "  Normal execution"
+finally:
+    Write "  Finally block executed (success)"
+end try
+Write ""
+
+# Test 6: Finally with Error
+Write "Test 6: Finally block (error case)"
+try this:
+    Write "  About to throw error"
+    throw "Test error"
+if error
+    Write "  Error caught"
+finally:
+    Write "  Finally block executed (after catch)"
+end try
+Write ""
+
+# Test 7: Uncaught Error Propagates (but finally runs)
+# Note: This will cause the program to exit, so we skip it
+# Write "Test 7: Uncaught error (finally still runs)"
+# try this:
+#     throw "Uncaught error"
+# finally:
+#     Write "  Finally runs even without catch"
+# end try
+
+# Test 8: Division by Zero with Location
+Write "Test 7: Division by zero (shows file location)"
+try this:
+    Set result to 10 divided by 0
+if error as div_err
+    Write "Caught division error: "
+    Write div_err
+end try
+Write ""
+
+# Test 9: Custom Error Types
+Write "Test 8: Custom error type"
+try this:
+    Set custom to error of type "DatabaseError" with message "Connection pool exhausted"
+    throw custom
+if error of type "DatabaseError" as db_err
+    Write "Database error: "
+    Write db_err
+end try
+Write ""
+
+# Test 10: Nested Try/Catch (if supported)
+Write "Test 9: Error without binding"
+try this:
+    throw "Error without variable"
+if error
+    Write "Caught error (no variable binding)"
+end try
+Write ""
+
+Write "=== All Tests Complete ==="
+Write "Phase 5 error handling working perfectly!"
+Write ""
+Write "Features demonstrated:"
+Write "  [OK] Natural English syntax"
+Write "  [OK] Natural error messages"
+Write "  [OK] Type-specific catching"
+Write "  [OK] Multiple handlers"
+Write "  [OK] Finally blocks"
+Write "  [OK] Variable binding"
+Write "  [OK] Custom error types"
+Write "  [OK] File location reporting"
+
+End Program

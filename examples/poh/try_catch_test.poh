@@ -1,0 +1,13 @@
+Start Program
+
+try this:
+    Set my_error to error of type "ValidationError" with message "Test error message"
+    throw my_error
+if error as err_var
+    Write "Error caught:"
+    Write err_var
+end try
+
+Write "Done"
+
+End Program

@@ -1,0 +1,6 @@
+Start Program
+
+Set x to error of type ValidationError with message "test"
+Write line "Done"
+
+End Program

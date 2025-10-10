@@ -5,6 +5,68 @@ All notable changes to PohLang will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2025-10-10 - Error Handling System (Phase 5)
+
+### Overview
+Major feature release adding comprehensive error handling with natural English syntax and messages. This release introduces try/catch/finally blocks, custom error types, type-specific error catching, and error location reporting.
+
+### Added
+- **Error Handling Infrastructure**
+  - `PohError` type with 7 built-in error kinds: `RuntimeError`, `TypeError`, `MathError`, `FileError`, `JsonError`, `NetworkError`, `ValidationError`
+  - Custom error types support with preserved casing
+  - Error message and type extraction operations
+  - Stack frame tracking for future enhancements
+
+- **Try/Catch/Finally Syntax** (Natural English)
+  - `try this:` / `end try` blocks
+  - `if error` - catch all errors
+  - `if error as variable` - catch with variable binding
+  - `if error of type "ErrorType" as variable` - type-specific catching
+  - `finally:` - always-executed cleanup blocks
+  - Multiple catch handlers with first-match semantics
+
+- **Error Creation and Throwing**
+  - Create errors: `Set err to error of type "ValidationError" with message "Invalid input"`
+  - Throw errors: `throw err` or `throw "Error message"`
+  - Extract info: `error message of err`, `error type of err`
+
+- **Natural Language Error Messages**
+  - Consistent natural English format: `Error occurred: a file error - message`
+  - Type marker system for accurate matching while showing natural text
+  - Custom error names preserved (e.g., "DatabaseError occurred: message")
+
+- **Error Location Reporting**
+  - Filename tracking: Errors show `in file: filename.poh`
+  - VM infrastructure for location context
+  - Updated division by zero and throw statements with location info
+
+### Changed
+- Error messages converted from technical format to natural English
+- Added `Value::Error` variant to value system
+- Enhanced VM with error context tracking
+
+### Examples
+- `error_handling_demo.poh` - 5 comprehensive test scenarios
+- `natural_errors.poh` - Natural language format validation
+- `comprehensive_error_demo.poh` - Complete feature demonstration
+- `test_error_location.poh`, `test_throw_location.poh` - Location reporting tests
+
+### Documentation
+- `PHASE_5_PLAN.md` - Complete design and architecture
+- `PHASE_5_COMPLETE.md` - Implementation summary and examples
+- `doc/ERROR_LOCATION_STATUS.md` - Technical details of location reporting
+
+### Technical Details
+- ~450 lines of new production code
+- 10 unit tests in `stdlib/errors.rs`
+- 11 new phrasal constants for error handling
+- Complete parser support for error syntax
+- VM execution with proper error propagation
+
+### Known Limitations
+- Line/column numbers not implemented (requires AST refactor, estimated 20+ hours)
+- ~50 existing error sites could be updated to use location helper (can be done incrementally)
+
 ## [0.5.2] - 2025-10-05 - Symbolic Operators Support
 
 ### Overview

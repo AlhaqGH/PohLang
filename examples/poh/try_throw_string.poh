@@ -1,0 +1,10 @@
+Start Program
+
+try this:
+    throw "Simple error"
+if error as e
+    Write "Caught:"
+    Write e
+end try
+
+End Program

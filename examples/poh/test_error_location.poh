@@ -1,0 +1,13 @@
+Start Program
+
+Write "Testing error location reporting:"
+
+Set x to 5
+Set y to 0
+
+Write "About to divide by zero..."
+Set result to x divided by y
+
+Write "This won't run"
+
+End Program

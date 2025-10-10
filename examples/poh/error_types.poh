@@ -1,0 +1,23 @@
+Start Program
+
+Write "Testing error types:"
+
+Set e1 to error of type "RuntimeError" with message "Runtime failure"
+Set t1 to error type of e1
+Write t1
+
+Set e2 to error of type "TypeError" with message "Type mismatch"
+Set t2 to error type of e2
+Write t2
+
+Set e3 to error of type "MathError" with message "Division by zero"
+Set t3 to error type of e3
+Write t3
+
+Set e4 to error of type "CustomError" with message "Custom issue"
+Set t4 to error type of e4
+Write t4
+
+Write "All error types working!"
+
+End Program

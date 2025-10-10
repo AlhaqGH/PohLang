@@ -1,0 +1,18 @@
+Start Program
+
+Set error_type to "ValidationError"
+Set error_msg to "Invalid input"
+Set my_error to error of type error_type with message error_msg
+Write line "Error created"
+
+Set msg to error message of my_error
+Write line "Message: "
+Write line msg
+
+Set typ to error type of my_error
+Write line "Type: "
+Write line typ
+
+Write line "Tests passed"
+
+End Program

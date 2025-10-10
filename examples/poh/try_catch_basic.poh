@@ -1,0 +1,15 @@
+Start Program
+
+Write "Testing try/catch:"
+
+try this:
+    Set my_error to error of type "ValidationError" with message "Invalid data"
+    throw my_error
+if error as e
+    Write "Caught error:"
+    Write e
+end try
+
+Write "After try/catch"
+
+End Program

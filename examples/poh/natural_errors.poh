@@ -1,0 +1,47 @@
+Start Program
+
+Write "=== Testing Natural English Error Messages ==="
+
+Write ""
+Write "Test 1: Math error"
+try this:
+    Set err to error of type "MathError" with message "Cannot divide by zero"
+    throw err
+if error of type "MathError" as e
+    Write "Caught math error:"
+    Write e
+end try
+
+Write ""
+Write "Test 2: Validation error"
+try this:
+    Set err to error of type "ValidationError" with message "Email must contain @ symbol"
+    throw err
+if error of type "ValidationError" as e
+    Write "Caught validation error:"
+    Write e
+end try
+
+Write ""
+Write "Test 3: Custom error type"
+try this:
+    Set err to error of type "DatabaseError" with message "Connection timeout after 30 seconds"
+    throw err
+if error of type "DatabaseError" as e
+    Write "Caught custom error:"
+    Write e
+end try
+
+Write ""
+Write "Test 4: Simple string throw"
+try this:
+    throw "This is a simple error message"
+if error as e
+    Write "Caught:"
+    Write e
+end try
+
+Write ""
+Write "=== All natural language errors working! ==="
+
+End Program

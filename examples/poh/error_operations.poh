@@ -1,0 +1,38 @@
+Start Program
+
+Write line "Error Operations Test"
+Write line ""
+
+Comment: Test 1 - Create a custom error
+Write line "Test 1: Creating custom error"
+Set my_error to error of type "ValidationError" with message "Invalid input provided"
+Write line "Created error: " with my_error
+
+Comment: Test 2 - Get error message
+Write line ""
+Write line "Test 2: Get error message"
+Set err_message to error message of my_error
+Write line "Error message: " with err_message
+
+Comment: Test 3 - Get error type
+Write line ""
+Write line "Test 3: Get error type"
+Set err_type to error type of my_error
+Write line "Error type: " with err_type
+
+Comment: Test 4 - Create different error types
+Write line ""
+Write line "Test 4: Different error types"
+Set math_err to error of type "MathError" with message "Division by zero"
+Set file_err to error of type "FileError" with message "File not found"
+Write line "Math error type: " with error type of math_err
+Write line "File error type: " with error type of file_err
+
+Comment: Test 5 - Throw error (will cause program to exit with error)
+Comment: Uncomment the next line to test throwing
+Comment: Throw error of type "TestError" with message "This is a test error"
+
+Write line ""
+Write line "All error operation tests passed!"
+
+End Program

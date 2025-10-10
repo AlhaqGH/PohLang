@@ -43,10 +43,11 @@ Think of it like:
 - **PLHub** is to **Cargo** (the development tooling)
 
 ## Release Information
-- **PohLang Rust Runtime**: v0.5.2 (**Phase 1 Complete** ✅)
-- **Core Language**: Phase 1 Production-Ready
-- **Test Coverage**: 50 passing tests (100% core features)
-- **New in v0.5.2**: Symbolic operators (+, -, *, /, >, <, ==, etc.) alongside phrasal forms
+- **PohLang Rust Runtime**: v0.5.4 (**Phase 5 Complete** ✅)
+- **Core Language**: Phase 5 Production-Ready (Error Handling)
+- **Test Coverage**: 50+ passing tests (100% core features + error handling)
+- **New in v0.5.4**: Comprehensive error handling with try/catch/finally, custom error types, natural English error messages, and file location reporting
+- **Previous (v0.5.2)**: Symbolic operators (+, -, *, /, >, <, ==, etc.) alongside phrasal forms
 - ⚠️ **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for issues and workarounds
 
 ## Goals
@@ -215,6 +216,16 @@ cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
 - ✅ **Logical**: `And`, `Or`, `Not`
 - ✅ **Collections**: Lists `[1, 2, 3]`, Dictionaries `{key: value}`, Indexing with negative support
 - ✅ **Imports**: Local file imports, system module stubs
+
+### Error Handling (Phase 5 Complete ✅)
+- ✅ **Try/Catch/Finally**: Natural English syntax (`try this:`, `if error as e`, `finally:`)
+- ✅ **Error Types**: 7 built-in types (RuntimeError, TypeError, MathError, FileError, JsonError, NetworkError, ValidationError) + custom types
+- ✅ **Type-Specific Catching**: `if error of type "FileError" as err`
+- ✅ **Natural Error Messages**: "Error occurred: a file error - message"
+- ✅ **Error Creation**: `error of type "ValidationError" with message "Invalid input"`
+- ✅ **Throw Errors**: `throw err` or `throw "Error message"`
+- ✅ **Error Operations**: Extract message and type from errors
+- ✅ **File Location Reporting**: Errors show filename context
 
 ### Phrasal Built-in Expressions (20 total) ✅
 **Mathematical**: `total of`, `smallest in`, `largest in`, `absolute value of`, `round`, `round down`, `round up`

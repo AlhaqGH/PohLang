@@ -1,0 +1,13 @@
+Start Program
+
+Write "Before try"
+
+try this:
+    Write "Inside try"
+if error
+    Write "Inside catch"
+end try
+
+Write "After try"
+
+End Program

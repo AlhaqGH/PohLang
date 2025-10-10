@@ -1,0 +1,9 @@
+Start Program
+
+Set my_error to error of type "ValidationError" with message "Invalid input"
+Set msg to error message of my_error
+Set typ to error type of my_error
+Write msg
+Write typ
+
+End Program
