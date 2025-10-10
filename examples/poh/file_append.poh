@@ -1,6 +1,8 @@
-Write "Line 1" to file at "log.txt"
-Append "Line 2" to file at "log.txt"
-Append "Line 3" to file at "log.txt"
-Read file at "log.txt"
+Start Program
+Set r1 to write "Line 1\n" into file at "log.txt"
+Set r2 to append "Line 2\n" into file at "log.txt"
+Set r3 to append "Line 3\n" into file at "log.txt"
+Set content to read file at "log.txt"
 Write "Log contents:"
-Write the result
+Write content
+End Program

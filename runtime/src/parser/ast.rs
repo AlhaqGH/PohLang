@@ -39,6 +39,17 @@ pub enum Expr {
     Remove(Box<Expr>, Box<Expr>),   // remove item from list
     Append(Box<Expr>, Box<Expr>),   // append item to list
     InsertAt(Box<Expr>, Box<Expr>, Box<Expr>), // insert item at index in list
+    // File I/O operations
+    ReadFile(Box<Expr>),                       // read file at path
+    WriteFile(Box<Expr>, Box<Expr>),           // write content to file at path
+    AppendFile(Box<Expr>, Box<Expr>),          // append content to file at path
+    FileExists(Box<Expr>),                     // file exists at path
+    DeleteFile(Box<Expr>),                     // delete file at path
+    CreateDir(Box<Expr>),                      // create directory at path
+    ListDir(Box<Expr>),                        // list files in directory at path
+    ReadLines(Box<Expr>),                      // read lines from file at path
+    CopyFile(Box<Expr>, Box<Expr>),            // copy file from source to dest
+    MoveFile(Box<Expr>, Box<Expr>),            // move file from source to dest
 }
 
 #[derive(Debug, Clone)]

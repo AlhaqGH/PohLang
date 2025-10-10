@@ -1,2 +1,4 @@
-Write "Hello from PohLang File I/O!" to file at "output.txt"
-Write "File I/O module is working!"
+Start Program
+Set result to write "Hello from PohLang File I/O!" into file at "output.txt"
+Write "File written successfully!"
+End Program

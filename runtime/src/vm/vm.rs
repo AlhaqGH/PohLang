@@ -1,7 +1,7 @@
 use super::instructions::Instruction;
 use crate::core::io as core_io;
 use crate::parser::ast::{CmpOp, Expr, Param, Program, Stmt};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -608,6 +608,138 @@ impl Vm {
                 let list_val = self.eval(list)?;
                 builtin_insert_at(&[item_val, index_val, list_val])
             }
+            // File I/O operations
+            Expr::ReadFile(path_expr) => {
+                let path_val = self.eval(path_expr)?;
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("read file at: path must be a string"),
+                };
+                match crate::stdlib::file::read_file(&path) {
+                    Ok(content) => Ok(Value::Str(content)),
+                    Err(e) => bail!("Failed to read file '{}': {}", path, e),
+                }
+            }
+            Expr::WriteFile(content_expr, path_expr) => {
+                let content_val = self.eval(content_expr)?;
+                let path_val = self.eval(path_expr)?;
+                let content = match content_val {
+                    Value::Str(s) => s,
+                    Value::Num(n) => n.to_string(),
+                    Value::Bool(b) => b.to_string(),
+                    _ => bail!("write to file: content must be string, number, or boolean"),
+                };
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("write to file at: path must be a string"),
+                };
+                match crate::stdlib::file::write_file(&path, &content) {
+                    Ok(_) => Ok(Value::Null),
+                    Err(e) => bail!("Failed to write file '{}': {}", path, e),
+                }
+            }
+            Expr::AppendFile(content_expr, path_expr) => {
+                let content_val = self.eval(content_expr)?;
+                let path_val = self.eval(path_expr)?;
+                let content = match content_val {
+                    Value::Str(s) => s,
+                    Value::Num(n) => n.to_string(),
+                    Value::Bool(b) => b.to_string(),
+                    _ => bail!("append to file: content must be string, number, or boolean"),
+                };
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("append to file at: path must be a string"),
+                };
+                match crate::stdlib::file::append_file(&path, &content) {
+                    Ok(_) => Ok(Value::Null),
+                    Err(e) => bail!("Failed to append to file '{}': {}", path, e),
+                }
+            }
+            Expr::FileExists(path_expr) => {
+                let path_val = self.eval(path_expr)?;
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("file exists at: path must be a string"),
+                };
+                Ok(Value::Bool(crate::stdlib::file::file_exists(&path)))
+            }
+            Expr::DeleteFile(path_expr) => {
+                let path_val = self.eval(path_expr)?;
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("delete file at: path must be a string"),
+                };
+                match crate::stdlib::file::delete_file(&path) {
+                    Ok(_) => Ok(Value::Null),
+                    Err(e) => bail!("Failed to delete file '{}': {}", path, e),
+                }
+            }
+            Expr::CreateDir(path_expr) => {
+                let path_val = self.eval(path_expr)?;
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("create directory at: path must be a string"),
+                };
+                match crate::stdlib::file::create_directory(&path) {
+                    Ok(_) => Ok(Value::Null),
+                    Err(e) => bail!("Failed to create directory '{}': {}", path, e),
+                }
+            }
+            Expr::ListDir(path_expr) => {
+                let path_val = self.eval(path_expr)?;
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("list files in: path must be a string"),
+                };
+                match crate::stdlib::file::list_directory(&path) {
+                    Ok(files) => Ok(Value::List(files.into_iter().map(Value::Str).collect())),
+                    Err(e) => bail!("Failed to list directory '{}': {}", path, e),
+                }
+            }
+            Expr::ReadLines(path_expr) => {
+                let path_val = self.eval(path_expr)?;
+                let path = match path_val {
+                    Value::Str(s) => s,
+                    _ => bail!("read lines from: path must be a string"),
+                };
+                match crate::stdlib::file::read_lines(&path) {
+                    Ok(lines) => Ok(Value::List(lines.into_iter().map(Value::Str).collect())),
+                    Err(e) => bail!("Failed to read lines from '{}': {}", path, e),
+                }
+            }
+            Expr::CopyFile(source_expr, dest_expr) => {
+                let source_val = self.eval(source_expr)?;
+                let dest_val = self.eval(dest_expr)?;
+                let source = match source_val {
+                    Value::Str(s) => s,
+                    _ => bail!("copy file from: source path must be a string"),
+                };
+                let dest = match dest_val {
+                    Value::Str(s) => s,
+                    _ => bail!("copy file to: destination path must be a string"),
+                };
+                match crate::stdlib::file::copy_file(&source, &dest) {
+                    Ok(_) => Ok(Value::Null),
+                    Err(e) => bail!("Failed to copy file from '{}' to '{}': {}", source, dest, e),
+                }
+            }
+            Expr::MoveFile(source_expr, dest_expr) => {
+                let source_val = self.eval(source_expr)?;
+                let dest_val = self.eval(dest_expr)?;
+                let source = match source_val {
+                    Value::Str(s) => s,
+                    _ => bail!("move file from: source path must be a string"),
+                };
+                let dest = match dest_val {
+                    Value::Str(s) => s,
+                    _ => bail!("move file to: destination path must be a string"),
+                };
+                match crate::stdlib::file::move_file(&source, &dest) {
+                    Ok(_) => Ok(Value::Null),
+                    Err(e) => bail!("Failed to move file from '{}' to '{}': {}", source, dest, e),
+                }
+            }
         }
     }
 
@@ -1202,6 +1334,17 @@ impl Vm {
                 let list_val = self.eval_in_frame(list, frame)?;
                 builtin_insert_at(&[item_val, index_val, list_val])
             }
+            // File I/O operations - delegate to eval since they don't use local scope
+            Expr::ReadFile(_)
+            | Expr::WriteFile(_, _)
+            | Expr::AppendFile(_, _)
+            | Expr::FileExists(_)
+            | Expr::DeleteFile(_)
+            | Expr::CreateDir(_)
+            | Expr::ListDir(_)
+            | Expr::ReadLines(_)
+            | Expr::CopyFile(_, _)
+            | Expr::MoveFile(_, _) => self.eval(e),
         }
     }
 
@@ -1466,6 +1609,17 @@ impl Vm {
                 let list_val = self.eval_in_scope(list, locals)?;
                 builtin_insert_at(&[item_val, index_val, list_val])
             }
+            // File I/O operations - delegate to eval since they don't use local scope
+            Expr::ReadFile(_)
+            | Expr::WriteFile(_, _)
+            | Expr::AppendFile(_, _)
+            | Expr::FileExists(_)
+            | Expr::DeleteFile(_)
+            | Expr::CreateDir(_)
+            | Expr::ListDir(_)
+            | Expr::ReadLines(_)
+            | Expr::CopyFile(_, _)
+            | Expr::MoveFile(_, _) => self.eval(e),
         }
     }
 
@@ -1766,6 +1920,17 @@ impl Vm {
                 let list_val = self.eval_in_scope_with_capture(list, locals, captured)?;
                 builtin_insert_at(&[item_val, index_val, list_val])
             }
+            // File I/O operations - delegate to eval since they don't use local scope
+            Expr::ReadFile(_)
+            | Expr::WriteFile(_, _)
+            | Expr::AppendFile(_, _)
+            | Expr::FileExists(_)
+            | Expr::DeleteFile(_)
+            | Expr::CreateDir(_)
+            | Expr::ListDir(_)
+            | Expr::ReadLines(_)
+            | Expr::CopyFile(_, _)
+            | Expr::MoveFile(_, _) => self.eval(e),
         }
     }
 }
@@ -2126,6 +2291,25 @@ fn dump_expr(e: &Expr) -> String {
             dump_expr(index),
             dump_expr(list)
         ),
+        // File I/O operations
+        Expr::ReadFile(path) => format!("read file at {}", dump_expr(path)),
+        Expr::WriteFile(content, path) => {
+            format!("write {} to file at {}", dump_expr(content), dump_expr(path))
+        }
+        Expr::AppendFile(content, path) => {
+            format!("append {} to file at {}", dump_expr(content), dump_expr(path))
+        }
+        Expr::FileExists(path) => format!("file exists at {}", dump_expr(path)),
+        Expr::DeleteFile(path) => format!("delete file at {}", dump_expr(path)),
+        Expr::CreateDir(path) => format!("create directory at {}", dump_expr(path)),
+        Expr::ListDir(path) => format!("list files in {}", dump_expr(path)),
+        Expr::ReadLines(path) => format!("read lines from {}", dump_expr(path)),
+        Expr::CopyFile(source, dest) => {
+            format!("copy file from {} to {}", dump_expr(source), dump_expr(dest))
+        }
+        Expr::MoveFile(source, dest) => {
+            format!("move file from {} to {}", dump_expr(source), dump_expr(dest))
+        }
     }
 }
 

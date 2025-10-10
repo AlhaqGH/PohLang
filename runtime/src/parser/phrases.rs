@@ -39,6 +39,23 @@ pub const P_INSERT: &str = "insert "; // needs ' at ' and ' in '
 pub const P_INSERT_AT: &str = " at ";
 pub const P_INSERT_IN: &str = " in ";
 
+// File I/O operation phrases
+pub const P_READ_FILE: &str = "read file at ";
+pub const P_WRITE_FILE: &str = "write "; // needs ' into file at '
+pub const P_WRITE_TO_FILE: &str = " into file at ";
+pub const P_APPEND_FILE: &str = "append "; // needs ' into file at '
+pub const P_APPEND_TO_FILE: &str = " into file at ";
+pub const P_FILE_EXISTS: &str = "file exists at ";
+pub const P_DELETE_FILE: &str = "delete file at ";
+pub const P_CREATE_DIR: &str = "create directory at ";
+pub const P_LIST_DIR: &str = "list files in ";
+pub const P_LIST_DIR_ALT: &str = "list files in directory at ";
+pub const P_READ_LINES: &str = "read lines from file at ";
+pub const P_READ_LINES_ALT: &str = "read lines from ";
+pub const P_COPY_FILE: &str = "copy file from "; // needs ' to '
+pub const P_COPY_TO: &str = " to ";
+pub const P_MOVE_FILE: &str = "move file from "; // needs ' to '
+
 pub fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
     if s.len() < prefix.len() {
         return None;

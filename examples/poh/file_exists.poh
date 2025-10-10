@@ -1,10 +1,12 @@
-Check if file exists at "myfile.txt"
-If it exists then
+Start Program
+Set fileExists to file exists at "myfile.txt"
+If fileExists is True then
     Write "File exists!"
-    Read file at "myfile.txt"
-    Write the result
+    Set content to read file at "myfile.txt"
+    Write content
 Otherwise
     Write "File does not exist"
     Write "Creating new file..."
-    Write "Hello, PohLang!" to file at "myfile.txt"
+    Set r to write "Hello, PohLang!" into file at "myfile.txt"
     Write "File created successfully!"
+End Program

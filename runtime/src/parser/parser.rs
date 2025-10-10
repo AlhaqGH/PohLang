@@ -1355,6 +1355,70 @@ fn parse_term(s: &str) -> Result<Expr> {
         }
     }
 
+    // File I/O operations
+    // read file at <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_READ_FILE) {
+        return Ok(Expr::ReadFile(Box::new(parse_expr(rest)?)));
+    }
+    // read lines from file at <path> or read lines from <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_READ_LINES) {
+        return Ok(Expr::ReadLines(Box::new(parse_expr(rest)?)));
+    }
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_READ_LINES_ALT) {
+        return Ok(Expr::ReadLines(Box::new(parse_expr(rest)?)));
+    }
+    // file exists at <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_FILE_EXISTS) {
+        return Ok(Expr::FileExists(Box::new(parse_expr(rest)?)));
+    }
+    // delete file at <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_DELETE_FILE) {
+        return Ok(Expr::DeleteFile(Box::new(parse_expr(rest)?)));
+    }
+    // create directory at <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_CREATE_DIR) {
+        return Ok(Expr::CreateDir(Box::new(parse_expr(rest)?)));
+    }
+    // list files in directory at <path> or list files in <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_LIST_DIR_ALT) {
+        return Ok(Expr::ListDir(Box::new(parse_expr(rest)?)));
+    }
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_LIST_DIR) {
+        return Ok(Expr::ListDir(Box::new(parse_expr(rest)?)));
+    }
+    // write <content> to file at <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_WRITE_FILE) {
+        if let Some((content, path)) = split_once_top_level(rest, P::P_WRITE_TO_FILE) {
+            let content_expr = parse_expr(content.trim())?;
+            let path_expr = parse_expr(path.trim())?;
+            return Ok(Expr::WriteFile(Box::new(content_expr), Box::new(path_expr)));
+        }
+    }
+    // append <content> to file at <path>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_APPEND_FILE) {
+        if let Some((content, path)) = split_once_top_level(rest, P::P_APPEND_TO_FILE) {
+            let content_expr = parse_expr(content.trim())?;
+            let path_expr = parse_expr(path.trim())?;
+            return Ok(Expr::AppendFile(Box::new(content_expr), Box::new(path_expr)));
+        }
+    }
+    // copy file from <source> to <dest>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_COPY_FILE) {
+        if let Some((source, dest)) = split_once_top_level(rest, P::P_COPY_TO) {
+            let source_expr = parse_expr(source.trim())?;
+            let dest_expr = parse_expr(dest.trim())?;
+            return Ok(Expr::CopyFile(Box::new(source_expr), Box::new(dest_expr)));
+        }
+    }
+    // move file from <source> to <dest>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_MOVE_FILE) {
+        if let Some((source, dest)) = split_once_top_level(rest, P::P_COPY_TO) {
+            let source_expr = parse_expr(source.trim())?;
+            let dest_expr = parse_expr(dest.trim())?;
+            return Ok(Expr::MoveFile(Box::new(source_expr), Box::new(dest_expr)));
+        }
+    }
+
     // String literal
     if (s.starts_with('"') && s.ends_with('"') && s.len() >= 2)
         || (s.starts_with('\'') && s.ends_with('\'') && s.len() >= 2)

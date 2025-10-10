@@ -1,3 +1,5 @@
-Read file at "data.txt"
+Start Program
+Set content to read file at "data.txt"
 Write "File contents:"
-Write the result
+Write content
+End Program
