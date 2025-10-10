@@ -50,14 +50,14 @@ pub fn create_directory(path: &str) -> io::Result<()> {
 pub fn list_directory(path: &str) -> io::Result<Vec<String>> {
     let entries = fs::read_dir(path)?;
     let mut files = Vec::new();
-    
+
     for entry in entries {
         let entry = entry?;
         if let Some(filename) = entry.file_name().to_str() {
             files.push(filename.to_string());
         }
     }
-    
+
     Ok(files)
 }
 
@@ -165,11 +165,23 @@ mod tests {
     #[test]
     fn test_list_directory() {
         let temp_dir = TempDir::new().unwrap();
-        
+
         // Create some test files
-        write_file(test_file_path(&temp_dir, "file1.txt").to_str().unwrap(), "test").unwrap();
-        write_file(test_file_path(&temp_dir, "file2.txt").to_str().unwrap(), "test").unwrap();
-        write_file(test_file_path(&temp_dir, "file3.txt").to_str().unwrap(), "test").unwrap();
+        write_file(
+            test_file_path(&temp_dir, "file1.txt").to_str().unwrap(),
+            "test",
+        )
+        .unwrap();
+        write_file(
+            test_file_path(&temp_dir, "file2.txt").to_str().unwrap(),
+            "test",
+        )
+        .unwrap();
+        write_file(
+            test_file_path(&temp_dir, "file3.txt").to_str().unwrap(),
+            "test",
+        )
+        .unwrap();
 
         // List directory
         let files = list_directory(temp_dir.path().to_str().unwrap()).unwrap();

@@ -1,6 +1,5 @@
 /// Error handling infrastructure for PohLang
 /// Provides structured error types, stack traces, and error operations
-
 use std::fmt;
 
 /// A PohLang error with type, message, and stack trace
@@ -76,7 +75,7 @@ impl PohError {
             ErrorKind::Custom(name) => name.clone(),
         }
     }
-    
+
     /// Get the error type as a natural English description
     pub fn type_description(&self) -> &str {
         match &self.kind {
@@ -103,10 +102,20 @@ impl PohError {
         let type_marker = format!("[{}]", self.type_string());
         let mut output = if matches!(self.kind, ErrorKind::Custom(_)) {
             // For custom errors, show the type name
-            format!("{} {} occurred: {}", type_marker, self.type_string(), self.message)
+            format!(
+                "{} {} occurred: {}",
+                type_marker,
+                self.type_string(),
+                self.message
+            )
         } else {
             // For built-in errors, use natural description
-            format!("{} Error occurred: {} - {}", type_marker, self.type_description(), self.message)
+            format!(
+                "{} Error occurred: {} - {}",
+                type_marker,
+                self.type_description(),
+                self.message
+            )
         };
 
         if !self.stack_trace.is_empty() {
@@ -200,10 +209,7 @@ mod tests {
     #[test]
     fn test_error_kind_from_string() {
         assert_eq!(ErrorKind::from_string("MathError"), ErrorKind::MathError);
-        assert_eq!(
-            ErrorKind::from_string("matherror"),
-            ErrorKind::MathError
-        ); // case insensitive
+        assert_eq!(ErrorKind::from_string("matherror"), ErrorKind::MathError); // case insensitive
         assert_eq!(ErrorKind::from_string("FileError"), ErrorKind::FileError);
         assert_eq!(
             ErrorKind::from_string("CustomError"),

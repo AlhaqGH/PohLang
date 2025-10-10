@@ -430,27 +430,32 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         if P::strip_prefix_ci(t, P::P_TRY).is_some() {
             *i += 1;
             // Parse try block
-            let try_block = parse_until_keywords(lines, i, &[P::P_IF_ERROR, P::P_FINALLY, P::P_END_TRY, "End"])?;
-            
+            let try_block = parse_until_keywords(
+                lines,
+                i,
+                &[P::P_IF_ERROR, P::P_FINALLY, P::P_END_TRY, "End"],
+            )?;
+
             let mut catch_handlers = Vec::new();
             let mut finally_block = None;
-            
+
             // Parse catch handlers
             while *i < lines.len() {
                 let line = lines[*i].trim();
-                
+
                 // Check for "if error" catch clause
                 if let Some(rest) = P::strip_prefix_ci(line, P::P_IF_ERROR) {
                     *i += 1;
-                    
+
                     let rest = rest.trim();
                     let mut error_type = None;
                     let mut var_name = None;
-                    
+
                     // Check for "of type X"
                     if let Some(after_of_type) = strip_prefix_ci(rest, "of type ") {
                         // Split on " as " to get type and variable name
-                        if let Some((type_part, var_part)) = split_once_word(after_of_type, " as ") {
+                        if let Some((type_part, var_part)) = split_once_word(after_of_type, " as ")
+                        {
                             error_type = Some(type_part.trim().trim_matches('"').to_string());
                             var_name = Some(var_part.trim().to_string());
                         } else {
@@ -462,10 +467,14 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                         var_name = Some(rest_as.trim().to_string());
                     }
                     // else: just "if error" - catch all without binding
-                    
+
                     // Parse catch body
-                    let block = parse_until_keywords(lines, i, &[P::P_IF_ERROR, P::P_FINALLY, P::P_END_TRY, "End"])?;
-                    
+                    let block = parse_until_keywords(
+                        lines,
+                        i,
+                        &[P::P_IF_ERROR, P::P_FINALLY, P::P_END_TRY, "End"],
+                    )?;
+
                     catch_handlers.push(CatchHandler {
                         error_type,
                         var_name,
@@ -473,23 +482,26 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                     });
                     continue;
                 }
-                
+
                 // Check for "finally"
                 if P::strip_prefix_ci(line, P::P_FINALLY).is_some() {
                     *i += 1;
                     finally_block = Some(parse_until_keywords(lines, i, &[P::P_END_TRY, "End"])?);
                     continue;
                 }
-                
+
                 // Check for "end try"
                 if P::strip_prefix_ci(line, P::P_END_TRY).is_some() || line == "End" {
                     *i += 1;
                     break;
                 }
-                
-                return Err(anyhow!("Expected 'if error', 'finally', or 'end try', found '{}'", line));
+
+                return Err(anyhow!(
+                    "Expected 'if error', 'finally', or 'end try', found '{}'",
+                    line
+                ));
             }
-            
+
             out.push(Stmt::TryCatch {
                 try_block,
                 catch_handlers,
@@ -783,7 +795,11 @@ fn parse_add(s: &str) -> Result<Expr> {
     let sym_minus_parts = split_top_level(s, " - ");
 
     // If we have any operators, process them in order
-    if plus_parts.len() > 1 || minus_parts.len() > 1 || sym_plus_parts.len() > 1 || sym_minus_parts.len() > 1 {
+    if plus_parts.len() > 1
+        || minus_parts.len() > 1
+        || sym_plus_parts.len() > 1
+        || sym_minus_parts.len() > 1
+    {
         // Find which operator comes first
         let mut tokens: Vec<(usize, bool, String)> = Vec::new(); // (position, is_plus, text)
         let mut pos = 0;
@@ -887,8 +903,10 @@ fn parse_mult(s: &str) -> Result<Expr> {
     let sym_mult_parts = split_top_level(s, " * ");
     let sym_div_parts = split_top_level(s, " / ");
 
-    if times_parts.len() > 1 || div_parts.len() > 1
-        || sym_mult_parts.len() > 1 || sym_div_parts.len() > 1
+    if times_parts.len() > 1
+        || div_parts.len() > 1
+        || sym_mult_parts.len() > 1
+        || sym_div_parts.len() > 1
     {
         // Find which operator comes first
         let mut tokens: Vec<(usize, bool, String)> = Vec::new(); // (position, is_times, text)
@@ -1493,7 +1511,10 @@ fn parse_term(s: &str) -> Result<Expr> {
         if let Some((content, path)) = split_once_top_level(rest, P::P_APPEND_TO_FILE) {
             let content_expr = parse_expr(content.trim())?;
             let path_expr = parse_expr(path.trim())?;
-            return Ok(Expr::AppendFile(Box::new(content_expr), Box::new(path_expr)));
+            return Ok(Expr::AppendFile(
+                Box::new(content_expr),
+                Box::new(path_expr),
+            ));
         }
     }
     // copy file from <source> to <dest>

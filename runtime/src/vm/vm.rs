@@ -112,12 +112,12 @@ impl Vm {
     pub fn set_current_file(&mut self, file: String) {
         self.current_file = file;
     }
-    
+
     /// Get the current file being executed
     pub fn current_file(&self) -> &str {
         &self.current_file
     }
-    
+
     /// Create an error with file location context
     fn error_with_location(&self, message: impl Into<String>) -> anyhow::Error {
         let msg = message.into();
@@ -127,7 +127,7 @@ impl Vm {
             anyhow::anyhow!("{}\n  in file: {}", msg, self.current_file)
         }
     }
-    
+
     pub fn execute(&mut self, prog: &Program) -> Result<()> {
         for stmt in prog {
             match stmt {
@@ -257,10 +257,14 @@ impl Vm {
                     self.globals.insert(name.clone(), v);
                 }
                 Stmt::Return(_) => { /* top-level Return ignored */ }
-                Stmt::TryCatch { try_block, catch_handlers, finally_block } => {
+                Stmt::TryCatch {
+                    try_block,
+                    catch_handlers,
+                    finally_block,
+                } => {
                     // Execute try block
                     let try_result = self.execute(&try_block);
-                    
+
                     // If try succeeded or no catch handlers, run finally and return
                     if try_result.is_ok() || catch_handlers.is_empty() {
                         if let Some(fin) = finally_block {
@@ -269,10 +273,10 @@ impl Vm {
                         try_result?;
                         continue;
                     }
-                    
+
                     // Try block failed - extract error message
                     let err_msg = try_result.unwrap_err().to_string();
-                    
+
                     // Extract error type from [TypeName] marker if present
                     let error_type_from_msg = if let Some(start) = err_msg.find('[') {
                         if let Some(end) = err_msg.find(']') {
@@ -287,7 +291,7 @@ impl Vm {
                     } else {
                         None
                     };
-                    
+
                     // Try to match a catch handler
                     let mut handled = false;
                     for handler in catch_handlers {
@@ -303,7 +307,7 @@ impl Vm {
                         } else {
                             true // No type specified = catch all
                         };
-                        
+
                         if type_matches {
                             // Bind error message to variable if specified
                             if let Some(ref var_name) = handler.var_name {
@@ -315,21 +319,21 @@ impl Vm {
                                 };
                                 self.globals.insert(var_name.clone(), Value::Str(clean_msg));
                             }
-                            
+
                             // Execute catch block
                             let catch_result = self.execute(&handler.block);
-                            
+
                             // Always execute finally block
                             if let Some(fin) = finally_block {
                                 self.execute(fin)?;
                             }
-                            
+
                             catch_result?;
                             handled = true;
                             break;
                         }
                     }
-                    
+
                     // No matching catch handler - execute finally and re-raise
                     if !handled {
                         if let Some(fin) = finally_block {
@@ -907,9 +911,10 @@ impl Vm {
                     _ => bail!("get from json: key must be a string"),
                 };
                 match json_val {
-                    Value::Dict(ref map) => {
-                        map.get(&key).cloned().ok_or_else(|| anyhow!("Key '{}' not found in JSON object", key))
-                    }
+                    Value::Dict(ref map) => map
+                        .get(&key)
+                        .cloned()
+                        .ok_or_else(|| anyhow!("Key '{}' not found in JSON object", key)),
                     _ => bail!("get from json: first argument must be a JSON object (dictionary)"),
                 }
             }
@@ -929,12 +934,8 @@ impl Vm {
                     _ => bail!("set in json: first argument must be a JSON object (dictionary)"),
                 }
             }
-            Expr::NewJsonObject => {
-                Ok(Value::Dict(HashMap::new()))
-            }
-            Expr::NewJsonArray => {
-                Ok(Value::List(Vec::new()))
-            }
+            Expr::NewJsonObject => Ok(Value::Dict(HashMap::new())),
+            Expr::NewJsonArray => Ok(Value::List(Vec::new())),
             Expr::JsonPush(json_expr, item_expr) => {
                 let json_val = self.eval(json_expr)?;
                 let item_val = self.eval(item_expr)?;
@@ -968,7 +969,10 @@ impl Vm {
                     _ => bail!("error type of: argument must be an error value"),
                 }
             }
-            Expr::NewError { error_type, message } => {
+            Expr::NewError {
+                error_type,
+                message,
+            } => {
                 let msg_val = self.eval(message)?;
                 let msg_str = to_string(&msg_val);
                 let kind = ErrorKind::from_string(error_type);
@@ -1015,11 +1019,9 @@ impl Vm {
         match value {
             Value::Null => Ok(JsonValue::Null),
             Value::Bool(b) => Ok(JsonValue::Bool(*b)),
-            Value::Num(n) => {
-                Ok(serde_json::Number::from_f64(*n)
-                    .map(JsonValue::Number)
-                    .unwrap_or(JsonValue::Null))
-            }
+            Value::Num(n) => Ok(serde_json::Number::from_f64(*n)
+                .map(JsonValue::Number)
+                .unwrap_or(JsonValue::Null)),
             Value::Str(s) => Ok(JsonValue::String(s.clone())),
             Value::List(vec) => {
                 let mut arr = Vec::new();
@@ -1071,7 +1073,9 @@ impl Vm {
     fn build_stack_trace(&self) -> Vec<StackFrame> {
         self.call_stack
             .iter()
-            .map(|frame| StackFrame::new(frame.function_name.clone(), frame.file.clone(), frame.line))
+            .map(|frame| {
+                StackFrame::new(frame.function_name.clone(), frame.file.clone(), frame.line)
+            })
             .collect()
     }
 
@@ -2683,10 +2687,18 @@ fn dump_expr(e: &Expr) -> String {
         // File I/O operations
         Expr::ReadFile(path) => format!("read file at {}", dump_expr(path)),
         Expr::WriteFile(content, path) => {
-            format!("write {} to file at {}", dump_expr(content), dump_expr(path))
+            format!(
+                "write {} to file at {}",
+                dump_expr(content),
+                dump_expr(path)
+            )
         }
         Expr::AppendFile(content, path) => {
-            format!("append {} to file at {}", dump_expr(content), dump_expr(path))
+            format!(
+                "append {} to file at {}",
+                dump_expr(content),
+                dump_expr(path)
+            )
         }
         Expr::FileExists(path) => format!("file exists at {}", dump_expr(path)),
         Expr::DeleteFile(path) => format!("delete file at {}", dump_expr(path)),
@@ -2694,10 +2706,18 @@ fn dump_expr(e: &Expr) -> String {
         Expr::ListDir(path) => format!("list files in {}", dump_expr(path)),
         Expr::ReadLines(path) => format!("read lines from {}", dump_expr(path)),
         Expr::CopyFile(source, dest) => {
-            format!("copy file from {} to {}", dump_expr(source), dump_expr(dest))
+            format!(
+                "copy file from {} to {}",
+                dump_expr(source),
+                dump_expr(dest)
+            )
         }
         Expr::MoveFile(source, dest) => {
-            format!("move file from {} to {}", dump_expr(source), dump_expr(dest))
+            format!(
+                "move file from {} to {}",
+                dump_expr(source),
+                dump_expr(dest)
+            )
         }
         // JSON operations
         Expr::ParseJson(s) => format!("parse json from {}", dump_expr(s)),
@@ -2714,13 +2734,22 @@ fn dump_expr(e: &Expr) -> String {
         }
         Expr::NewJsonObject => "new json object".to_string(),
         Expr::NewJsonArray => "new json array".to_string(),
-        Expr::JsonPush(json, item) => format!("push {} to json {}", dump_expr(item), dump_expr(json)),
+        Expr::JsonPush(json, item) => {
+            format!("push {} to json {}", dump_expr(item), dump_expr(json))
+        }
         Expr::JsonLength(json) => format!("json length of {}", dump_expr(json)),
         // Error operations
         Expr::ErrorMessage(e) => format!("error message of {}", dump_expr(e)),
         Expr::ErrorType(e) => format!("error type of {}", dump_expr(e)),
-        Expr::NewError { error_type, message } => {
-            format!("error of type {} with message {}", error_type, dump_expr(message))
+        Expr::NewError {
+            error_type,
+            message,
+        } => {
+            format!(
+                "error of type {} with message {}",
+                error_type,
+                dump_expr(message)
+            )
         }
     }
 }
@@ -2757,10 +2786,7 @@ fn to_string(v: &Value) -> String {
         Value::Func(f) => format!("<function {}>", f.name),
         Value::List(xs) => format!(
             "[{}]",
-            xs.iter()
-                .map(to_string)
-                .collect::<Vec<_>>()
-                .join(", ")
+            xs.iter().map(to_string).collect::<Vec<_>>().join(", ")
         ),
         Value::Dict(m) => {
             let mut parts: Vec<String> = Vec::new();
@@ -2867,10 +2893,7 @@ fn builtin_join(args: &[Value]) -> Result<Value> {
     };
     match &args[0] {
         Value::List(xs) => Ok(Value::Str(
-            xs.iter()
-                .map(to_string)
-                .collect::<Vec<_>>()
-                .join(&sep),
+            xs.iter().map(to_string).collect::<Vec<_>>().join(&sep),
         )),
         other => Ok(Value::Str(to_string(other))),
     }

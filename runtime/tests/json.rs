@@ -8,7 +8,7 @@ use tempfile::TempDir;
 fn test_parse_json_object() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -31,7 +31,7 @@ Write "Parsed JSON successfully"
 fn test_json_get() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -55,7 +55,7 @@ Write name
 fn test_json_set() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -81,7 +81,7 @@ Write json_str
 fn test_new_json_object() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -106,7 +106,7 @@ Write json_str
 fn test_new_json_array() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -134,7 +134,7 @@ Write json_str
 fn test_json_length_array() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -158,7 +158,7 @@ Write len
 fn test_json_length_object() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -182,7 +182,7 @@ Write len
 fn test_json_pretty() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -207,7 +207,7 @@ Write pretty
 fn test_json_roundtrip() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
-    
+
     fs::write(
         &test_file,
         r#"
@@ -233,7 +233,7 @@ fn test_json_with_file() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("test.poh");
     let json_file = temp_dir.path().join("data.json");
-    
+
     fs::write(
         &test_file,
         format!(
@@ -259,7 +259,7 @@ Write content
         .success()
         .stdout(predicate::str::contains("message"))
         .stdout(predicate::str::contains("Hello from PohLang"));
-    
+
     // Verify the file was actually created
     assert!(json_file.exists());
 }
