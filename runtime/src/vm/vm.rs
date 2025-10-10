@@ -263,7 +263,7 @@ impl Vm {
                     finally_block,
                 } => {
                     // Execute try block
-                    let try_result = self.execute(&try_block);
+                    let try_result = self.execute(try_block);
 
                     // If try succeeded or no catch handlers, run finally and return
                     if try_result.is_ok() || catch_handlers.is_empty() {
@@ -983,6 +983,7 @@ impl Vm {
     }
 
     // Helper to convert serde_json::Value to our Value
+    #[allow(clippy::only_used_in_recursion)]
     fn json_to_value(&self, json: &serde_json::Value) -> Result<Value> {
         use serde_json::Value as JsonValue;
         match json {
@@ -1014,6 +1015,7 @@ impl Vm {
     }
 
     // Helper to convert our Value to serde_json::Value
+    #[allow(clippy::only_used_in_recursion)]
     fn value_to_json(&self, value: &Value) -> Result<serde_json::Value> {
         use serde_json::Value as JsonValue;
         match value {
@@ -1056,6 +1058,7 @@ impl Vm {
     }
 
     /// Push a new frame onto the call stack for error tracking
+    #[allow(dead_code)]
     fn push_call_frame(&mut self, function_name: impl Into<String>) {
         self.call_stack.push(CallFrame {
             function_name: function_name.into(),
@@ -1065,6 +1068,7 @@ impl Vm {
     }
 
     /// Pop the topmost call frame when returning from a function
+    #[allow(dead_code)]
     fn pop_call_frame(&mut self) {
         self.call_stack.pop();
     }
