@@ -71,6 +71,19 @@ pub const P_JSON_PUSH: &str = "push "; // needs ' to json '
 pub const P_JSON_PUSH_TO: &str = " to json ";
 pub const P_JSON_LENGTH: &str = "json length of ";
 
+// Error handling phrases
+pub const P_TRY: &str = "try this:";
+pub const P_IF_ERROR: &str = "if error";
+pub const P_OF_TYPE: &str = " of type ";
+pub const P_AS: &str = " as ";
+pub const P_FINALLY: &str = "finally:";
+pub const P_END_TRY: &str = "end try";
+pub const P_THROW: &str = "throw ";
+pub const P_ERROR: &str = "error";
+pub const P_ERROR_MESSAGE: &str = "error message of ";
+pub const P_ERROR_TYPE: &str = "error type of ";
+pub const P_WITH_MESSAGE: &str = " with message ";
+
 pub fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
     if s.len() < prefix.len() {
         return None;

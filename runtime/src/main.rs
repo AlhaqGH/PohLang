@@ -39,6 +39,8 @@ fn main() -> anyhow::Result<()> {
                 .unwrap_or_else(|| std::path::Path::new("."))
                 .to_path_buf(),
         );
+        // Set the current file being executed
+        vm.set_current_file(args.input.display().to_string());
         vm.execute(&program)?;
         return Ok(());
     }

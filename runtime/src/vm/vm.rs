@@ -1,6 +1,7 @@
 use super::instructions::Instruction;
 use crate::core::io as core_io;
 use crate::parser::ast::{CmpOp, Expr, Param, Program, Stmt};
+use crate::stdlib::errors::{ErrorKind, PohError, StackFrame};
 use anyhow::{anyhow, bail, Result};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -41,6 +42,7 @@ enum Value {
     Func(Func),
     List(Vec<Value>),
     Dict(HashMap<String, Value>),
+    Error(PohError),
 }
 
 #[derive(Clone, Debug)]
@@ -49,6 +51,13 @@ struct Func {
     params: Vec<Param>,
     body: Expr,
     captured: Vec<HashMap<String, Value>>, // lexical chain from inner to outer
+}
+
+#[derive(Clone, Debug)]
+struct CallFrame {
+    function_name: String,
+    file: String,
+    line: usize,
 }
 
 pub struct Vm {
@@ -60,6 +69,8 @@ pub struct Vm {
     system_exports: HashMap<String, HashMap<String, Value>>,
     module_aliases: HashMap<String, String>,
     exposed_symbols: HashMap<String, String>,
+    call_stack: Vec<CallFrame>,
+    current_file: String,
 }
 
 impl Default for Vm {
@@ -73,6 +84,8 @@ impl Default for Vm {
             system_exports: HashMap::new(),
             module_aliases: HashMap::new(),
             exposed_symbols: HashMap::new(),
+            call_stack: Vec::new(),
+            current_file: String::from("<main>"),
         }
     }
 }
@@ -88,11 +101,33 @@ impl Vm {
             system_exports: HashMap::new(),
             module_aliases: HashMap::new(),
             exposed_symbols: HashMap::new(),
+            call_stack: Vec::new(),
+            current_file: String::from("<main>"),
         }
     }
 }
 
 impl Vm {
+    /// Set the current file being executed (for error reporting)
+    pub fn set_current_file(&mut self, file: String) {
+        self.current_file = file;
+    }
+    
+    /// Get the current file being executed
+    pub fn current_file(&self) -> &str {
+        &self.current_file
+    }
+    
+    /// Create an error with file location context
+    fn error_with_location(&self, message: impl Into<String>) -> anyhow::Error {
+        let msg = message.into();
+        if self.current_file.is_empty() {
+            anyhow::anyhow!("{}", msg)
+        } else {
+            anyhow::anyhow!("{}\n  in file: {}", msg, self.current_file)
+        }
+    }
+    
     pub fn execute(&mut self, prog: &Program) -> Result<()> {
         for stmt in prog {
             match stmt {
@@ -222,6 +257,99 @@ impl Vm {
                     self.globals.insert(name.clone(), v);
                 }
                 Stmt::Return(_) => { /* top-level Return ignored */ }
+                Stmt::TryCatch { try_block, catch_handlers, finally_block } => {
+                    // Execute try block
+                    let try_result = self.execute(&try_block);
+                    
+                    // If try succeeded or no catch handlers, run finally and return
+                    if try_result.is_ok() || catch_handlers.is_empty() {
+                        if let Some(fin) = finally_block {
+                            self.execute(fin)?;
+                        }
+                        try_result?;
+                        continue;
+                    }
+                    
+                    // Try block failed - extract error message
+                    let err_msg = try_result.unwrap_err().to_string();
+                    
+                    // Extract error type from [TypeName] marker if present
+                    let error_type_from_msg = if let Some(start) = err_msg.find('[') {
+                        if let Some(end) = err_msg.find(']') {
+                            if start < end {
+                                Some(err_msg[start + 1..end].to_string())
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+                    
+                    // Try to match a catch handler
+                    let mut handled = false;
+                    for handler in catch_handlers {
+                        // Check if error type matches (if specified)
+                        let type_matches = if let Some(ref error_type) = handler.error_type {
+                            // Match against extracted type marker first, then fallback to message search
+                            if let Some(ref msg_type) = error_type_from_msg {
+                                msg_type.eq_ignore_ascii_case(error_type)
+                            } else {
+                                // Fallback: case-insensitive message search
+                                err_msg.to_lowercase().contains(&error_type.to_lowercase())
+                            }
+                        } else {
+                            true // No type specified = catch all
+                        };
+                        
+                        if type_matches {
+                            // Bind error message to variable if specified
+                            if let Some(ref var_name) = handler.var_name {
+                                // Remove [TypeName] marker before binding for cleaner user display
+                                let clean_msg = if let Some(end) = err_msg.find(']') {
+                                    err_msg[end + 1..].trim().to_string()
+                                } else {
+                                    err_msg.clone()
+                                };
+                                self.globals.insert(var_name.clone(), Value::Str(clean_msg));
+                            }
+                            
+                            // Execute catch block
+                            let catch_result = self.execute(&handler.block);
+                            
+                            // Always execute finally block
+                            if let Some(fin) = finally_block {
+                                self.execute(fin)?;
+                            }
+                            
+                            catch_result?;
+                            handled = true;
+                            break;
+                        }
+                    }
+                    
+                    // No matching catch handler - execute finally and re-raise
+                    if !handled {
+                        if let Some(fin) = finally_block {
+                            self.execute(fin)?;
+                        }
+                        bail!("{}", err_msg);
+                    }
+                }
+                Stmt::Throw(expr) => {
+                    let val = self.eval(expr)?;
+                    let error_msg = match val {
+                        Value::Error(e) => e.format_with_trace(),
+                        _ => {
+                            let msg = to_string(&val);
+                            let error = self.create_error(ErrorKind::RuntimeError, msg);
+                            error.format_with_trace()
+                        }
+                    };
+                    return Err(self.error_with_location(error_msg));
+                }
             }
         }
         Ok(())
@@ -279,7 +407,7 @@ impl Vm {
                     let a = stack.pop().unwrap_or(Value::Num(0.0));
                     let db = to_num(b)?;
                     if db == 0.0 {
-                        return Err(anyhow!("Division by zero"));
+                        return Err(self.error_with_location("Division by zero"));
                     }
                     stack.push(Value::Num(to_num(a)? / db));
                 }
@@ -392,7 +520,7 @@ impl Vm {
                 match (sa, sb) {
                     (Value::Num(na), Value::Num(nb)) => {
                         if nb == 0.0 {
-                            Err(anyhow!("Division by zero"))
+                            Err(self.error_with_location("Division by zero"))
                         } else {
                             Ok(Value::Num(na / nb))
                         }
@@ -826,6 +954,27 @@ impl Vm {
                     _ => bail!("json length of: argument must be a JSON array or object"),
                 }
             }
+            Expr::ErrorMessage(err_expr) => {
+                let err_val = self.eval(err_expr)?;
+                match err_val {
+                    Value::Error(e) => Ok(Value::Str(e.message.clone())),
+                    _ => bail!("error message of: argument must be an error value"),
+                }
+            }
+            Expr::ErrorType(err_expr) => {
+                let err_val = self.eval(err_expr)?;
+                match err_val {
+                    Value::Error(e) => Ok(Value::Str(e.type_string())),
+                    _ => bail!("error type of: argument must be an error value"),
+                }
+            }
+            Expr::NewError { error_type, message } => {
+                let msg_val = self.eval(message)?;
+                let msg_str = to_string(&msg_val);
+                let kind = ErrorKind::from_string(error_type);
+                let error = self.create_error(kind, msg_str);
+                Ok(Value::Error(error))
+            }
         }
     }
 
@@ -887,6 +1036,7 @@ impl Vm {
                 Ok(JsonValue::Object(obj))
             }
             Value::Func(_) => bail!("Cannot convert function to JSON"),
+            Value::Error(e) => bail!("Cannot convert error to JSON: {}", e.message),
         }
     }
 
@@ -899,7 +1049,35 @@ impl Vm {
             Value::Func(_) => Ok(true),
             Value::List(v) => Ok(!v.is_empty()),
             Value::Dict(m) => Ok(!m.is_empty()),
+            Value::Error(_) => Ok(true), // Errors are truthy (presence indicates something went wrong)
         }
+    }
+
+    /// Push a new frame onto the call stack for error tracking
+    fn push_call_frame(&mut self, function_name: impl Into<String>) {
+        self.call_stack.push(CallFrame {
+            function_name: function_name.into(),
+            file: self.current_file.clone(),
+            line: 0, // Line tracking can be added later if needed
+        });
+    }
+
+    /// Pop the topmost call frame when returning from a function
+    fn pop_call_frame(&mut self) {
+        self.call_stack.pop();
+    }
+
+    /// Build a stack trace from the current call stack
+    fn build_stack_trace(&self) -> Vec<StackFrame> {
+        self.call_stack
+            .iter()
+            .map(|frame| StackFrame::new(frame.function_name.clone(), frame.file.clone(), frame.line))
+            .collect()
+    }
+
+    /// Create a PohError with the current stack trace
+    fn create_error(&self, kind: ErrorKind, message: impl Into<String>) -> PohError {
+        PohError::with_stack_trace(kind, message, self.build_stack_trace())
     }
 
     fn call_function(&self, name: &str, args: &[Value]) -> Result<Value> {
@@ -1198,6 +1376,28 @@ impl Vm {
                     };
                     return ControlFlow::Return(v);
                 }
+                Stmt::TryCatch { .. } => {
+                    // TODO: Implement proper try/catch in function context
+                    // For now, just continue execution
+                    // Full implementation requires propagating errors through ControlFlow
+                    return ControlFlow::Continue;
+                }
+                Stmt::Throw(expr) => {
+                    // Evaluate throw expression in function context
+                    if let Ok(val) = self.eval_in_frame(expr, frame) {
+                        match val {
+                            Value::Error(e) => {
+                                eprintln!("{}", e.format_with_trace());
+                            }
+                            _ => {
+                                let msg = to_string(&val);
+                                let error = self.create_error(ErrorKind::RuntimeError, msg);
+                                eprintln!("{}", error.format_with_trace());
+                            }
+                        }
+                    }
+                    return ControlFlow::Return(None);
+                }
             }
         }
         ControlFlow::Continue
@@ -1250,7 +1450,7 @@ impl Vm {
                 match (sa, sb) {
                     (Value::Num(na), Value::Num(nb)) => {
                         if nb == 0.0 {
-                            Err(anyhow!("Division by zero"))
+                            Err(self.error_with_location("Division by zero"))
                         } else {
                             Ok(Value::Num(na / nb))
                         }
@@ -1501,7 +1701,11 @@ impl Vm {
             | Expr::NewJsonObject
             | Expr::NewJsonArray
             | Expr::JsonPush(_, _)
-            | Expr::JsonLength(_) => self.eval(e),
+            | Expr::JsonLength(_)
+            // Error operations - also delegate to eval
+            | Expr::ErrorMessage(_)
+            | Expr::ErrorType(_)
+            | Expr::NewError { .. } => self.eval(e),
         }
     }
 
@@ -1547,7 +1751,7 @@ impl Vm {
                 match (sa, sb) {
                     (Value::Num(na), Value::Num(nb)) => {
                         if nb == 0.0 {
-                            Err(anyhow!("Division by zero"))
+                            Err(self.error_with_location("Division by zero"))
                         } else {
                             Ok(Value::Num(na / nb))
                         }
@@ -1786,7 +1990,11 @@ impl Vm {
             | Expr::NewJsonObject
             | Expr::NewJsonArray
             | Expr::JsonPush(_, _)
-            | Expr::JsonLength(_) => self.eval(e),
+            | Expr::JsonLength(_)
+            // Error operations - also delegate to eval
+            | Expr::ErrorMessage(_)
+            | Expr::ErrorType(_)
+            | Expr::NewError { .. } => self.eval(e),
         }
     }
 
@@ -1845,7 +2053,7 @@ impl Vm {
                 match (sa, sb) {
                     (Value::Num(na), Value::Num(nb)) => {
                         if nb == 0.0 {
-                            Err(anyhow!("Division by zero"))
+                            Err(self.error_with_location("Division by zero"))
                         } else {
                             Ok(Value::Num(na / nb))
                         }
@@ -2107,7 +2315,11 @@ impl Vm {
             | Expr::NewJsonObject
             | Expr::NewJsonArray
             | Expr::JsonPush(_, _)
-            | Expr::JsonLength(_) => self.eval(e),
+            | Expr::JsonLength(_)
+            // Error operations - also delegate to eval
+            | Expr::ErrorMessage(_)
+            | Expr::ErrorType(_)
+            | Expr::NewError { .. } => self.eval(e),
         }
     }
 }
@@ -2504,6 +2716,12 @@ fn dump_expr(e: &Expr) -> String {
         Expr::NewJsonArray => "new json array".to_string(),
         Expr::JsonPush(json, item) => format!("push {} to json {}", dump_expr(item), dump_expr(json)),
         Expr::JsonLength(json) => format!("json length of {}", dump_expr(json)),
+        // Error operations
+        Expr::ErrorMessage(e) => format!("error message of {}", dump_expr(e)),
+        Expr::ErrorType(e) => format!("error type of {}", dump_expr(e)),
+        Expr::NewError { error_type, message } => {
+            format!("error of type {} with message {}", error_type, dump_expr(message))
+        }
     }
 }
 
@@ -2551,6 +2769,14 @@ fn to_string(v: &Value) -> String {
             }
             format!("{{{}}}", parts.join(", "))
         }
+        Value::Error(e) => {
+            // Natural format when printing error values
+            if matches!(e.kind, ErrorKind::Custom(_)) {
+                format!("{} occurred: {}", e.type_string(), e.message)
+            } else {
+                format!("Error occurred: {} - {}", e.type_description(), e.message)
+            }
+        }
     }
 }
 
@@ -2562,6 +2788,7 @@ fn to_num(v: Value) -> Result<f64> {
             .map_err(|_| anyhow!("Cannot convert string to number: {}", s)),
         Value::Bool(b) => Ok(if b { 1.0 } else { 0.0 }),
         Value::Null => Ok(0.0),
+        Value::Error(e) => Err(anyhow!("Cannot convert error to number: {}", e.message)),
         _ => Err(anyhow!("Cannot convert value to number: {}", to_string(&v))),
     }
 }

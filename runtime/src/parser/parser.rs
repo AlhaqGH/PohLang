@@ -1,7 +1,17 @@
-use crate::parser::ast::{CmpOp, Expr, Param, Program, Stmt};
+use crate::parser::ast::{CatchHandler, CmpOp, Expr, Param, Program, Stmt};
 use crate::parser::phrases as P;
 use crate::parser::phrases::strip_prefix_ci;
 use anyhow::{anyhow, Result};
+
+// Helper to check if a line starts with any of the given prefixes (case-insensitive)
+fn line_starts_with_any(line: &str, prefixes: &[&str]) -> bool {
+    for prefix in prefixes {
+        if P::strip_prefix_ci(line, prefix).is_some() {
+            return true;
+        }
+    }
+    false
+}
 
 fn suggest_fix(error_msg: &str, context: &str) -> String {
     let suggestions = vec![
@@ -127,7 +137,8 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
     let mut out = Vec::new();
     while *i < lines.len() {
         let t = lines[*i].trim();
-        if stops.contains(&t) {
+        // Check exact match or prefix match
+        if stops.contains(&t) || line_starts_with_any(t, stops) {
             break;
         }
 
@@ -415,6 +426,77 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
             *i += 1;
             continue;
         }
+        // Try-Catch
+        if P::strip_prefix_ci(t, P::P_TRY).is_some() {
+            *i += 1;
+            // Parse try block
+            let try_block = parse_until_keywords(lines, i, &[P::P_IF_ERROR, P::P_FINALLY, P::P_END_TRY, "End"])?;
+            
+            let mut catch_handlers = Vec::new();
+            let mut finally_block = None;
+            
+            // Parse catch handlers
+            while *i < lines.len() {
+                let line = lines[*i].trim();
+                
+                // Check for "if error" catch clause
+                if let Some(rest) = P::strip_prefix_ci(line, P::P_IF_ERROR) {
+                    *i += 1;
+                    
+                    let rest = rest.trim();
+                    let mut error_type = None;
+                    let mut var_name = None;
+                    
+                    // Check for "of type X"
+                    if let Some(after_of_type) = strip_prefix_ci(rest, "of type ") {
+                        // Split on " as " to get type and variable name
+                        if let Some((type_part, var_part)) = split_once_word(after_of_type, " as ") {
+                            error_type = Some(type_part.trim().trim_matches('"').to_string());
+                            var_name = Some(var_part.trim().to_string());
+                        } else {
+                            // Just type, no variable
+                            error_type = Some(after_of_type.trim().trim_matches('"').to_string());
+                        }
+                    } else if let Some(rest_as) = strip_prefix_ci(rest, "as ") {
+                        // Just "if error as var_name" - catch all errors
+                        var_name = Some(rest_as.trim().to_string());
+                    }
+                    // else: just "if error" - catch all without binding
+                    
+                    // Parse catch body
+                    let block = parse_until_keywords(lines, i, &[P::P_IF_ERROR, P::P_FINALLY, P::P_END_TRY, "End"])?;
+                    
+                    catch_handlers.push(CatchHandler {
+                        error_type,
+                        var_name,
+                        block,
+                    });
+                    continue;
+                }
+                
+                // Check for "finally"
+                if P::strip_prefix_ci(line, P::P_FINALLY).is_some() {
+                    *i += 1;
+                    finally_block = Some(parse_until_keywords(lines, i, &[P::P_END_TRY, "End"])?);
+                    continue;
+                }
+                
+                // Check for "end try"
+                if P::strip_prefix_ci(line, P::P_END_TRY).is_some() || line == "End" {
+                    *i += 1;
+                    break;
+                }
+                
+                return Err(anyhow!("Expected 'if error', 'finally', or 'end try', found '{}'", line));
+            }
+            
+            out.push(Stmt::TryCatch {
+                try_block,
+                catch_handlers,
+                finally_block,
+            });
+            continue;
+        }
         // Return
         if let Some(rest) = t.strip_prefix("Return") {
             let r = rest.trim();
@@ -424,6 +506,13 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                 Some(parse_expr(r)?)
             };
             out.push(Stmt::Return(expr));
+            *i += 1;
+            continue;
+        }
+        // Throw
+        if let Some(rest) = P::strip_prefix_ci(t, P::P_THROW) {
+            let expr = parse_expr(rest.trim())?;
+            out.push(Stmt::Throw(expr));
             *i += 1;
             continue;
         }
@@ -573,6 +662,11 @@ fn try_parse_phrasal_call(s: &str) -> Option<Expr> {
     if let Some((name, after)) = split_ident(st) {
         let after = after.trim_start();
         if let Some(rest) = strip_prefix_ci(after, "with ") {
+            // Don't treat "error of type X with message Y" as a phrasal call
+            // Check if the name is "error" and after starts with "of type"
+            if name == "error" && after.trim_start().starts_with("of type") {
+                return None;
+            }
             if let Ok(args) = parse_arg_list_multi(rest, true) {
                 return Some(Expr::Call { name, args });
             }
@@ -1473,6 +1567,35 @@ fn parse_term(s: &str) -> Result<Expr> {
             let item_expr = parse_expr(item.trim())?;
             let json_expr = parse_expr(json.trim())?;
             return Ok(Expr::JsonPush(Box::new(json_expr), Box::new(item_expr)));
+        }
+    }
+
+    // Error operations
+    // error message of <error>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_ERROR_MESSAGE) {
+        return Ok(Expr::ErrorMessage(Box::new(parse_expr(rest)?)));
+    }
+    // error type of <error>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_ERROR_TYPE) {
+        return Ok(Expr::ErrorType(Box::new(parse_expr(rest)?)));
+    }
+    // error of type <type> with message <message>
+    if let Some(rest) = P::strip_prefix_ci(s, "error of type ") {
+        if let Some((type_part, message_part)) = split_once_top_level(rest, P::P_WITH_MESSAGE) {
+            let error_type = type_part.trim();
+            // Remove quotes from type if present
+            let error_type_clean = if (error_type.starts_with('"') && error_type.ends_with('"'))
+                || (error_type.starts_with('\'') && error_type.ends_with('\''))
+            {
+                &error_type[1..error_type.len() - 1]
+            } else {
+                error_type
+            };
+            let message_expr = parse_expr(message_part.trim())?;
+            return Ok(Expr::NewError {
+                error_type: error_type_clean.to_string(),
+                message: Box::new(message_expr),
+            });
         }
     }
 

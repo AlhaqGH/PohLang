@@ -60,6 +60,13 @@ pub enum Expr {
     NewJsonArray,                              // new json array
     JsonPush(Box<Expr>, Box<Expr>),            // push item to json array
     JsonLength(Box<Expr>),                     // json length of array/object
+    // Error handling operations
+    ErrorMessage(Box<Expr>),                   // error message of error
+    ErrorType(Box<Expr>),                      // error type of error
+    NewError {
+        error_type: String,
+        message: Box<Expr>,
+    }, // error of type X with message Y
 }
 
 #[derive(Debug, Clone)]
@@ -113,12 +120,25 @@ pub enum Stmt {
         value: Expr,
     },
     Return(Option<Expr>),
+    TryCatch {
+        try_block: Program,
+        catch_handlers: Vec<CatchHandler>,
+        finally_block: Option<Program>,
+    },
+    Throw(Expr),
 }
 
 #[derive(Debug, Clone)]
 pub struct Param {
     pub name: String,
     pub default: Option<Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CatchHandler {
+    pub error_type: Option<String>, // None = catch all errors
+    pub var_name: Option<String>,   // Variable name to bind the error to
+    pub block: Program,
 }
 
 pub type Program = Vec<Stmt>;
