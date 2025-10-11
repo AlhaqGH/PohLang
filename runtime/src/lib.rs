@@ -2,6 +2,7 @@ pub mod core;
 pub mod parser;
 pub mod stdlib;
 pub mod vm;
+pub mod bytecode;
 
 // Optional: expose a simple runtime API
 pub fn execute_program(program: &parser::Program) -> anyhow::Result<()> {
