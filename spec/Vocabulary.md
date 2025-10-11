@@ -6,9 +6,11 @@ It mirrors the grammar file and highlights how the lexicon grows in Phases 2 an
 
 | Phase | Status | Headline |
 | ----- | ------ | -------- |
-| 1     | ✅ shipping | Core statements, modern collections, `Make`/`Use` functions |
-| 2     | 🛠 planned | Standard-library modules with aliased system imports |
-| 3     | 🛠 planned | Bytecode compilation directives and artifacts |
+| 1-5   | ✅ complete | Core statements, collections, operators, error handling |
+| 6     | ✅ complete | Web Framework & Hot Reload (v0.6.0) |
+| 7     | 🚀 next | Bytecode compilation & VM |
+| 8     | 🛠 planned | Standard-library modules with aliased system imports |
+| 9     | 🛠 planned | AOT Native Compilation |
 
 ---
 
@@ -160,9 +162,48 @@ End Program
 
 ---
 
-## Phase 2 — Vocabulary Additions (Standard Library)
+## Phase 7 — Bytecode Compilation & VM (Next Phase) 🚀
 
-Phase 2 expands the import vocabulary and establishes module terminology. The
+Phase 7 introduces bytecode compilation for 10x+ performance improvement and prepares for AOT compilation.
+
+### Bytecode Compilation Commands
+
+| Phrase | Purpose | Example |
+| ------ | ------- | ------- |
+| `Compile to "file.pbc"` | Compile current script to bytecode | CLI: `pohlang --compile script.poh` |
+| `Run bytecode "file.pbc"` | Execute precompiled bytecode | CLI: `pohlang --run-bytecode script.pbc` |
+
+### CLI Options
+
+```bash
+# Compile to bytecode
+pohlang --compile program.poh -o program.pbc
+
+# Run bytecode directly
+pohlang --run-bytecode program.pbc
+
+# Compile and run in one step
+pohlang --bytecode program.poh
+```
+
+### File Format
+- Extension: `.pbc` (PohLang ByteCode)
+- Magic header: "POHC" (4 bytes)
+- Version number
+- Constant pool (strings, numbers)
+- Bytecode instructions
+
+### Expected Performance
+- 10x+ faster than AST walking
+- Smaller file size than source
+- Portable across platforms
+- Foundation for AOT compilation
+
+---
+
+## Phase 8 — Vocabulary Additions (Standard Library)
+
+Phase 8 expands the import vocabulary and establishes module terminology. The
 goal is to make system imports explicit and ergonomic without introducing new
 core statements.
 
