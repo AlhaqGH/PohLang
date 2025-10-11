@@ -1,0 +1,11 @@
+Start Program
+
+Write "=== File I/O Tests ==="
+
+Write "Test 1 Writing to file"
+Write "Hello PohLang" to file at "test_output.txt"
+Set content to read file at "test_output.txt"
+Write "Read from file"
+Write content
+
+End Program

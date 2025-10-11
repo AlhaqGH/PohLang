@@ -5,6 +5,58 @@ All notable changes to PohLang will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-10-11 - Web Framework & Hot Reload (Phase 6)
+
+### Overview
+Major feature release adding complete web framework with HTTP server, route handling, and Flutter-style hot reload. This release introduces web servers, HTML/JSON responses, live file watching, and automatic browser reload.
+
+### Added
+- **Web Server Infrastructure**
+  - `Create web server on port <port>` - Initialize HTTP server
+  - `Add route "<path>" with method "<method>" to server:` - Define routes with handlers
+  - `Start server` - Start server and listen for requests
+  - Handler execution with isolated VM instances per request
+  - Support for GET, POST, PUT, DELETE HTTP methods
+
+- **HTTP Response Types**
+  - `Write html response with <html>` - HTML responses with auto-injection
+  - `Write json response with <json>` - JSON responses with proper headers
+  - Automatic Content-Type headers
+  - Custom status codes and headers support
+
+- **Hot Reload System (Flutter-style)**
+  - `--watch` CLI flag - Enable hot reload mode
+  - `LiveReloadTracker` - File modification tracking
+  - `/__reload_check` endpoint - Automatic polling endpoint
+  - Auto-injection of livereload JavaScript into HTML
+  - Sub-500ms reload time (2x per second polling)
+  - No native dependencies (pure Rust polling)
+
+- **Developer Experience**
+  - Automatic livereload script injection before `</body>`
+  - Browser console logging: `[LiveReload] Monitoring for changes...`
+  - Friendly startup messages with emojis
+  - Watch mode prints watched directories
+
+### Changed
+- HTTP server binds to `0.0.0.0` instead of `127.0.0.1` (Windows compatibility)
+- Added `Value::LiveReloadTracker` and `Value::WebServer` to VM value system
+- Added `vm.enable_hot_reload(paths)` public API
+
+### Fixed
+- Server blocking issue - now uses lock-free `start_server_from_arc()`
+- Handler execution - each request gets isolated VM with cloned globals
+
+### Examples
+- `examples/poh/web_hello.poh` - Simple web server with hot reload
+- `examples/TaskMaster/backend.poh` - Task management backend
+- `examples/TaskMaster/public/*` - Complete frontend (HTML/CSS/JS)
+
+### Performance
+- Hot reload detection: <500ms
+- Request handling: Multi-threaded with `thread::spawn`
+- File polling: 500ms interval (2x per second)
+
 ## [0.5.4] - 2025-10-10 - Error Handling System (Phase 5)
 
 ### Overview

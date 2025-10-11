@@ -9,6 +9,10 @@ struct Args {
     #[arg(long)]
     run: bool,
 
+    /// Enable hot reload / watch mode (like Flutter)
+    #[arg(long)]
+    watch: bool,
+
     /// Compile to bytecode (future: native)
     #[arg(long)]
     compile: bool,
@@ -33,14 +37,23 @@ fn main() -> anyhow::Result<()> {
     let program = parser::parse(&src)?;
 
     if args.run {
-        let mut vm = vm::Vm::with_base_dir(
-            args.input
-                .parent()
-                .unwrap_or_else(|| std::path::Path::new("."))
-                .to_path_buf(),
-        );
+        let base_dir = args.input
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("."))
+            .to_path_buf();
+        
+        let mut vm = vm::Vm::with_base_dir(base_dir.clone());
+        
         // Set the current file being executed
         vm.set_current_file(args.input.display().to_string());
+        
+        // Enable hot reload if --watch flag is set
+        if args.watch {
+            vm.enable_hot_reload(vec![base_dir.clone()]);
+            println!("🔥 Hot reload enabled! Changes will be detected automatically.");
+            println!("💡 Watching: {}", base_dir.display());
+        }
+        
         vm.execute(&program)?;
         return Ok(());
     }

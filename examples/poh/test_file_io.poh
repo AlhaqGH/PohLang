@@ -1,0 +1,30 @@
+Start Program
+
+Write "=== File I/O Tests ==="
+
+Write "Test 1 Writing to file"
+Write "Hello PohLang!" to file at "test_output.txt"
+Set content to read file at "test_output.txt"
+Write "Read from file"
+Write content
+
+Write "Test 2 Appending to file"
+Append "\nSecond line" to file at "test_output.txt"
+Set content2 to read file at "test_output.txt"
+Write "After append"
+Write content2
+
+Write "Test 3 File exists check"
+If file exists at "test_output.txt":
+    Write "File exists!"
+End If
+
+Write "Test 4 Deleting file"
+Delete file at "test_output.txt"
+If not file exists at "test_output.txt":
+    Write "File deleted successfully!"
+End If
+
+Write "All file I/O tests complete!"
+
+End Program

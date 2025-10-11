@@ -174,10 +174,42 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                 return Err(anyhow!("Expected 'as <expr>'"));
             }
         }
-        // Write
+        // Write statement - check for "to file" pattern first
         if let Some(rest) = t.strip_prefix("Write ") {
+            // Check if it's "Write <content> to file at <path>"
+            if let Some((content_part, file_part)) = rest.split_once(" to file at ") {
+                let content_expr = parse_expr(content_part.trim())?;
+                let path_expr = parse_expr(file_part.trim())?;
+                // Convert to a statement that writes to file
+                let write_file_expr = Expr::WriteFile(Box::new(content_expr), Box::new(path_expr));
+                out.push(Stmt::Write(write_file_expr));
+                *i += 1;
+                continue;
+            }
+            // Regular Write statement
             let expr = parse_expr(rest)?;
             out.push(Stmt::Write(expr));
+            *i += 1;
+            continue;
+        }
+        // Append statement - "Append <content> to file at <path>"
+        if let Some(rest) = t.strip_prefix("Append ") {
+            if let Some((content_part, file_part)) = rest.split_once(" to file at ") {
+                let content_expr = parse_expr(content_part.trim())?;
+                let path_expr = parse_expr(file_part.trim())?;
+                // Convert to a statement that appends to file
+                let append_file_expr = Expr::AppendFile(Box::new(content_expr), Box::new(path_expr));
+                out.push(Stmt::Write(append_file_expr));
+                *i += 1;
+                continue;
+            }
+            return Err(anyhow!("Expected 'Append <content> to file at <path>'"));
+        }
+        // Delete file statement - "Delete file at <path>"
+        if let Some(rest) = t.strip_prefix("Delete file at ") {
+            let path_expr = parse_expr(rest.trim())?;
+            let delete_expr = Expr::DeleteFile(Box::new(path_expr));
+            out.push(Stmt::Write(delete_expr));
             *i += 1;
             continue;
         }
@@ -273,7 +305,9 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         }
         // Block If
         if let Some(rest) = t.strip_prefix("If ") {
-            let cond_expr = parse_expr(rest.trim())?;
+            // Strip trailing colon if present
+            let rest = rest.trim().strip_suffix(':').unwrap_or(rest.trim());
+            let cond_expr = parse_expr(rest)?;
             *i += 1;
             let then_body = parse_until_keywords(lines, i, &["Otherwise", "End If", "End"])?;
             let mut otherwise_body = None;
@@ -528,6 +562,59 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
             *i += 1;
             continue;
         }
+
+        // Web Framework Statements
+        // Add route <path> with method <method> to server:
+        if let Some(rest) = P::strip_prefix_ci(t, "add route ") {
+            if let Some((path_and_method, _)) = rest.split_once(" to server:") {
+                if let Some((path_part, method_part)) = path_and_method.split_once(" with method ") {
+                    let path_expr = parse_expr(path_part.trim())?;
+                    let method_expr = parse_expr(method_part.trim())?;
+                    
+                    // Parse handler block (indented lines following)
+                    *i += 1;
+                    let handler_start = *i;
+                    
+                    // Find indented handler lines
+                    while *i < lines.len() {
+                        let line = lines[*i];
+                        if line.trim().is_empty() {
+                            *i += 1;
+                            continue;
+                        }
+                        // If line starts with whitespace, it's part of the handler
+                        if line.starts_with(' ') || line.starts_with('\t') {
+                            *i += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // Parse handler as a program
+                    let handler_lines: Vec<&str> = lines[handler_start..*i]
+                        .iter()
+                        .map(|l| l.trim_start())
+                        .collect();
+                    let mut handler_i = 0;
+                    let handler_prog = parse_until_keywords(&handler_lines, &mut handler_i, &[])?;
+                    
+                    out.push(Stmt::AddRoute {
+                        path: path_expr,
+                        method: method_expr,
+                        handler: handler_prog,
+                    });
+                    continue;
+                }
+            }
+        }
+        
+        // Start server
+        if P::strip_prefix_ci(t, "start server").is_some() {
+            out.push(Stmt::StartServer);
+            *i += 1;
+            continue;
+        }
+
         return Err(anyhow!("Unsupported statement: {}", t));
     }
     Ok(out)
@@ -1617,6 +1704,42 @@ fn parse_term(s: &str) -> Result<Expr> {
                 error_type: error_type_clean.to_string(),
                 message: Box::new(message_expr),
             });
+        }
+    }
+
+    // Web Framework Expressions
+    // create web server on port <port>
+    if let Some(rest) = P::strip_prefix_ci(s, "create web server on port ") {
+        return Ok(Expr::CreateWebServer(Box::new(parse_expr(rest)?)));
+    }
+    // html response with <content>
+    if let Some(rest) = P::strip_prefix_ci(s, "html response with ") {
+        return Ok(Expr::HtmlResponse(Box::new(parse_expr(rest)?)));
+    }
+    // json response with <data>
+    if let Some(rest) = P::strip_prefix_ci(s, "json response with ") {
+        // Check if it has "and status"
+        if let Some((data_part, status_part)) = split_once_top_level(rest, " and status ") {
+            let data_expr = parse_expr(data_part.trim())?;
+            let status_expr = parse_expr(status_part.trim())?;
+            return Ok(Expr::JsonResponseStatus(Box::new(data_expr), Box::new(status_expr)));
+        }
+        return Ok(Expr::JsonResponse(Box::new(parse_expr(rest)?)));
+    }
+    // render template <template> with <data>
+    if let Some(rest) = P::strip_prefix_ci(s, "render template ") {
+        if let Some((template_part, data_part)) = split_once_top_level(rest, " with ") {
+            let template_expr = parse_expr(template_part.trim())?;
+            let data_expr = parse_expr(data_part.trim())?;
+            return Ok(Expr::RenderTemplate(Box::new(template_expr), Box::new(data_expr)));
+        }
+    }
+    // error response with status <status> and message <message>
+    if let Some(rest) = P::strip_prefix_ci(s, "error response with status ") {
+        if let Some((status_part, message_part)) = split_once_top_level(rest, " and message ") {
+            let status_expr = parse_expr(status_part.trim())?;
+            let message_expr = parse_expr(message_part.trim())?;
+            return Ok(Expr::ErrorResponse(Box::new(status_expr), Box::new(message_expr)));
         }
     }
 

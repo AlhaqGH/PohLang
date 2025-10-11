@@ -70,6 +70,14 @@ pub enum Expr {
         error_type: String,
         message: Box<Expr>,
     }, // error of type X with message Y
+    // Web server operations
+    CreateWebServer(Box<Expr>),                     // create web server on port
+    HtmlResponse(Box<Expr>),                        // html response with content
+    JsonResponse(Box<Expr>),                        // json response with data
+    JsonResponseStatus(Box<Expr>, Box<Expr>),       // json response with data and status
+    RenderTemplate(Box<Expr>, Box<Expr>),           // render template with data
+    ErrorResponse(Box<Expr>, Box<Expr>),            // error response with status and message
+    RequestField(Box<Expr>, Box<Expr>),             // request["field"]
 }
 
 #[derive(Debug, Clone)]
@@ -129,6 +137,13 @@ pub enum Stmt {
         finally_block: Option<Program>,
     },
     Throw(Expr),
+    // Web server statements
+    AddRoute {
+        path: Expr,
+        method: Expr,
+        handler: Program,
+    },
+    StartServer,
 }
 
 #[derive(Debug, Clone)]

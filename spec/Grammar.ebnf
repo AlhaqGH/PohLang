@@ -616,3 +616,28 @@ primary
 condition = expression ;
 
 type-name = "Number" | "String" ;
+
+########################
+# 8. Web Framework (Phase 6 - v0.6.0)
+########################
+
+# Web Server Creation
+web-server-stmt = "Create" , ws1 , "web" , ws1 , "server" , ws1 , "on" , ws1 , "port" , ws1 , expression ;
+
+# Route Definition with Handler Block
+add-route-stmt = "Add" , ws1 , "route" , ws1 , StringLiteral , 
+                 ws1 , "with" , ws1 , "method" , ws1 , StringLiteral ,
+                 ws1 , "to" , ws1 , identifier , ws0 , ":" , ws0 , newline ,
+                 { ws1 , statement } ;
+
+# Start Server (blocking)
+start-server-stmt = "Start" , ws1 , "server" ;
+
+# HTTP Response Types
+html-response = "html" , ws1 , "response" , ws1 , "with" , ws1 , expression ;
+json-response = "json" , ws1 , "response" , ws1 , "with" , ws1 , expression ;
+
+# Hot Reload (CLI flag)
+# Usage: pohlang --run --watch file.poh
+# Automatically injects livereload script into HTML responses
+# Adds /__reload_check endpoint for polling (500ms interval)

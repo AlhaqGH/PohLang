@@ -1,4 +1,4 @@
-# PohLang Vocabulary Roadmap (Phases 1 – 3)
+# PohLang Vocabulary (Phases 1 – 3)
 
 This document is the source of truth for the phrases the PohLang parser accepts.
 It mirrors the grammar file and highlights how the lexicon grows in Phases 2 and
@@ -321,5 +321,63 @@ Function square(x)
     Return x times x
 End Function
 Write "Square of 4 is " plus square(4)
+End Program
+```
+
+---
+
+## Phase 6 — Web Framework & Hot Reload (v0.6.0) ✅
+
+### Web Server Operations
+
+| Intent | Phrase | Example |
+| ------ | ------ | ------- |
+| Create server | `Create web server on port <port>` | `Set server to create web server on port 3000` |
+| Add route | `Add route "<path>" with method "<method>" to <server>:` | `Add route "/" with method "GET" to server:` |
+| Start server | `Start server` | Blocking call, starts listening for requests |
+
+### HTTP Responses
+
+| Type | Phrase | Example |
+| ---- | ------ | ------- |
+| HTML | `Write html response with <html>` | `Write html response with "<h1>Hello</h1>"` |
+| JSON | `Write json response with <json>` | `Write json response with Make a dictionary with "status" set to "ok"` |
+
+### Hot Reload
+
+| Feature | Usage | Notes |
+| ------- | ----- | ----- |
+| Watch mode | `pohlang --run --watch file.poh` | Enables file watching and auto-reload |
+| Reload endpoint | `GET /__reload_check` | Automatically added, returns `{"changed": true/false}` |
+| Auto-injection | Automatic | Livereload script injected before `</body>` tag |
+| Poll interval | 500ms | Browser checks for changes 2x per second |
+
+### Example: Simple Web Server
+
+```poh
+Start Program
+Set server to create web server on port 3000
+Add route "/" with method "GET" to server:
+    Write html response with "<h1>Hello Web!</h1>"
+Start server
+End Program
+```
+
+### Example: Task Master API
+
+```poh
+Start Program
+Set server to create web server on port 3000
+Set tasks to Make a list
+
+Add route "/api/tasks" with method "GET" to server:
+    Write json response with Make a dictionary with "tasks" set to tasks
+
+Add route "/api/tasks" with method "POST" to server:
+    Set new_task to Make a dictionary with "id" set to 1, "title" set to "New Task"
+    Add new_task to tasks
+    Write json response with Make a dictionary with "success" set to True
+
+Start server
 End Program
 ```

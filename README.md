@@ -43,11 +43,11 @@ Think of it like:
 - **PLHub** is to **Cargo** (the development tooling)
 
 ## Release Information
-- **PohLang Rust Runtime**: v0.5.4 (**Phase 5 Complete** ✅)
-- **Core Language**: Phase 5 Production-Ready (Error Handling)
-- **Test Coverage**: 50+ passing tests (100% core features + error handling)
-- **New in v0.5.4**: Comprehensive error handling with try/catch/finally, custom error types, natural English error messages, and file location reporting
-- **Previous (v0.5.2)**: Symbolic operators (+, -, *, /, >, <, ==, etc.) alongside phrasal forms
+- **PohLang Rust Runtime**: v0.6.0 (**Phase 6 Complete** ✅)
+- **Core Language**: Phase 6 Production-Ready (Web Framework & Hot Reload)
+- **Test Coverage**: 50+ passing tests (100% core features + web framework)
+- **New in v0.6.0**: 🔥 Web server with HTTP routes, HTML/JSON responses, Flutter-style hot reload (<500ms), multi-threaded request handling
+- **Previous (v0.5.4)**: Comprehensive error handling with try/catch/finally, custom error types, natural English error messages
 - ⚠️ **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for issues and workarounds
 
 ## Goals
@@ -57,18 +57,46 @@ Think of it like:
 - **Become a real compiled language**: native executables, no external runtime dependencies.
 - **Pure Rust implementation**: Fast, safe, and portable runtime.
 
-## Example
-```
+## Examples
+
+### Basic Program
+```poh
+Start Program
 Ask for name
 Write "Hello " plus name
 Set count to 3
-Repeat 3
-	 Write "Hi"
-End
-If count is greater than 1 Write "Many" Otherwise Write "Few"
-Make greet with who Write "Hi " plus who
-Use greet with "Poh"
+Repeat 3 times
+    Write "Hi"
+End Repeat
+If count is greater than 1 
+    Write "Many" 
+Otherwise 
+    Write "Few"
+End If
+End Program
 ```
+
+### Web Server with Hot Reload (v0.6.0) 🔥
+```poh
+Start Program
+Set server to create web server on port 3000
+
+Add route "/" with method "GET" to server:
+    Write html response with "<!DOCTYPE html><html><body><h1>Hello Web!</h1></body></html>"
+
+Add route "/api/status" with method "GET" to server:
+    Write json response with Make a dictionary with "status" set to "ok", "version" set to "0.6.0"
+
+Write "Server ready at http://localhost:3000"
+Start server
+End Program
+```
+
+**Run with hot reload:**
+```bash
+pohlang --run --watch server.poh
+```
+Edit your `.poh` file and watch the browser reload automatically!
 
 ## Quick Start
 

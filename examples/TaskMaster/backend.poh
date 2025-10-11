@@ -1,0 +1,28 @@
+Start Program
+
+Write "Starting Task Master backend..."
+
+Set server to create web server on port 3000
+
+# Initialize empty task list in memory
+Set tasks to Make a list
+
+# GET /api/tasks - List all tasks
+Add route "/api/tasks" with method "GET" to server:
+    Write json response with Make a dictionary with "tasks" set to tasks, "count" set to Count of tasks
+
+# POST /api/tasks - Create new task (simplified - just adds a placeholder)
+Add route "/api/tasks" with method "POST" to server:
+    Set task_id to Count of tasks Plus 1
+    Set new_task to Make a dictionary with "id" set to task_id, "title" set to "New Task", "completed" set to False
+    Add new_task to tasks
+    Write json response with Make a dictionary with "success" set to True, "task" set to new_task
+
+# GET / - Serve the frontend (simplified HTML inline)
+Add route "/" with method "GET" to server:
+    Write html response with "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Task Master</title><link rel='stylesheet' href='/css/style.css'></head><body><div class='container'><header><h1>🔥 Task Master</h1><p class='subtitle'>Built with PohLang + Hot Reload</p></header><div class='add-task'><input type='text' id='taskInput' placeholder='What needs to be done?' /><button id='addBtn'>Add Task</button></div><div class='tasks-container'><h2>My Tasks (<span id='taskCount'>0</span>)</h2><ul id='taskList'></ul></div><footer><p>⚡ Powered by PohLang</p></footer></div><script src='/js/app.js'></script></body></html>"
+
+Write "✅ Task Master ready at http://localhost:3000"
+Start server
+
+End Program
