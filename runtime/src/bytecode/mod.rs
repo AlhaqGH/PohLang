@@ -7,11 +7,13 @@ pub mod instruction;
 pub mod constant;
 pub mod compiler;
 pub mod vm;
+pub mod serialization;
 
 pub use instruction::Instruction;
 pub use constant::{Constant, ConstantPool};
 pub use compiler::{Compiler, CompilerError, CompileResult};
 pub use vm::{BytecodeVM, Value, VMError, VMResult};
+pub use serialization::{BytecodeSerializer, BytecodeDeserializer, SerializationError, SerializationResult};
 
 /// Bytecode chunk containing instructions and constants
 #[derive(Debug, Clone)]
