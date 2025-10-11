@@ -6,10 +6,12 @@
 pub mod instruction;
 pub mod constant;
 pub mod compiler;
+pub mod vm;
 
 pub use instruction::Instruction;
 pub use constant::{Constant, ConstantPool};
 pub use compiler::{Compiler, CompilerError, CompileResult};
+pub use vm::{BytecodeVM, Value, VMError, VMResult};
 
 /// Bytecode chunk containing instructions and constants
 #[derive(Debug, Clone)]
