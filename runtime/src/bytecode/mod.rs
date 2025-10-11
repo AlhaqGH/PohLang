@@ -5,9 +5,11 @@
 
 pub mod instruction;
 pub mod constant;
+pub mod compiler;
 
 pub use instruction::Instruction;
 pub use constant::{Constant, ConstantPool};
+pub use compiler::{Compiler, CompilerError, CompileResult};
 
 /// Bytecode chunk containing instructions and constants
 #[derive(Debug, Clone)]
@@ -39,10 +41,10 @@ pub struct DebugInfo {
 }
 
 impl BytecodeChunk {
-    /// Create a new bytecode chunk
-    pub fn new() -> Self {
+    /// Create a new bytecode chunk with specified version
+    pub fn new(version: u32) -> Self {
         Self {
-            version: 1,
+            version,
             constants: Vec::new(),
             code: Vec::new(),
             debug_info: None,
@@ -64,7 +66,7 @@ impl BytecodeChunk {
 
 impl Default for BytecodeChunk {
     fn default() -> Self {
-        Self::new()
+        Self::new(1) // Default to version 1
     }
 }
 
@@ -74,7 +76,7 @@ mod tests {
     
     #[test]
     fn test_bytecode_chunk_creation() {
-        let chunk = BytecodeChunk::new();
+        let chunk = BytecodeChunk::new(1);
         assert_eq!(chunk.version, 1);
         assert_eq!(chunk.instruction_count(), 0);
         assert!(chunk.debug_info.is_none());
@@ -82,7 +84,7 @@ mod tests {
     
     #[test]
     fn test_bytecode_chunk_with_code() {
-        let mut chunk = BytecodeChunk::new();
+        let mut chunk = BytecodeChunk::new(1);
         chunk.constants.push(Constant::Number(42.0));
         chunk.code.push(Instruction::LoadConst(0));
         chunk.code.push(Instruction::Print);
