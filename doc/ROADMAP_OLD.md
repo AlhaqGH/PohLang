@@ -134,7 +134,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 1. ✅ Phase 1-4: Core Language (2024-2025)
 2. ✅ Phase 5: Error Handling (October 2025)
 3. ✅ VS Code Extensions v0.2.5 with IntelliSense (October 2025)
-4. 🔥 **Phase 7: Web Framework (October 2025) - CURRENT PRIORITY**
+4. 🔥 **Phase 6: Web Framework (October 2025) - CURRENT PRIORITY**
    - ✅ HTTP server implementation (http.rs) - 325 lines
    - ✅ Template engine (template.rs) - 275 lines
    - ✅ JSON support (network.rs) - Pre-existing
@@ -156,4 +156,10 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 7. 🔥 **First web app in PohLang (THIS WEEK)**
 8. ⏳ Complete standard library modules
 9. ⏳ Bytecode compiler and VM
+10.⏳ AOT native compilation
+11.⏳ Ecosystem & tooling (packaging, LSP, debugger)
+12.⏳ Support all features and latest improvements in VS code extensions
+13.⏳ support for more platforms (ARM, macOS)
+14.⏳ improve documentation and examples
+15.⏳ Community growth and adoption
 
