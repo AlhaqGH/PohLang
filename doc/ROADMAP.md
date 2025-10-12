@@ -4,7 +4,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 ---
 
-## Phase 1: Rust Runtime Feature Parity (Q4 2025)
+## Phase 1-5: Rust Runtime, base, Feature Parity (Q4 2025)
 
 **Goal**: The Rust runtime can execute all core language features.
 
@@ -50,7 +50,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 ---
 
-## Phase 6.5: Bytecode Compiler & VM (Q2 2025)
+## Phase 6.5-7: Bytecode Compiler & VM (Q2 2025)
 
 **Goal**: Compile `.poh` to a compact bytecode format for faster execution and portability.
 
@@ -67,7 +67,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 ---
 
-## Phase 7: AOT Native Compilation (Q3-Q4 2026)
+## Phase 8: AOT Native Compilation (Q3-Q4 2025/10)
 
 **Goal**: Produce standalone native executables from `.poh` source.
 
@@ -83,7 +83,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 ---
 
-## Phase 8: Ecosystem & Tooling (Q4 2026 - 2027)
+## Phase 8.5: Ecosystem & Tooling (Q4 2025/11)
 
 **Goal**: Publish PohLang as a standalone language with rich ecosystem.
 
@@ -97,7 +97,7 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 
 ---
 
-## Phase 9: Advanced Features & Ecosystem (2027+)
+## Phase 9: Advanced Features & Ecosystem (2025/11)
 
 **Goal**: Grow the language with advanced features and community ecosystem.
 
@@ -127,8 +127,8 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 - ✅ **Phase 1-4**: COMPLETE (Core language features, collections, operators, control flow)
 - ✅ **Phase 5**: COMPLETE (Error handling with try/catch/finally, 7 error types, v0.5.4 released)
 - ✅ **VS Code Extensions**: Published v0.2.5 (PohLang Language Support + PLHub)
-- 🚀 **Phase 6**: IN PROGRESS (Standard Library modules)
-- 🔥 **Phase 7 (NEW)**: IN PROGRESS (Web Framework - 80% complete!)
+- 🚀 **Phase 5**: IN PROGRESS (Standard Library modules)
+- 🔥 **Phase 6 (NEW)**: IN PROGRESS (Web Framework - 80% complete!)
 
 **Actual Implementation Order** (Prioritizing practical applications):
 1. ✅ Phase 1-4: Core Language (2024-2025)
@@ -142,8 +142,8 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
    - ⏳ VM integration
    - ⏳ Task Master web app demo
 5. 🔥 Phase 6: Standard Library modules (Q4 2025 - Q1 2026)
-6. ⏳ Phase 6.5: Bytecode Compiler & VM (Q1-Q2 2026)
-7. ⏳ Phase 7: AOT Native Compilation (Q2-Q3 2026)
+6. ⏳ Phase 6.5-7: Bytecode Compiler & VM (Q1-Q2 2026)
+7. ⏳ Phase 7-7.5: AOT Native Compilation (Q2-Q3 2026)
 8. ⏳ Phase 8: Advanced Features & Ecosystem (2026+)
 
 **Next Immediate Steps**:
@@ -157,4 +157,3 @@ This roadmap outlines the path to make PohLang a fully independent, compiled lan
 8. ⏳ Complete standard library modules
 9. ⏳ Bytecode compiler and VM
 
-**See [PHASE_6_PLAN.md](../PHASE_6_PLAN.md) for detailed implementation plan.**

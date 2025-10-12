@@ -3,7 +3,7 @@
 ## 🎉 Milestone Achieved: Full Web Framework with Hot Reload
 
 **Date:** October 11, 2025  
-**Version:** PohLang v0.5.4 with Web Framework Phase 7  
+**Version:** PohLang v0.5.4 with Web Framework Phase 6  
 **Status:** ✅ PARSER + RUNTIME + HOT RELOAD COMPLETE
 
 ---
