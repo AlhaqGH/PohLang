@@ -1,4 +1,4 @@
-use pohlang::{parser, vm};
+use pohlang::{parser, vm, bytecode};
 use std::fs;
 use std::path::PathBuf;
 
@@ -13,15 +13,27 @@ struct Args {
     #[arg(long)]
     watch: bool,
 
-    /// Compile to bytecode (future: native)
+    /// Compile to bytecode .pbc file
     #[arg(long)]
     compile: bool,
+
+    /// Compile and run with bytecode VM
+    #[arg(long)]
+    bytecode: bool,
+
+    /// Run pre-compiled .pbc bytecode file
+    #[arg(long)]
+    run_bytecode: bool,
+
+    /// Disassemble .pbc file to show bytecode instructions
+    #[arg(long)]
+    disassemble: bool,
 
     /// Ahead-of-time compile to a native executable (stub)
     #[arg(long)]
     aot: bool,
 
-    /// Input .poh file
+    /// Input .poh or .pbc file
     input: PathBuf,
 
     /// Output path (for --compile or --aot)
@@ -32,10 +44,65 @@ struct Args {
 fn main() -> anyhow::Result<()> {
     let args = <Args as clap::Parser>::parse();
 
-    // Load source program
+    // Handle --run-bytecode: Execute pre-compiled .pbc file
+    if args.run_bytecode {
+        let bytes = fs::read(&args.input)?;
+        let chunk = bytecode::BytecodeDeserializer::deserialize(&bytes)?;
+        let mut vm = bytecode::BytecodeVM::new();
+        vm.load(chunk);
+        let _result = vm.run()?;
+        return Ok(());
+    }
+
+    // Handle --disassemble: Show bytecode instructions
+    if args.disassemble {
+        let bytes = fs::read(&args.input)?;
+        let chunk = bytecode::BytecodeDeserializer::deserialize(&bytes)?;
+        println!("=== Bytecode Disassembly ===");
+        println!("Version: {}", chunk.version);
+        println!("Constants: {} entries", chunk.constants.len());
+        for (i, constant) in chunk.constants.iter().enumerate() {
+            println!("  [{}] {:?}", i, constant);
+        }
+        println!("\nCode: {} instructions", chunk.code.len());
+        for (i, instruction) in chunk.code.iter().enumerate() {
+            println!("  {:04} {:?}", i, instruction);
+        }
+        if let Some(debug_info) = &chunk.debug_info {
+            println!("\nDebug Info:");
+            println!("  Source: {}", debug_info.source_file);
+            println!("  Line numbers: {} entries", debug_info.line_numbers.len());
+            println!("  Variables: {} entries", debug_info.variable_names.len());
+        }
+        return Ok(());
+    }
+
+    // For all other modes, we need to parse the source
     let src = fs::read_to_string(&args.input)?;
     let program = parser::parse(&src)?;
 
+    // Handle --compile: Compile .poh to .pbc
+    if args.compile {
+        let compiler = bytecode::Compiler::new();
+        let chunk = compiler.compile(program)?;
+        let bc_path = args.out.unwrap_or_else(|| args.input.with_extension("pbc"));
+        bytecode::BytecodeSerializer::save_to_file(&chunk, &bc_path)?;
+        println!("✓ Compiled to {}", bc_path.display());
+        println!("  {} constants, {} instructions", chunk.constants.len(), chunk.code.len());
+        return Ok(());
+    }
+
+    // Handle --bytecode: Compile and run with bytecode VM
+    if args.bytecode {
+        let compiler = bytecode::Compiler::new();
+        let chunk = compiler.compile(program)?;
+        let mut vm = bytecode::BytecodeVM::new();
+        vm.load(chunk);
+        let _result = vm.run()?;
+        return Ok(());
+    }
+
+    // Handle --run: Execute with AST interpreter
     if args.run {
         let base_dir = args.input
             .parent()
@@ -58,21 +125,18 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    if args.compile {
-        let bytecode = vm::compile(&program);
-        let bc_path = args.out.unwrap_or_else(|| args.input.with_extension("pbc"));
-        fs::write(&bc_path, bytecode)?;
-        println!("Wrote {}", bc_path.display());
-        return Ok(());
-    }
-
+    // Handle --aot: Stub for future AOT compilation
     if args.aot {
-        // Stub for AOT: for now, emit a tiny runner shell script or warn.
-        // Future: link a static runtime and embed bytecode.
         eprintln!("AOT compilation is not yet implemented. Use --compile to generate bytecode.");
         return Ok(());
     }
 
-    eprintln!("Nothing to do. Use --run, --compile, or --aot.");
+    // Default: show help
+    eprintln!("Nothing to do. Use one of:");
+    eprintln!("  --run           Execute with AST interpreter");
+    eprintln!("  --bytecode      Compile and run with bytecode VM");
+    eprintln!("  --compile       Compile to .pbc file");
+    eprintln!("  --run-bytecode  Execute .pbc file");
+    eprintln!("  --disassemble   Show bytecode instructions");
     Ok(())
 }

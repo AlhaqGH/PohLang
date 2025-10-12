@@ -1,0 +1,7 @@
+Start Program
+
+set x to 10
+set y to 5
+set result to x + y
+
+End Program
