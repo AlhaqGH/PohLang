@@ -27,8 +27,13 @@ codegen-units = 1
 assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
+criterion = "0.5"
 
 [[bin]]
 name = "pohlang"
 path = "src/main.rs"
+
+[[bench]]
+name = "bytecode_benchmark"
+harness = false
 
