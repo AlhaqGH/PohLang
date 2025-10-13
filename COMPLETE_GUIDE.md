@@ -55,7 +55,7 @@ C:\Users\habib\POHLANG\PLHub\
 
 ### Extension Repository
 ```
-C:\Users\habib\POHLANG\PohLang-Hub-(VS_code_extention)\
+C:\Users\habib\POHLANG\PLHub\Editor\
 ├── package.json                 (version 0.1.0 → 0.1.1)
 ├── CHANGELOG.md                 (added v0.1.1 entry)
 └── out\                         (recompiled)
@@ -97,7 +97,7 @@ git push origin main
 
 ```pwsh
 # Navigate to Extension
-cd C:\Users\habib\POHLANG\PohLang-Hub-(VS_code_extention)
+cd C:\Users\habib\POHLANG\PLHub\Editor
 
 # Stage changes
 git add package.json CHANGELOG.md
@@ -149,7 +149,7 @@ git push origin v0.5.2
 
 ```pwsh
 # Tag Extension
-cd C:\Users\habib\POHLANG\PohLang-Hub-(VS_code_extention)
+cd C:\Users\habib\POHLANG\PLHub\Editor
 git tag -a v0.1.1 -m "PohLang Hub Extension v0.1.1 - Maintenance Release
 
 - Verified TypeScript compilation
@@ -168,7 +168,7 @@ cd C:\Users\habib\POHLANG\PLHub
 gh release create v0.5.2 --title "PLHub v0.5.2 - Test Suite Stability" --notes-file CHANGELOG.md
 
 # Extension Release
-cd C:\Users\habib\POHLANG\PohLang-Hub-(VS_code_extention)
+cd C:\Users\habib\POHLANG\PLHub\Editor
 gh release create v0.1.1 --title "PohLang Hub Extension v0.1.1 - Maintenance Release" --notes-file CHANGELOG.md
 ```
 
@@ -186,7 +186,7 @@ Repeat for Extension repository.
 If you want to distribute the .vsix file:
 
 ```pwsh
-cd C:\Users\habib\POHLANG\PohLang-Hub-(VS_code_extention)
+cd C:\Users\habib\POHLANG\PLHub\Editor
 
 # Install vsce if not already installed
 npm install -g @vscode/vsce
@@ -299,7 +299,7 @@ git tag -a v0.5.2 -m "PLHub v0.5.2"
 git push origin main v0.5.2
 
 # Commit Extension
-cd "$pohlang\PohLang-Hub-(VS_code_extention)"
+cd "$pohlang\PLHub\Editor"
 git add -A
 git commit -m "chore: release v0.1.1"
 git tag -a v0.1.1 -m "Extension v0.1.1"

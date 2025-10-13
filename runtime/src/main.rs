@@ -1,4 +1,4 @@
-use pohlang::{parser, vm, bytecode};
+use pohlang::{bytecode, parser, vm};
 use std::fs;
 use std::path::PathBuf;
 
@@ -88,7 +88,11 @@ fn main() -> anyhow::Result<()> {
         let bc_path = args.out.unwrap_or_else(|| args.input.with_extension("pbc"));
         bytecode::BytecodeSerializer::save_to_file(&chunk, &bc_path)?;
         println!("✓ Compiled to {}", bc_path.display());
-        println!("  {} constants, {} instructions", chunk.constants.len(), chunk.code.len());
+        println!(
+            "  {} constants, {} instructions",
+            chunk.constants.len(),
+            chunk.code.len()
+        );
         return Ok(());
     }
 
@@ -104,23 +108,24 @@ fn main() -> anyhow::Result<()> {
 
     // Handle --run: Execute with AST interpreter
     if args.run {
-        let base_dir = args.input
+        let base_dir = args
+            .input
             .parent()
             .unwrap_or_else(|| std::path::Path::new("."))
             .to_path_buf();
-        
+
         let mut vm = vm::Vm::with_base_dir(base_dir.clone());
-        
+
         // Set the current file being executed
         vm.set_current_file(args.input.display().to_string());
-        
+
         // Enable hot reload if --watch flag is set
         if args.watch {
             vm.enable_hot_reload(vec![base_dir.clone()]);
             println!("🔥 Hot reload enabled! Changes will be detected automatically.");
             println!("💡 Watching: {}", base_dir.display());
         }
-        
+
         vm.execute(&program)?;
         return Ok(());
     }

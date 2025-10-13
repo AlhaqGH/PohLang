@@ -80,12 +80,12 @@ impl WebServer {
             method: method.to_uppercase(),
             handler,
         };
-        
+
         if let Ok(mut routes) = self.routes.lock() {
             routes.push(route);
         }
     }
-    
+
     /// Add a route directly (for internal use, can work with Arc)
     pub fn add_route_direct(&self, route: Route) {
         if let Ok(mut routes) = self.routes.lock() {
@@ -96,15 +96,14 @@ impl WebServer {
     /// Starts the web server (blocking)
     pub fn start(&self) -> Result<()> {
         let addr = format!("127.0.0.1:{}", self.port);
-        let server = Server::http(&addr)
-            .map_err(|e| anyhow!("Failed to start server: {}", e))?;
-        
+        let server = Server::http(&addr).map_err(|e| anyhow!("Failed to start server: {}", e))?;
+
         println!("🚀 Server listening on http://{}", addr);
         eprintln!("[DEBUG] Entering request loop...");
-        
+
         let routes = self.routes.clone();
         let mut request_count = 0;
-        
+
         loop {
             eprintln!("[DEBUG] Waiting for request #{}...", request_count + 1);
             let request = match server.recv() {
@@ -118,7 +117,7 @@ impl WebServer {
                     continue;
                 }
             };
-            
+
             let routes = routes.clone();
             thread::spawn(move || {
                 if let Err(e) = handle_request(request, &routes) {
@@ -139,22 +138,27 @@ pub fn start_server_from_arc(server_arc: Arc<Mutex<WebServer>>) -> Result<()> {
         let routes = server.routes.clone();
         (addr, routes)
     }; // Lock released here
-    
+
     // Now start the server without holding any locks
-    let http_server = Server::http(&addr)
-        .map_err(|e| anyhow!("Failed to start server: {}", e))?;
-    
+    let http_server = Server::http(&addr).map_err(|e| anyhow!("Failed to start server: {}", e))?;
+
     eprintln!("[DEBUG] Server::http() succeeded, server object created");
     eprintln!("[DEBUG] Server address: {}", addr);
-    eprintln!("[DEBUG] Server type: {:?}", std::any::type_name_of_val(&http_server));
-    
+    eprintln!(
+        "[DEBUG] Server type: {:?}",
+        std::any::type_name_of_val(&http_server)
+    );
+
     println!("🚀 Server listening on http://{}", addr);
     eprintln!("[DEBUG] Entering request loop...");
-    
+
     let mut request_count = 0;
-    
+
     loop {
-        eprintln!("[DEBUG] Loop iteration {}, about to call server.recv()...", request_count + 1);
+        eprintln!(
+            "[DEBUG] Loop iteration {}, about to call server.recv()...",
+            request_count + 1
+        );
         eprintln!("[DEBUG] Right before recv() call...");
         let request = match http_server.recv() {
             Ok(req) => {
@@ -168,7 +172,7 @@ pub fn start_server_from_arc(server_arc: Arc<Mutex<WebServer>>) -> Result<()> {
                 return Err(anyhow!("Server recv() failed: {}", e));
             }
         };
-        
+
         let routes_clone = routes.clone();
         thread::spawn(move || {
             if let Err(e) = handle_request(request, &routes_clone) {
@@ -188,10 +192,10 @@ fn handle_request(mut request: Request, routes: &Arc<Mutex<Vec<Route>>>) -> Resu
     // Extract request information
     let method = request.method().to_string();
     let path = request.url().to_string();
-    
+
     // Parse query string
     let query = parse_query_string(&path);
-    
+
     // Extract headers
     let mut headers = HashMap::new();
     for header in request.headers() {
@@ -200,13 +204,13 @@ fn handle_request(mut request: Request, routes: &Arc<Mutex<Vec<Route>>>) -> Resu
             header.value.as_str().to_string(),
         );
     }
-    
+
     // Read body
     let mut body_string = String::new();
     if let Err(e) = request.as_reader().read_to_string(&mut body_string) {
         eprintln!("Error reading body: {}", e);
     }
-    
+
     // Create PohLang request object
     let poh_request = HttpRequest {
         method: method.clone(),
@@ -215,47 +219,46 @@ fn handle_request(mut request: Request, routes: &Arc<Mutex<Vec<Route>>>) -> Resu
         headers,
         body: body_string,
     };
-    
+
     // Find matching route
     let routes_guard = routes.lock().unwrap();
     let matched_route = routes_guard
         .iter()
         .find(|r| r.path == poh_request.path && r.method == method);
-    
+
     let response = match matched_route {
-        Some(route) => {
-            match (route.handler)(poh_request.clone()) {
-                Ok(resp) => resp,
-                Err(e) => error_response(500, format!("Handler error: {}", e)),
-            }
-        }
+        Some(route) => match (route.handler)(poh_request.clone()) {
+            Ok(resp) => resp,
+            Err(e) => error_response(500, format!("Handler error: {}", e)),
+        },
         None => error_response(404, "Not Found".to_string()),
     };
-    
+
     // Build tiny_http response
     let status_code = StatusCode::from(response.status);
     let mut tiny_response = Response::from_string(response.body);
-    
+
     // Add headers
     for (key, value) in response.headers {
         if let Ok(header) = Header::from_bytes(key.as_bytes(), value.as_bytes()) {
             tiny_response = tiny_response.with_header(header);
         }
     }
-    
+
     tiny_response = tiny_response.with_status_code(status_code);
-    
+
     // Send response
-    request.respond(tiny_response)
+    request
+        .respond(tiny_response)
         .map_err(|e| anyhow!("Failed to send response: {}", e))?;
-    
+
     Ok(())
 }
 
 /// Parses query string from URL
 fn parse_query_string(url: &str) -> HashMap<String, String> {
     let mut query = HashMap::new();
-    
+
     if let Some(query_str) = url.split('?').nth(1) {
         for pair in query_str.split('&') {
             if let Some((key, value)) = pair.split_once('=') {
@@ -263,22 +266,25 @@ fn parse_query_string(url: &str) -> HashMap<String, String> {
             }
         }
     }
-    
+
     query
 }
 
 /// Helper function to create an HTML response
 pub fn html_response(html: String) -> HttpResponse {
     let mut headers = HashMap::new();
-    headers.insert("Content-Type".to_string(), "text/html; charset=utf-8".to_string());
-    
+    headers.insert(
+        "Content-Type".to_string(),
+        "text/html; charset=utf-8".to_string(),
+    );
+
     // Auto-inject livereload script if HTML contains </body>
     let html_with_reload = if html.contains("</body>") {
         html.replace("</body>", &format!("{}</body>", LIVERELOAD_SCRIPT))
     } else {
         html
     };
-    
+
     HttpResponse {
         status: 200,
         headers,
@@ -316,7 +322,7 @@ const LIVERELOAD_SCRIPT: &str = r#"
 pub fn json_response(json: JsonValue) -> HttpResponse {
     let mut headers = HashMap::new();
     headers.insert("Content-Type".to_string(), "application/json".to_string());
-    
+
     HttpResponse {
         status: 200,
         headers,
@@ -328,7 +334,7 @@ pub fn json_response(json: JsonValue) -> HttpResponse {
 pub fn json_response_with_status(json: JsonValue, status: u16) -> HttpResponse {
     let mut headers = HashMap::new();
     headers.insert("Content-Type".to_string(), "application/json".to_string());
-    
+
     HttpResponse {
         status,
         headers,
@@ -340,12 +346,12 @@ pub fn json_response_with_status(json: JsonValue, status: u16) -> HttpResponse {
 pub fn error_response(status: u16, message: String) -> HttpResponse {
     let mut headers = HashMap::new();
     headers.insert("Content-Type".to_string(), "application/json".to_string());
-    
+
     let error_json = json!({
         "error": message,
         "status": status
     });
-    
+
     HttpResponse {
         status,
         headers,
@@ -367,7 +373,7 @@ pub fn request_to_json(request: &HttpRequest) -> JsonValue {
 /// Converts JSON to HttpResponse for PohLang
 pub fn json_to_response(json: &JsonValue) -> Result<HttpResponse> {
     let status = json["status"].as_u64().unwrap_or(200) as u16;
-    
+
     let headers: HashMap<String, String> = json["headers"]
         .as_object()
         .map(|obj| {
@@ -376,9 +382,9 @@ pub fn json_to_response(json: &JsonValue) -> Result<HttpResponse> {
                 .collect()
         })
         .unwrap_or_default();
-    
+
     let body = json["body"].as_str().unwrap_or("").to_string();
-    
+
     Ok(HttpResponse {
         status,
         headers,
@@ -394,33 +400,36 @@ pub fn serve_static_file(root_dir: &Path, request_path: &str) -> Option<HttpResp
     if safe_path.contains("..") {
         return Some(error_response(403, "Forbidden".to_string()));
     }
-    
+
     let file_path = root_dir.join(safe_path);
-    
+
     // If path is a directory, try index.html
     let file_path = if file_path.is_dir() {
         file_path.join("index.html")
     } else {
         file_path
     };
-    
+
     // Check if file exists
     if !file_path.exists() || !file_path.is_file() {
         return None;
     }
-    
+
     // Read file
     match fs::read(&file_path) {
         Ok(content) => {
             let mime_type = guess_mime_type(&file_path);
             let mut headers = HashMap::new();
             headers.insert("Content-Type".to_string(), mime_type);
-            
+
             // Add cache control for static assets
             if is_cacheable_asset(&file_path) {
-                headers.insert("Cache-Control".to_string(), "public, max-age=3600".to_string());
+                headers.insert(
+                    "Cache-Control".to_string(),
+                    "public, max-age=3600".to_string(),
+                );
             }
-            
+
             Some(HttpResponse {
                 status: 200,
                 headers,
@@ -456,8 +465,17 @@ fn guess_mime_type(path: &Path) -> String {
 fn is_cacheable_asset(path: &Path) -> bool {
     matches!(
         path.extension().and_then(|e| e.to_str()),
-        Some("css") | Some("js") | Some("png") | Some("jpg") | Some("jpeg") | 
-        Some("gif") | Some("svg") | Some("woff") | Some("woff2") | Some("ttf") | Some("ico")
+        Some("css")
+            | Some("js")
+            | Some("png")
+            | Some("jpg")
+            | Some("jpeg")
+            | Some("gif")
+            | Some("svg")
+            | Some("woff")
+            | Some("woff2")
+            | Some("ttf")
+            | Some("ico")
     )
 }
 
@@ -475,7 +493,11 @@ mod tests {
     fn test_html_response() {
         let response = html_response("<h1>Hello</h1>".to_string());
         assert_eq!(response.status, 200);
-        assert!(response.headers.get("Content-Type").unwrap().contains("text/html"));
+        assert!(response
+            .headers
+            .get("Content-Type")
+            .unwrap()
+            .contains("text/html"));
         assert_eq!(response.body, "<h1>Hello</h1>");
     }
 
@@ -484,7 +506,10 @@ mod tests {
         let json = json!({"message": "success"});
         let response = json_response(json);
         assert_eq!(response.status, 200);
-        assert_eq!(response.headers.get("Content-Type").unwrap(), "application/json");
+        assert_eq!(
+            response.headers.get("Content-Type").unwrap(),
+            "application/json"
+        );
         assert!(response.body.contains("success"));
     }
 }

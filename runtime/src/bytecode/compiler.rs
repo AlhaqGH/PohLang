@@ -155,14 +155,14 @@ impl Compiler {
 
             Stmt::Set { name, value } => {
                 self.compile_expr(value)?;
-                
+
                 // Check if variable exists, if not create it
                 let local_idx = if let Some(idx) = self.context.get_local(&name) {
                     idx
                 } else {
                     self.context.define_local(name)?
                 };
-                
+
                 self.emit(Instruction::StoreLocal(local_idx));
             }
 
@@ -184,27 +184,27 @@ impl Compiler {
             } => {
                 // Compile condition
                 self.compile_expr(cond)?;
-                
+
                 // Jump to else if false
                 let else_jump = self.current_offset();
                 self.emit(Instruction::JumpIfFalse(0)); // Placeholder
-                
+
                 // Then branch
                 self.compile_expr(then_write)?;
                 self.emit(Instruction::Print);
-                
+
                 if let Some(else_write) = otherwise_write {
                     // Jump over else
                     let end_jump = self.current_offset();
                     self.emit(Instruction::Jump(0)); // Placeholder
-                    
+
                     // Patch else jump
                     self.patch_jump(else_jump)?;
-                    
+
                     // Else branch
                     self.compile_expr(else_write)?;
                     self.emit(Instruction::Print);
-                    
+
                     // Patch end jump
                     self.patch_jump(end_jump)?;
                 } else {
@@ -220,33 +220,33 @@ impl Compiler {
             } => {
                 // Compile condition
                 self.compile_expr(cond)?;
-                
+
                 // Jump to else if false
                 let else_jump = self.current_offset();
                 self.emit(Instruction::JumpIfFalse(0)); // Placeholder
-                
+
                 // Then block
                 self.context.enter_scope();
                 for stmt in then_body {
                     self.compile_stmt(stmt)?;
                 }
                 self.context.exit_scope();
-                
+
                 if let Some(else_body) = otherwise_body {
                     // Jump over else
                     let end_jump = self.current_offset();
                     self.emit(Instruction::Jump(0)); // Placeholder
-                    
+
                     // Patch else jump
                     self.patch_jump(else_jump)?;
-                    
+
                     // Else block
                     self.context.enter_scope();
                     for stmt in else_body {
                         self.compile_stmt(stmt)?;
                     }
                     self.context.exit_scope();
-                    
+
                     // Patch end jump
                     self.patch_jump(end_jump)?;
                 } else {
@@ -257,25 +257,25 @@ impl Compiler {
 
             Stmt::WhileBlock { cond, body } => {
                 let loop_start = self.current_offset();
-                
+
                 // Compile condition
                 self.compile_expr(cond)?;
-                
+
                 // Jump to end if false
                 let exit_jump = self.current_offset();
                 self.emit(Instruction::JumpIfFalse(0)); // Placeholder
-                
+
                 // Loop body
                 self.context.enter_scope();
                 for stmt in body {
                     self.compile_stmt(stmt)?;
                 }
                 self.context.exit_scope();
-                
+
                 // Jump back to start
                 let loop_distance = self.current_offset() - loop_start + 1;
                 self.emit(Instruction::Loop(loop_distance as i32));
-                
+
                 // Patch exit jump
                 self.patch_jump(exit_jump)?;
             }
@@ -283,41 +283,41 @@ impl Compiler {
             Stmt::RepeatBlock { count, body } => {
                 // Compile count expression
                 self.compile_expr(count)?;
-                
+
                 // Store in a temporary local
                 let counter_idx = self.context.define_local("__repeat_count__".to_string())?;
                 self.emit(Instruction::StoreLocal(counter_idx));
-                
+
                 let loop_start = self.current_offset();
-                
+
                 // Load counter and check if > 0
                 self.emit(Instruction::LoadLocal(counter_idx));
                 let zero_idx = self.add_constant(Constant::Number(0.0))?;
                 self.emit(Instruction::LoadConst(zero_idx));
                 self.emit(Instruction::Greater);
-                
+
                 // Jump to end if false
                 let exit_jump = self.current_offset();
                 self.emit(Instruction::JumpIfFalse(0)); // Placeholder
-                
+
                 // Loop body
                 self.context.enter_scope();
                 for stmt in body {
                     self.compile_stmt(stmt)?;
                 }
                 self.context.exit_scope();
-                
+
                 // Decrement counter
                 self.emit(Instruction::LoadLocal(counter_idx));
                 let one_idx = self.add_constant(Constant::Number(1.0))?;
                 self.emit(Instruction::LoadConst(one_idx));
                 self.emit(Instruction::Subtract);
                 self.emit(Instruction::StoreLocal(counter_idx));
-                
+
                 // Jump back to start
                 let loop_distance = self.current_offset() - loop_start + 1;
                 self.emit(Instruction::Loop(loop_distance as i32));
-                
+
                 // Patch exit jump
                 self.patch_jump(exit_jump)?;
             }
@@ -328,9 +328,9 @@ impl Compiler {
                 for arg in args {
                     self.compile_expr(arg)?;
                 }
-                
+
                 // Call the function
-                
+
                 // Load function by name (we'll need to look it up)
                 if let Some(fn_idx) = self.context.get_local(&name) {
                     self.emit(Instruction::LoadLocal(fn_idx));
@@ -339,7 +339,7 @@ impl Compiler {
                     let name_idx = self.add_constant(Constant::String(name))?;
                     self.emit(Instruction::LoadConst(name_idx));
                 }
-                
+
                 self.emit(Instruction::Call(arg_count));
             }
 
@@ -351,24 +351,24 @@ impl Compiler {
                 // Push try handler
                 let catch_jump = self.current_offset();
                 self.emit(Instruction::PushTryHandler(0)); // Placeholder
-                
+
                 // Try block
                 self.context.enter_scope();
                 for stmt in try_block {
                     self.compile_stmt(stmt)?;
                 }
                 self.context.exit_scope();
-                
+
                 // Pop try handler
                 self.emit(Instruction::PopTryHandler);
-                
+
                 // Jump over catch handlers
                 let end_jump = self.current_offset();
                 self.emit(Instruction::Jump(0)); // Placeholder
-                
+
                 // Patch catch jump
                 self.patch_jump(catch_jump)?;
-                
+
                 // Catch handlers
                 for handler in catch_handlers {
                     if let Some(var_name) = handler.var_name {
@@ -377,17 +377,17 @@ impl Compiler {
                     } else {
                         self.emit(Instruction::Pop);
                     }
-                    
+
                     self.context.enter_scope();
                     for stmt in handler.block {
                         self.compile_stmt(stmt)?;
                     }
                     self.context.exit_scope();
                 }
-                
+
                 // Patch end jump
                 self.patch_jump(end_jump)?;
-                
+
                 // Finally block
                 if let Some(finally_stmts) = finally_block {
                     for stmt in finally_stmts {
@@ -405,7 +405,7 @@ impl Compiler {
                 // For now, we'll store the function as a constant
                 // In a full implementation, we'd compile it to a separate chunk
                 let fn_idx = self.context.define_local(name)?;
-                
+
                 // Compile the function body as an expression
                 self.compile_expr(body)?;
                 self.emit(Instruction::StoreLocal(fn_idx));
@@ -429,7 +429,7 @@ impl Compiler {
                 // Compile path and method
                 self.compile_expr(path)?;
                 self.compile_expr(method)?;
-                
+
                 // For now, handler is not compiled (would need closure support)
                 // We'll emit the AddRoute instruction
                 self.emit(Instruction::AddRoute);
@@ -558,7 +558,9 @@ impl Compiler {
                 }
                 // TODO: Implement MakeList instruction
                 // self.emit(Instruction::MakeList);
-                return Err(CompilerError::Other("ListLit not yet supported".to_string()));
+                return Err(CompilerError::Other(
+                    "ListLit not yet supported".to_string(),
+                ));
             }
 
             Expr::DictLit(pairs) => {
@@ -570,7 +572,9 @@ impl Compiler {
                 }
                 // TODO: Implement MakeDict instruction
                 // self.emit(Instruction::MakeDict);
-                return Err(CompilerError::Other("DictLit not yet supported".to_string()));
+                return Err(CompilerError::Other(
+                    "DictLit not yet supported".to_string(),
+                ));
             }
 
             Expr::Index(collection, index) => {
@@ -586,7 +590,9 @@ impl Compiler {
                 self.compile_expr(*item)?;
                 // TODO: Implement Contains instruction
                 // self.emit(Instruction::Contains);
-                return Err(CompilerError::Other("Contains not yet supported".to_string()));
+                return Err(CompilerError::Other(
+                    "Contains not yet supported".to_string(),
+                ));
             }
 
             Expr::Append(list, item) => {
@@ -609,7 +615,9 @@ impl Compiler {
                 self.compile_expr(*collection)?;
                 // TODO: Implement Length instruction
                 // self.emit(Instruction::Length);
-                return Err(CompilerError::Other("CountOf not yet supported".to_string()));
+                return Err(CompilerError::Other(
+                    "CountOf not yet supported".to_string(),
+                ));
             }
 
             // Function calls
@@ -619,7 +627,7 @@ impl Compiler {
                 for arg in args {
                     self.compile_expr(arg)?;
                 }
-                
+
                 // Load function by name
                 if let Some(fn_idx) = self.context.get_local(&name) {
                     self.emit(Instruction::LoadLocal(fn_idx));
@@ -627,7 +635,7 @@ impl Compiler {
                     let name_idx = self.add_constant(Constant::String(name))?;
                     self.emit(Instruction::LoadConst(name_idx));
                 }
-                
+
                 self.emit(Instruction::Call(arg_count));
             }
 
@@ -684,7 +692,7 @@ mod tests {
         let compiler = Compiler::new();
         let program = vec![Stmt::Write(Expr::Num(42.0))];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should have: LoadConst, Print, Return
         assert_eq!(chunk.instruction_count(), 3);
         assert_eq!(chunk.constants.len(), 1);
@@ -698,7 +706,7 @@ mod tests {
             Box::new(Expr::Num(20.0)),
         ))];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should have: LoadConst(10), LoadConst(20), Add, Print, Return
         assert_eq!(chunk.instruction_count(), 5);
         assert_eq!(chunk.constants.len(), 2);
@@ -715,7 +723,7 @@ mod tests {
             Stmt::Write(Expr::Ident("x".to_string())),
         ];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should have: LoadConst(42), StoreLocal(0), LoadLocal(0), Print, Return
         assert_eq!(chunk.instruction_count(), 5);
     }

@@ -1,7 +1,6 @@
 /// PohLang Bytecode Virtual Machine
-/// 
+///
 /// Stack-based VM for executing bytecode instructions
-
 use super::{BytecodeChunk, Constant, Instruction};
 use std::fmt;
 
@@ -92,19 +91,19 @@ struct CallFrame {
 pub struct BytecodeVM {
     /// Value stack
     stack: Vec<Value>,
-    
+
     /// Local variables
     locals: Vec<Value>,
-    
+
     /// Call frames
     call_stack: Vec<CallFrame>,
-    
+
     /// Instruction pointer
     ip: usize,
-    
+
     /// Current chunk being executed
     chunk: Option<BytecodeChunk>,
-    
+
     /// Output buffer (for testing)
     pub output: Vec<String>,
 }
@@ -150,7 +149,7 @@ impl BytecodeVM {
 
             match self.execute_instruction(instruction) {
                 Ok(Some(value)) => return Ok(value), // Return instruction hit
-                Ok(None) => continue,                 // Continue execution
+                Ok(None) => continue,                // Continue execution
                 Err(e) => return Err(e),
             }
         }
@@ -163,7 +162,9 @@ impl BytecodeVM {
             // === Literals ===
             Instruction::LoadConst(idx) => {
                 let chunk = self.chunk.as_ref().unwrap();
-                let constant = chunk.constants.get(*idx as usize)
+                let constant = chunk
+                    .constants
+                    .get(*idx as usize)
                     .ok_or(VMError::InvalidConstantIndex(*idx))?;
                 let value = Value::from_constant(constant);
                 self.push(value)?;
@@ -183,7 +184,9 @@ impl BytecodeVM {
 
             // === Variables ===
             Instruction::LoadLocal(idx) => {
-                let value = self.locals.get(*idx as usize)
+                let value = self
+                    .locals
+                    .get(*idx as usize)
                     .ok_or(VMError::InvalidLocalIndex(*idx))?
                     .clone();
                 self.push(value)?;
@@ -205,7 +208,11 @@ impl BytecodeVM {
                 let result = match (a, b) {
                     (Value::Number(x), Value::Number(y)) => Value::Number(x + y),
                     (Value::String(x), Value::String(y)) => Value::String(format!("{}{}", x, y)),
-                    _ => return Err(VMError::TypeError("Add requires numbers or strings".to_string())),
+                    _ => {
+                        return Err(VMError::TypeError(
+                            "Add requires numbers or strings".to_string(),
+                        ))
+                    }
                 };
                 self.push(result)?;
             }
@@ -295,7 +302,11 @@ impl BytecodeVM {
                 let a = self.pop()?;
                 match (a, b) {
                     (Value::Number(x), Value::Number(y)) => self.push(Value::Boolean(x >= y))?,
-                    _ => return Err(VMError::TypeError("GreaterEqual requires numbers".to_string())),
+                    _ => {
+                        return Err(VMError::TypeError(
+                            "GreaterEqual requires numbers".to_string(),
+                        ))
+                    }
                 }
             }
 
@@ -376,7 +387,10 @@ impl BytecodeVM {
             }
 
             _ => {
-                return Err(VMError::Other(format!("Unimplemented instruction: {:?}", instruction)));
+                return Err(VMError::Other(format!(
+                    "Unimplemented instruction: {:?}",
+                    instruction
+                )));
             }
         }
 
@@ -429,7 +443,7 @@ mod tests {
         let mut vm = BytecodeVM::new();
         vm.push(Value::Number(42.0)).unwrap();
         vm.push(Value::String("hello".to_string())).unwrap();
-        
+
         assert_eq!(vm.pop().unwrap(), Value::String("hello".to_string()));
         assert_eq!(vm.pop().unwrap(), Value::Number(42.0));
     }
@@ -440,11 +454,11 @@ mod tests {
         chunk.constants.push(Constant::Number(42.0));
         chunk.code.push(Instruction::LoadConst(0));
         chunk.code.push(Instruction::Return);
-        
+
         let mut vm = BytecodeVM::new();
         vm.load(chunk);
         let result = vm.run().unwrap();
-        
+
         assert_eq!(result, Value::Number(42.0));
     }
 
@@ -457,11 +471,11 @@ mod tests {
         chunk.code.push(Instruction::LoadConst(1));
         chunk.code.push(Instruction::Add);
         chunk.code.push(Instruction::Return);
-        
+
         let mut vm = BytecodeVM::new();
         vm.load(chunk);
         let result = vm.run().unwrap();
-        
+
         assert_eq!(result, Value::Number(30.0));
     }
 
@@ -473,11 +487,11 @@ mod tests {
         chunk.code.push(Instruction::StoreLocal(0));
         chunk.code.push(Instruction::LoadLocal(0));
         chunk.code.push(Instruction::Return);
-        
+
         let mut vm = BytecodeVM::new();
         vm.load(chunk);
         let result = vm.run().unwrap();
-        
+
         assert_eq!(result, Value::Number(42.0));
     }
 
@@ -490,26 +504,28 @@ mod tests {
         chunk.code.push(Instruction::LoadConst(1));
         chunk.code.push(Instruction::Less);
         chunk.code.push(Instruction::Return);
-        
+
         let mut vm = BytecodeVM::new();
         vm.load(chunk);
         let result = vm.run().unwrap();
-        
+
         assert_eq!(result, Value::Boolean(true));
     }
 
     #[test]
     fn test_vm_print() {
         let mut chunk = BytecodeChunk::new(1);
-        chunk.constants.push(Constant::String("Hello, VM!".to_string()));
+        chunk
+            .constants
+            .push(Constant::String("Hello, VM!".to_string()));
         chunk.code.push(Instruction::LoadConst(0));
         chunk.code.push(Instruction::Print);
         chunk.code.push(Instruction::Return);
-        
+
         let mut vm = BytecodeVM::new();
         vm.load(chunk);
         vm.run().unwrap();
-        
+
         assert_eq!(vm.output, vec!["Hello, VM!"]);
     }
 }

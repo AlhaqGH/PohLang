@@ -1,18 +1,18 @@
 /// Bytecode Compiler Test Suite
-/// 
+///
 /// Comprehensive tests for the bytecode compiler
 
 #[cfg(test)]
 mod tests {
-    use pohlang::bytecode::{Compiler, Instruction, Constant};
-    use pohlang::parser::ast::{Expr, Stmt, CmpOp};
+    use pohlang::bytecode::{Compiler, Constant, Instruction};
+    use pohlang::parser::ast::{CmpOp, Expr, Stmt};
 
     #[test]
     fn test_compile_empty_program() {
         let compiler = Compiler::new();
         let program = vec![];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should just have a Return
         assert_eq!(chunk.instruction_count(), 1);
         assert!(matches!(chunk.code[0], Instruction::Return));
@@ -23,7 +23,7 @@ mod tests {
         let compiler = Compiler::new();
         let program = vec![Stmt::Write(Expr::Num(42.0))];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should have: LoadConst(0), Print, Return
         assert_eq!(chunk.instruction_count(), 3);
         assert_eq!(chunk.constants.len(), 1);
@@ -41,7 +41,7 @@ mod tests {
             Box::new(Expr::Num(20.0)),
         ))];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should have: LoadConst(10), LoadConst(20), Add, Print, Return
         assert_eq!(chunk.instruction_count(), 5);
         assert_eq!(chunk.constants.len(), 2);
@@ -59,7 +59,7 @@ mod tests {
             Stmt::Write(Expr::Ident("x".to_string())),
         ];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Should have: LoadConst(42), StoreLocal(0), LoadLocal(0), Print, Return
         assert_eq!(chunk.instruction_count(), 5);
         assert!(matches!(chunk.code[0], Instruction::LoadConst(0)));
@@ -84,9 +84,12 @@ mod tests {
             )),
         ];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Verify Greater instruction is emitted
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::Greater)));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::Greater)));
     }
 
     #[test]
@@ -108,10 +111,16 @@ mod tests {
             },
         ];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Verify Jump instructions are present
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::JumpIfFalse(_))));
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::Jump(_))));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::JumpIfFalse(_))));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::Jump(_))));
     }
 
     #[test]
@@ -141,28 +150,50 @@ mod tests {
             },
         ];
         let chunk = compiler.compile(program).unwrap();
-        
+
         // Verify Loop instruction is present
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::Loop(_))));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::Loop(_))));
     }
 
     #[test]
     fn test_compile_all_arithmetic_ops() {
         let ops = vec![
-            (Expr::Plus(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))), Instruction::Add),
-            (Expr::Minus(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))), Instruction::Subtract),
-            (Expr::Times(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))), Instruction::Multiply),
-            (Expr::DividedBy(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))), Instruction::Divide),
+            (
+                Expr::Plus(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))),
+                Instruction::Add,
+            ),
+            (
+                Expr::Minus(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))),
+                Instruction::Subtract,
+            ),
+            (
+                Expr::Times(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))),
+                Instruction::Multiply,
+            ),
+            (
+                Expr::DividedBy(Box::new(Expr::Num(1.0)), Box::new(Expr::Num(2.0))),
+                Instruction::Divide,
+            ),
         ];
 
         for (expr, expected_inst) in ops {
             let compiler = Compiler::new();
             let program = vec![Stmt::Write(expr)];
             let chunk = compiler.compile(program).unwrap();
-            
+
             // Verify the operation instruction is present
-            assert!(chunk.code.iter().any(|inst| std::mem::discriminant(inst) == std::mem::discriminant(&expected_inst)),
-                   "Expected {:?} instruction", expected_inst);
+            assert!(
+                chunk
+                    .code
+                    .iter()
+                    .any(|inst| std::mem::discriminant(inst)
+                        == std::mem::discriminant(&expected_inst)),
+                "Expected {:?} instruction",
+                expected_inst
+            );
         }
     }
 
@@ -179,57 +210,63 @@ mod tests {
 
         for (op, expected_inst) in ops {
             let compiler = Compiler::new();
-            let program = vec![
-                Stmt::Write(Expr::Cmp(
-                    op,
-                    Box::new(Expr::Num(1.0)),
-                    Box::new(Expr::Num(2.0)),
-                ))
-            ];
+            let program = vec![Stmt::Write(Expr::Cmp(
+                op,
+                Box::new(Expr::Num(1.0)),
+                Box::new(Expr::Num(2.0)),
+            ))];
             let chunk = compiler.compile(program).unwrap();
-            
+
             // Verify the comparison instruction is present
-            assert!(chunk.code.iter().any(|inst| std::mem::discriminant(inst) == std::mem::discriminant(&expected_inst)),
-                   "Expected {:?} instruction", expected_inst);
+            assert!(
+                chunk
+                    .code
+                    .iter()
+                    .any(|inst| std::mem::discriminant(inst)
+                        == std::mem::discriminant(&expected_inst)),
+                "Expected {:?} instruction",
+                expected_inst
+            );
         }
     }
 
     #[test]
     fn test_compile_logical_ops() {
         let compiler = Compiler::new();
-        let program = vec![
-            Stmt::Write(Expr::And(
-                Box::new(Expr::Bool(true)),
-                Box::new(Expr::Bool(false)),
-            )),
-        ];
+        let program = vec![Stmt::Write(Expr::And(
+            Box::new(Expr::Bool(true)),
+            Box::new(Expr::Bool(false)),
+        ))];
         let chunk = compiler.compile(program).unwrap();
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::And)));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::And)));
 
         let compiler = Compiler::new();
-        let program = vec![
-            Stmt::Write(Expr::Or(
-                Box::new(Expr::Bool(true)),
-                Box::new(Expr::Bool(false)),
-            )),
-        ];
+        let program = vec![Stmt::Write(Expr::Or(
+            Box::new(Expr::Bool(true)),
+            Box::new(Expr::Bool(false)),
+        ))];
         let chunk = compiler.compile(program).unwrap();
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::Or)));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::Or)));
 
         let compiler = Compiler::new();
-        let program = vec![
-            Stmt::Write(Expr::Not(Box::new(Expr::Bool(true)))),
-        ];
+        let program = vec![Stmt::Write(Expr::Not(Box::new(Expr::Bool(true))))];
         let chunk = compiler.compile(program).unwrap();
-        assert!(chunk.code.iter().any(|inst| matches!(inst, Instruction::Not)));
+        assert!(chunk
+            .code
+            .iter()
+            .any(|inst| matches!(inst, Instruction::Not)));
     }
 
     #[test]
     fn test_undefined_variable_error() {
         let compiler = Compiler::new();
-        let program = vec![
-            Stmt::Write(Expr::Ident("undefined_var".to_string())),
-        ];
+        let program = vec![Stmt::Write(Expr::Ident("undefined_var".to_string()))];
         let result = compiler.compile(program);
         assert!(result.is_err());
     }
@@ -239,7 +276,7 @@ mod tests {
         let compiler = Compiler::new();
         let program = vec![Stmt::Write(Expr::Str("Hello, PohLang!".to_string()))];
         let chunk = compiler.compile(program).unwrap();
-        
+
         assert_eq!(chunk.constants.len(), 1);
         assert!(matches!(&chunk.constants[0], Constant::String(s) if s == "Hello, PohLang!"));
     }
@@ -252,7 +289,7 @@ mod tests {
             Stmt::Write(Expr::Bool(false)),
         ];
         let chunk = compiler.compile(program).unwrap();
-        
+
         assert_eq!(chunk.constants.len(), 2);
         assert!(matches!(chunk.constants[0], Constant::Boolean(true)));
         assert!(matches!(chunk.constants[1], Constant::Boolean(false)));
@@ -263,7 +300,7 @@ mod tests {
         let compiler = Compiler::new();
         let program = vec![Stmt::Write(Expr::Null)];
         let chunk = compiler.compile(program).unwrap();
-        
+
         assert_eq!(chunk.constants.len(), 1);
         assert!(matches!(chunk.constants[0], Constant::Null));
     }

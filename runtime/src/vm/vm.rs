@@ -121,11 +121,14 @@ impl Vm {
     pub fn current_file(&self) -> &str {
         &self.current_file
     }
-    
+
     /// Enable hot reload with file watching
     pub fn enable_hot_reload(&mut self, watch_paths: Vec<PathBuf>) {
         let tracker = crate::stdlib::livereload::LiveReloadTracker::new(watch_paths);
-        self.globals.insert("__livereload".to_string(), Value::LiveReloadTracker(tracker));
+        self.globals.insert(
+            "__livereload".to_string(),
+            Value::LiveReloadTracker(tracker),
+        );
     }
 
     /// Create an error with file location context
@@ -372,65 +375,73 @@ impl Vm {
                     // Get the server from globals (should be stored with key "server")
                     let server_val = self.globals.get("server").cloned()
                         .ok_or_else(|| anyhow!("No web server found. Create a server first with: Make server to Create web server on port <port>"))?;
-                    
+
                     let path_val = self.eval(path)?;
                     let method_val = self.eval(method)?;
-                    
+
                     let path_str = match path_val {
                         Value::Str(s) => s,
                         _ => bail!("add route: path must be a string"),
                     };
-                    
+
                     let method_str = match method_val {
                         Value::Str(s) => s.to_uppercase(),
                         _ => bail!("add route: method must be a string (GET, POST, PUT, DELETE)"),
                     };
-                    
+
                     // Clone the handler program to execute in the route
                     let handler_program = handler.clone();
                     let globals_snapshot = self.globals.clone();
                     let base_dir_snapshot = self.base_dir.clone();
-                    
+
                     // Create handler function that executes the PohLang code
-                    let handler_fn = std::sync::Arc::new(move |_request: crate::stdlib::http::HttpRequest| {
-                        // Create a new VM instance for this request
-                        let mut vm = Vm::with_base_dir(base_dir_snapshot.clone());
-                        vm.globals = globals_snapshot.clone();
-                        
-                        // Execute each statement and check for response values
-                        for stmt in &handler_program {
-                            match stmt {
-                                crate::parser::ast::Stmt::Write(expr) => {
-                                    // Evaluate the expression
-                                    match vm.eval(expr) {
-                                        Ok(Value::HttpResponse(resp)) => {
-                                            // Capture the response and return immediately
-                                            return Ok(resp);
-                                        }
-                                        Ok(val) => {
-                                            // Regular write - just evaluate it
-                                            let _ = val;
-                                        }
-                                        Err(e) => {
-                                            return Ok(crate::stdlib::http::error_response(500, format!("Handler error: {}", e)));
+                    let handler_fn = std::sync::Arc::new(
+                        move |_request: crate::stdlib::http::HttpRequest| {
+                            // Create a new VM instance for this request
+                            let mut vm = Vm::with_base_dir(base_dir_snapshot.clone());
+                            vm.globals = globals_snapshot.clone();
+
+                            // Execute each statement and check for response values
+                            for stmt in &handler_program {
+                                match stmt {
+                                    crate::parser::ast::Stmt::Write(expr) => {
+                                        // Evaluate the expression
+                                        match vm.eval(expr) {
+                                            Ok(Value::HttpResponse(resp)) => {
+                                                // Capture the response and return immediately
+                                                return Ok(resp);
+                                            }
+                                            Ok(val) => {
+                                                // Regular write - just evaluate it
+                                                let _ = val;
+                                            }
+                                            Err(e) => {
+                                                return Ok(crate::stdlib::http::error_response(
+                                                    500,
+                                                    format!("Handler error: {}", e),
+                                                ));
+                                            }
                                         }
                                     }
-                                }
-                                _ => {
-                                    // Execute other statements normally
-                                    if let Err(e) = vm.execute(&vec![stmt.clone()]) {
-                                        return Ok(crate::stdlib::http::error_response(500, format!("Handler error: {}", e)));
+                                    _ => {
+                                        // Execute other statements normally
+                                        if let Err(e) = vm.execute(&vec![stmt.clone()]) {
+                                            return Ok(crate::stdlib::http::error_response(
+                                                500,
+                                                format!("Handler error: {}", e),
+                                            ));
+                                        }
                                     }
                                 }
                             }
-                        }
-                        
-                        // If no response was captured, return a default message
-                        Ok(crate::stdlib::http::html_response(
+
+                            // If no response was captured, return a default message
+                            Ok(crate::stdlib::http::html_response(
                             "<h1>Handler executed</h1><p>No response returned. Use 'Write html response with ...' or 'Write json response with ...'</p>".to_string()
                         ))
-                    });
-                    
+                        },
+                    );
+
                     // Add route to server
                     match server_val {
                         Value::WebServer(server_arc) => {
@@ -445,13 +456,15 @@ impl Vm {
                     // Get the server from globals
                     let server_val = self.globals.remove("server")
                         .ok_or_else(|| anyhow!("No web server found. Create a server first with: Make server to Create web server on port <port>"))?;
-                    
+
                     match server_val {
                         Value::WebServer(server_arc) => {
                             // Add hot reload route if LiveReloadTracker exists
-                            if let Some(Value::LiveReloadTracker(tracker)) = self.globals.get("__livereload") {
+                            if let Some(Value::LiveReloadTracker(tracker)) =
+                                self.globals.get("__livereload")
+                            {
                                 let tracker_clone = tracker.clone();
-                                
+
                                 // Create the /__reload_check route handler
                                 let reload_handler = Arc::new(move |_req: crate::stdlib::http::HttpRequest| -> Result<crate::stdlib::http::HttpResponse> {
                                     let changed = tracker_clone.check_for_changes();
@@ -464,23 +477,23 @@ impl Vm {
                                     });
                                     Ok(crate::stdlib::http::json_response(response_json))
                                 });
-                                
+
                                 // Add the route
                                 let route = crate::stdlib::http::Route {
                                     path: "/__reload_check".to_string(),
                                     method: "GET".to_string(),
                                     handler: reload_handler,
                                 };
-                                
+
                                 server_arc.lock().unwrap().add_route_direct(route);
                                 eprintln!("🔄 Hot reload enabled at /__reload_check");
                             }
-                            
+
                             eprintln!("[DEBUG] About to call server.start()...");
-                            
+
                             // Use the special function that doesn't hold the lock
                             crate::stdlib::http::start_server_from_arc(server_arc)?;
-                            
+
                             eprintln!("[DEBUG] Server.start() returned (unexpected!)");
                         }
                         _ => bail!("server variable is not a web server"),
@@ -1116,10 +1129,14 @@ impl Vm {
                 let port_val = self.eval(port_expr)?;
                 let port = match port_val {
                     Value::Num(n) if n >= 0.0 && n <= 65535.0 => n as u16,
-                    _ => bail!("create web server on port: port must be a number between 0 and 65535"),
+                    _ => bail!(
+                        "create web server on port: port must be a number between 0 and 65535"
+                    ),
                 };
                 let server = crate::stdlib::http::WebServer::new(port);
-                Ok(Value::WebServer(std::sync::Arc::new(std::sync::Mutex::new(server))))
+                Ok(Value::WebServer(std::sync::Arc::new(
+                    std::sync::Mutex::new(server),
+                )))
             }
             Expr::HtmlResponse(content_expr) => {
                 let content_val = self.eval(content_expr)?;
@@ -1138,7 +1155,9 @@ impl Vm {
                 let status_val = self.eval(status_expr)?;
                 let status = match status_val {
                     Value::Num(n) if n >= 100.0 && n < 600.0 => n as u16,
-                    _ => bail!("json response with status: status must be a number between 100 and 599"),
+                    _ => bail!(
+                        "json response with status: status must be a number between 100 and 599"
+                    ),
                 };
                 let json_value = self.value_to_json(&data_val)?;
                 let response = crate::stdlib::http::json_response_with_status(json_value, status);
@@ -3013,7 +3032,11 @@ fn dump_expr(e: &Expr) -> String {
             )
         }
         Expr::RenderTemplate(template, data) => {
-            format!("render template {} with {}", dump_expr(template), dump_expr(data))
+            format!(
+                "render template {} with {}",
+                dump_expr(template),
+                dump_expr(data)
+            )
         }
         Expr::ErrorResponse(status, message) => {
             format!(

@@ -28,17 +28,17 @@ use serde_json::Value as JsonValue;
 /// ```
 pub fn render_template(template: &str, data: &JsonValue) -> Result<String> {
     let mut result = template.to_string();
-    
+
     // Extract all variables from template
     let vars = extract_variables(template);
-    
+
     // Replace each variable with its value from data
     for var in vars {
         let placeholder = format!("{{{{{}}}}}", var);
         let value = get_nested_value(data, &var);
         result = result.replace(&placeholder, &value);
     }
-    
+
     Ok(result)
 }
 
@@ -47,17 +47,17 @@ pub fn render_template(template: &str, data: &JsonValue) -> Result<String> {
 fn extract_variables(template: &str) -> Vec<String> {
     let mut vars = Vec::new();
     let mut chars = template.chars().peekable();
-    
+
     while let Some(ch) = chars.next() {
         if ch == '{' {
             if let Some(&next) = chars.peek() {
                 if next == '{' {
                     chars.next(); // consume second {
-                    
+
                     // Read variable name until }}
                     let mut var_name = String::new();
                     let mut found_closing = false;
-                    
+
                     while let Some(c) = chars.next() {
                         if c == '}' {
                             if let Some(&next_c) = chars.peek() {
@@ -70,7 +70,7 @@ fn extract_variables(template: &str) -> Vec<String> {
                         }
                         var_name.push(c);
                     }
-                    
+
                     if found_closing {
                         vars.push(var_name.trim().to_string());
                     }
@@ -78,7 +78,7 @@ fn extract_variables(template: &str) -> Vec<String> {
             }
         }
     }
-    
+
     vars
 }
 
@@ -87,14 +87,14 @@ fn extract_variables(template: &str) -> Vec<String> {
 fn get_nested_value(data: &JsonValue, path: &str) -> String {
     let parts: Vec<&str> = path.split('.').collect();
     let mut current = data;
-    
+
     for part in &parts {
         current = match current.get(part) {
             Some(val) => val,
             None => return String::new(),
         };
     }
-    
+
     // Convert JSON value to string
     match current {
         JsonValue::String(s) => s.clone(),
@@ -118,37 +118,41 @@ fn get_nested_value(data: &JsonValue, path: &str) -> String {
 /// ```
 pub fn render_template_with_loops(template: &str, data: &JsonValue) -> Result<String> {
     let mut result = template.to_string();
-    
+
     // Find and process {{#each}} blocks
     while let Some(start) = result.find("{{#each ") {
         let after_start = &result[start + 8..];
-        let end_of_tag = after_start.find("}}").ok_or_else(|| anyhow!("Unclosed {{#each tag"))?;
+        let end_of_tag = after_start
+            .find("}}")
+            .ok_or_else(|| anyhow!("Unclosed {{#each tag"))?;
         let array_name = after_start[..end_of_tag].trim();
-        
+
         let block_start = start + 8 + end_of_tag + 2;
         let end_tag = "{{/each}}".to_string();
-        let block_end = result[block_start..].find(&end_tag)
+        let block_end = result[block_start..]
+            .find(&end_tag)
             .ok_or_else(|| anyhow!("Missing {{/each}} tag"))?;
-        
+
         let block_template = &result[block_start..block_start + block_end];
         let full_block_end = block_start + block_end + end_tag.len();
-        
+
         // Get array from data
-        let array = data.get(array_name)
+        let array = data
+            .get(array_name)
             .and_then(|v| v.as_array())
             .ok_or_else(|| anyhow!("Array '{}' not found", array_name))?;
-        
+
         // Render block for each item
         let mut rendered_items = String::new();
         for item in array {
             let rendered = render_template(block_template, item)?;
             rendered_items.push_str(&rendered);
         }
-        
+
         // Replace the entire {{#each}}...{{/each}} block
         result.replace_range(start..full_block_end, &rendered_items);
     }
-    
+
     // Now render remaining variables
     render_template(&result, data)
 }
@@ -162,35 +166,39 @@ pub fn render_template_with_loops(template: &str, data: &JsonValue) -> Result<St
 /// ```
 pub fn render_template_with_conditionals(template: &str, data: &JsonValue) -> Result<String> {
     let mut result = template.to_string();
-    
+
     // Find and process {{#if}} blocks
     while let Some(start) = result.find("{{#if ") {
         let after_start = &result[start + 6..];
-        let end_of_tag = after_start.find("}}").ok_or_else(|| anyhow!("Unclosed {{#if tag"))?;
+        let end_of_tag = after_start
+            .find("}}")
+            .ok_or_else(|| anyhow!("Unclosed {{#if tag"))?;
         let condition_name = after_start[..end_of_tag].trim();
-        
+
         let block_start = start + 6 + end_of_tag + 2;
         let end_tag = "{{/if}}".to_string();
-        let block_end = result[block_start..].find(&end_tag)
+        let block_end = result[block_start..]
+            .find(&end_tag)
             .ok_or_else(|| anyhow!("Missing {{/if}} tag"))?;
-        
+
         let block_template = &result[block_start..block_start + block_end];
         let full_block_end = block_start + block_end + end_tag.len();
-        
+
         // Evaluate condition
-        let condition_value = data.get(condition_name)
+        let condition_value = data
+            .get(condition_name)
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
-        
+
         let replacement = if condition_value {
             render_template(block_template, data)?
         } else {
             String::new()
         };
-        
+
         result.replace_range(start..full_block_end, &replacement);
     }
-    
+
     Ok(result)
 }
 

@@ -1,32 +1,33 @@
+pub mod compiler;
+pub mod constant;
 /// PohLang Bytecode Module
-/// 
+///
 /// This module contains the bytecode compiler, VM, and related utilities
 /// for compiling and executing PohLang programs as bytecode.
-
 pub mod instruction;
-pub mod constant;
-pub mod compiler;
-pub mod vm;
 pub mod serialization;
+pub mod vm;
 
-pub use instruction::Instruction;
+pub use compiler::{CompileResult, Compiler, CompilerError};
 pub use constant::{Constant, ConstantPool};
-pub use compiler::{Compiler, CompilerError, CompileResult};
-pub use vm::{BytecodeVM, Value, VMError, VMResult};
-pub use serialization::{BytecodeSerializer, BytecodeDeserializer, SerializationError, SerializationResult};
+pub use instruction::Instruction;
+pub use serialization::{
+    BytecodeDeserializer, BytecodeSerializer, SerializationError, SerializationResult,
+};
+pub use vm::{BytecodeVM, VMError, VMResult, Value};
 
 /// Bytecode chunk containing instructions and constants
 #[derive(Debug, Clone)]
 pub struct BytecodeChunk {
     /// Bytecode format version
     pub version: u32,
-    
+
     /// Constant pool
     pub constants: Vec<Constant>,
-    
+
     /// Bytecode instructions
     pub code: Vec<Instruction>,
-    
+
     /// Optional debug information
     pub debug_info: Option<DebugInfo>,
 }
@@ -36,10 +37,10 @@ pub struct BytecodeChunk {
 pub struct DebugInfo {
     /// Source file name
     pub source_file: String,
-    
+
     /// Line number for each instruction
     pub line_numbers: Vec<u32>,
-    
+
     /// Variable names (local index -> name)
     pub variable_names: Vec<String>,
 }
@@ -54,12 +55,12 @@ impl BytecodeChunk {
             debug_info: None,
         }
     }
-    
+
     /// Get the number of instructions
     pub fn instruction_count(&self) -> usize {
         self.code.len()
     }
-    
+
     /// Get the size in bytes (approximate)
     pub fn size_bytes(&self) -> usize {
         let const_size: usize = self.constants.iter().map(|c| c.size()).sum();
@@ -77,7 +78,7 @@ impl Default for BytecodeChunk {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_bytecode_chunk_creation() {
         let chunk = BytecodeChunk::new(1);
@@ -85,7 +86,7 @@ mod tests {
         assert_eq!(chunk.instruction_count(), 0);
         assert!(chunk.debug_info.is_none());
     }
-    
+
     #[test]
     fn test_bytecode_chunk_with_code() {
         let mut chunk = BytecodeChunk::new(1);
@@ -93,7 +94,7 @@ mod tests {
         chunk.code.push(Instruction::LoadConst(0));
         chunk.code.push(Instruction::Print);
         chunk.code.push(Instruction::Halt);
-        
+
         assert_eq!(chunk.instruction_count(), 3);
         assert!(chunk.size_bytes() > 0);
     }

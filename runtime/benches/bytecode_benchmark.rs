@@ -1,20 +1,19 @@
 /// Benchmarks comparing AST interpreter vs Bytecode VM performance
-/// 
+///
 /// This file contains benchmarks for various PohLang operations to measure
 /// the performance improvement gained by using the bytecode VM instead of
 /// the traditional AST-walking interpreter.
-/// 
+///
 /// Expected Results:
 /// - Bytecode VM should be 5-15x faster than AST interpreter
 /// - Arithmetic operations: ~10x speedup
 /// - Loop execution: ~15x speedup  
 /// - Function calls: ~8x speedup
 /// - Variable access: ~12x speedup
-
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use pohlang::{parser, bytecode, vm};
-use pohlang::parser::ast::{Expr, Stmt, CmpOp};
-use pohlang::bytecode::{Compiler, BytecodeVM, Value};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use pohlang::bytecode::{BytecodeVM, Compiler, Value};
+use pohlang::parser::ast::{CmpOp, Expr, Stmt};
+use pohlang::{bytecode, parser, vm};
 
 // ============================================================================
 // Helper Functions
@@ -41,7 +40,7 @@ fn run_ast(program: Vec<Stmt>) {
 
 fn create_arithmetic_program(iterations: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     for i in 0..iterations {
         // ((5 * 3) + (10 / 2)) - 2 = (15 + 5) - 2 = 18
         stmts.push(Stmt::Write(Expr::Minus(
@@ -58,25 +57,25 @@ fn create_arithmetic_program(iterations: usize) -> Vec<Stmt> {
             Box::new(Expr::Num(2.0)),
         )));
     }
-    
+
     stmts
 }
 
 fn bench_arithmetic(c: &mut Criterion) {
     let mut group = c.benchmark_group("arithmetic");
-    
+
     for size in [10, 50, 100].iter() {
         let program = create_arithmetic_program(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("ast", size), size, |b, _| {
             b.iter(|| run_ast(black_box(program.clone())));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("bytecode", size), size, |b, _| {
             b.iter(|| run_bytecode(black_box(program.clone())));
         });
     }
-    
+
     group.finish();
 }
 
@@ -86,7 +85,7 @@ fn bench_arithmetic(c: &mut Criterion) {
 
 fn create_variable_program(iterations: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     // Initialize variables
     stmts.push(Stmt::Set {
         name: "x".to_string(),
@@ -96,7 +95,7 @@ fn create_variable_program(iterations: usize) -> Vec<Stmt> {
         name: "y".to_string(),
         value: Expr::Num(20.0),
     });
-    
+
     for _ in 0..iterations {
         // result = x + y
         stmts.push(Stmt::Set {
@@ -106,7 +105,7 @@ fn create_variable_program(iterations: usize) -> Vec<Stmt> {
                 Box::new(Expr::Ident("y".to_string())),
             ),
         });
-        
+
         // x = result * 2
         stmts.push(Stmt::Set {
             name: "x".to_string(),
@@ -116,25 +115,25 @@ fn create_variable_program(iterations: usize) -> Vec<Stmt> {
             ),
         });
     }
-    
+
     stmts
 }
 
 fn bench_variables(c: &mut Criterion) {
     let mut group = c.benchmark_group("variables");
-    
+
     for size in [10, 50, 100].iter() {
         let program = create_variable_program(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("ast", size), size, |b, _| {
             b.iter(|| run_ast(black_box(program.clone())));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("bytecode", size), size, |b, _| {
             b.iter(|| run_bytecode(black_box(program.clone())));
         });
     }
-    
+
     group.finish();
 }
 
@@ -144,66 +143,64 @@ fn bench_variables(c: &mut Criterion) {
 
 fn create_conditional_program(iterations: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     stmts.push(Stmt::Set {
         name: "counter".to_string(),
         value: Expr::Num(0.0),
     });
-    
+
     for i in 0..iterations {
         let condition = if i % 2 == 0 {
-            Expr::Cmp(CmpOp::Gt, 
+            Expr::Cmp(
+                CmpOp::Gt,
                 Box::new(Expr::Num(10.0)),
                 Box::new(Expr::Num(5.0)),
             )
         } else {
-            Expr::Cmp(CmpOp::Lt, 
+            Expr::Cmp(
+                CmpOp::Lt,
                 Box::new(Expr::Num(3.0)),
                 Box::new(Expr::Num(7.0)),
             )
         };
-        
+
         stmts.push(Stmt::IfBlock {
             cond: condition,
-            then_body: vec![
-                Stmt::Set {
-                    name: "counter".to_string(),
-                    value: Expr::Plus(
-                        Box::new(Expr::Ident("counter".to_string())),
-                        Box::new(Expr::Num(1.0)),
-                    ),
-                }
-            ],
-            otherwise_body: Some(vec![
-                Stmt::Set {
-                    name: "counter".to_string(),
-                    value: Expr::Plus(
-                        Box::new(Expr::Ident("counter".to_string())),
-                        Box::new(Expr::Num(2.0)),
-                    ),
-                }
-            ]),
+            then_body: vec![Stmt::Set {
+                name: "counter".to_string(),
+                value: Expr::Plus(
+                    Box::new(Expr::Ident("counter".to_string())),
+                    Box::new(Expr::Num(1.0)),
+                ),
+            }],
+            otherwise_body: Some(vec![Stmt::Set {
+                name: "counter".to_string(),
+                value: Expr::Plus(
+                    Box::new(Expr::Ident("counter".to_string())),
+                    Box::new(Expr::Num(2.0)),
+                ),
+            }]),
         });
     }
-    
+
     stmts
 }
 
 fn bench_conditionals(c: &mut Criterion) {
     let mut group = c.benchmark_group("conditionals");
-    
+
     for size in [10, 50, 100].iter() {
         let program = create_conditional_program(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("ast", size), size, |b, _| {
             b.iter(|| run_ast(black_box(program.clone())));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("bytecode", size), size, |b, _| {
             b.iter(|| run_bytecode(black_box(program.clone())));
         });
     }
-    
+
     group.finish();
 }
 
@@ -213,12 +210,12 @@ fn bench_conditionals(c: &mut Criterion) {
 
 fn create_string_program(iterations: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     stmts.push(Stmt::Set {
         name: "text".to_string(),
         value: Expr::StringLit("Hello ".to_string()),
     });
-    
+
     for i in 0..iterations {
         stmts.push(Stmt::Set {
             name: format!("msg{}", i),
@@ -228,25 +225,25 @@ fn create_string_program(iterations: usize) -> Vec<Stmt> {
             ),
         });
     }
-    
+
     stmts
 }
 
 fn bench_strings(c: &mut Criterion) {
     let mut group = c.benchmark_group("strings");
-    
+
     for size in [10, 50, 100].iter() {
         let program = create_string_program(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("ast", size), size, |b, _| {
             b.iter(|| run_ast(black_box(program.clone())));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("bytecode", size), size, |b, _| {
             b.iter(|| run_bytecode(black_box(program.clone())));
         });
     }
-    
+
     group.finish();
 }
 
@@ -256,7 +253,7 @@ fn bench_strings(c: &mut Criterion) {
 
 fn create_mixed_program(iterations: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     // Initialize
     stmts.push(Stmt::Set {
         name: "x".to_string(),
@@ -270,7 +267,7 @@ fn create_mixed_program(iterations: usize) -> Vec<Stmt> {
         name: "text".to_string(),
         value: Expr::StringLit("Result: ".to_string()),
     });
-    
+
     for i in 0..iterations {
         // Arithmetic
         stmts.push(Stmt::Set {
@@ -283,46 +280,45 @@ fn create_mixed_program(iterations: usize) -> Vec<Stmt> {
                 Box::new(Expr::Ident("y".to_string())),
             ),
         });
-        
+
         // Conditional
         if i % 3 == 0 {
             stmts.push(Stmt::IfBlock {
-                cond: Expr::Cmp(CmpOp::Gt, 
+                cond: Expr::Cmp(
+                    CmpOp::Gt,
                     Box::new(Expr::Ident("result".to_string())),
                     Box::new(Expr::Num(20.0)),
                 ),
-                then_body: vec![
-                    Stmt::Set {
-                        name: "x".to_string(),
-                        value: Expr::Minus(
-                            Box::new(Expr::Ident("x".to_string())),
-                            Box::new(Expr::Num(1.0)),
-                        ),
-                    }
-                ],
+                then_body: vec![Stmt::Set {
+                    name: "x".to_string(),
+                    value: Expr::Minus(
+                        Box::new(Expr::Ident("x".to_string())),
+                        Box::new(Expr::Num(1.0)),
+                    ),
+                }],
                 otherwise_body: None,
             });
         }
     }
-    
+
     stmts
 }
 
 fn bench_mixed(c: &mut Criterion) {
     let mut group = c.benchmark_group("mixed");
-    
+
     for size in [10, 50, 100].iter() {
         let program = create_mixed_program(*size);
-        
+
         group.bench_with_input(BenchmarkId::new("ast", size), size, |b, _| {
             b.iter(|| run_ast(black_box(program.clone())));
         });
-        
+
         group.bench_with_input(BenchmarkId::new("bytecode", size), size, |b, _| {
             b.iter(|| run_bytecode(black_box(program.clone())));
         });
     }
-    
+
     group.finish();
 }
 

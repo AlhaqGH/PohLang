@@ -1,9 +1,8 @@
+use pohlang::bytecode::{BytecodeVM, Compiler};
+use pohlang::parser::ast::{Expr, Stmt};
 /// Simple manual benchmarks to quickly measure AST vs Bytecode performance
 /// Run with: cargo run --release --bin manual_benchmark
-
-use pohlang::{parser, bytecode, vm};
-use pohlang::parser::ast::{Expr, Stmt};
-use pohlang::bytecode::{Compiler, BytecodeVM};
+use pohlang::{bytecode, parser, vm};
 use std::time::Instant;
 
 fn run_bytecode(program: Vec<Stmt>) {
@@ -23,13 +22,13 @@ fn benchmark(name: &str, program: Vec<Stmt>, iterations: usize) {
     println!("\n{}", "=".repeat(60));
     println!("Benchmark: {} ({} iterations)", name, iterations);
     println!("{}", "=".repeat(60));
-    
+
     // Warm up
     for _ in 0..5 {
         run_ast(program.clone());
         run_bytecode(program.clone());
     }
-    
+
     // Benchmark AST
     let ast_start = Instant::now();
     for _ in 0..iterations {
@@ -37,7 +36,7 @@ fn benchmark(name: &str, program: Vec<Stmt>, iterations: usize) {
     }
     let ast_duration = ast_start.elapsed();
     let ast_ms = ast_duration.as_secs_f64() * 1000.0;
-    
+
     // Benchmark Bytecode
     let bc_start = Instant::now();
     for _ in 0..iterations {
@@ -45,14 +44,22 @@ fn benchmark(name: &str, program: Vec<Stmt>, iterations: usize) {
     }
     let bc_duration = bc_start.elapsed();
     let bc_ms = bc_duration.as_secs_f64() * 1000.0;
-    
+
     // Calculate speedup
     let speedup = ast_ms / bc_ms;
-    
-    println!("AST Interpreter:  {:.3} ms ({:.3} ms per iteration)", ast_ms, ast_ms / iterations as f64);
-    println!("Bytecode VM:      {:.3} ms ({:.3} ms per iteration)", bc_ms, bc_ms / iterations as f64);
+
+    println!(
+        "AST Interpreter:  {:.3} ms ({:.3} ms per iteration)",
+        ast_ms,
+        ast_ms / iterations as f64
+    );
+    println!(
+        "Bytecode VM:      {:.3} ms ({:.3} ms per iteration)",
+        bc_ms,
+        bc_ms / iterations as f64
+    );
     println!("Speedup:          {:.2}x faster", speedup);
-    
+
     if speedup >= 10.0 {
         println!("Status:           ✓ EXCELLENT (>10x speedup)");
     } else if speedup >= 5.0 {
@@ -66,13 +73,13 @@ fn benchmark(name: &str, program: Vec<Stmt>, iterations: usize) {
 
 fn create_arithmetic_benchmark(size: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     // Initialize a variable to store results
     stmts.push(Stmt::Set {
         name: "result".to_string(),
         value: Expr::Num(0.0),
     });
-    
+
     for _ in 0..size {
         // result = ((5 * 3) + (10 / 2)) - 2 = 18
         stmts.push(Stmt::Set {
@@ -97,7 +104,7 @@ fn create_arithmetic_benchmark(size: usize) -> Vec<Stmt> {
 
 fn create_variable_benchmark(size: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     stmts.push(Stmt::Set {
         name: "x".to_string(),
         value: Expr::Num(10.0),
@@ -106,7 +113,7 @@ fn create_variable_benchmark(size: usize) -> Vec<Stmt> {
         name: "y".to_string(),
         value: Expr::Num(20.0),
     });
-    
+
     for _ in 0..size {
         stmts.push(Stmt::Set {
             name: "result".to_string(),
@@ -115,7 +122,7 @@ fn create_variable_benchmark(size: usize) -> Vec<Stmt> {
                 Box::new(Expr::Ident("y".to_string())),
             ),
         });
-        
+
         stmts.push(Stmt::Set {
             name: "x".to_string(),
             value: Expr::Times(
@@ -124,18 +131,18 @@ fn create_variable_benchmark(size: usize) -> Vec<Stmt> {
             ),
         });
     }
-    
+
     stmts
 }
 
 fn create_conditional_benchmark(size: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     stmts.push(Stmt::Set {
         name: "counter".to_string(),
         value: Expr::Num(0.0),
     });
-    
+
     for i in 0..size {
         let condition = if i % 2 == 0 {
             Expr::Cmp(
@@ -150,36 +157,32 @@ fn create_conditional_benchmark(size: usize) -> Vec<Stmt> {
                 Box::new(Expr::Num(7.0)),
             )
         };
-        
+
         stmts.push(Stmt::IfBlock {
             cond: condition,
-            then_body: vec![
-                Stmt::Set {
-                    name: "counter".to_string(),
-                    value: Expr::Plus(
-                        Box::new(Expr::Ident("counter".to_string())),
-                        Box::new(Expr::Num(1.0)),
-                    ),
-                }
-            ],
-            otherwise_body: Some(vec![
-                Stmt::Set {
-                    name: "counter".to_string(),
-                    value: Expr::Plus(
-                        Box::new(Expr::Ident("counter".to_string())),
-                        Box::new(Expr::Num(2.0)),
-                    ),
-                }
-            ]),
+            then_body: vec![Stmt::Set {
+                name: "counter".to_string(),
+                value: Expr::Plus(
+                    Box::new(Expr::Ident("counter".to_string())),
+                    Box::new(Expr::Num(1.0)),
+                ),
+            }],
+            otherwise_body: Some(vec![Stmt::Set {
+                name: "counter".to_string(),
+                value: Expr::Plus(
+                    Box::new(Expr::Ident("counter".to_string())),
+                    Box::new(Expr::Num(2.0)),
+                ),
+            }]),
         });
     }
-    
+
     stmts
 }
 
 fn create_mixed_benchmark(size: usize) -> Vec<Stmt> {
     let mut stmts = Vec::new();
-    
+
     stmts.push(Stmt::Set {
         name: "x".to_string(),
         value: Expr::Num(10.0),
@@ -188,7 +191,7 @@ fn create_mixed_benchmark(size: usize) -> Vec<Stmt> {
         name: "y".to_string(),
         value: Expr::Num(5.0),
     });
-    
+
     for i in 0..size {
         // Arithmetic
         stmts.push(Stmt::Set {
@@ -201,7 +204,7 @@ fn create_mixed_benchmark(size: usize) -> Vec<Stmt> {
                 Box::new(Expr::Ident("y".to_string())),
             ),
         });
-        
+
         // Conditional every 3rd iteration
         if i % 3 == 0 {
             stmts.push(Stmt::IfBlock {
@@ -210,20 +213,18 @@ fn create_mixed_benchmark(size: usize) -> Vec<Stmt> {
                     Box::new(Expr::Ident("result".to_string())),
                     Box::new(Expr::Num(20.0)),
                 ),
-                then_body: vec![
-                    Stmt::Set {
-                        name: "x".to_string(),
-                        value: Expr::Minus(
-                            Box::new(Expr::Ident("x".to_string())),
-                            Box::new(Expr::Num(1.0)),
-                        ),
-                    }
-                ],
+                then_body: vec![Stmt::Set {
+                    name: "x".to_string(),
+                    value: Expr::Minus(
+                        Box::new(Expr::Ident("x".to_string())),
+                        Box::new(Expr::Num(1.0)),
+                    ),
+                }],
                 otherwise_body: None,
             });
         }
     }
-    
+
     stmts
 }
 
@@ -233,26 +234,34 @@ fn main() {
     println!("{}", "=".repeat(60));
     println!("\nComparing AST Interpreter vs Bytecode VM performance");
     println!("Goal: Achieve 5-15x speedup with bytecode execution");
-    
+
     // Run benchmarks
     let iterations = 100;
-    
-    benchmark("Arithmetic Operations (50 ops)", 
-              create_arithmetic_benchmark(50), 
-              iterations);
-    
-    benchmark("Variable Operations (50 ops)", 
-              create_variable_benchmark(50), 
-              iterations);
-    
-    benchmark("Conditional Branches (50 ops)", 
-              create_conditional_benchmark(50), 
-              iterations);
-    
-    benchmark("Mixed Workload (50 ops)", 
-              create_mixed_benchmark(50), 
-              iterations);
-    
+
+    benchmark(
+        "Arithmetic Operations (50 ops)",
+        create_arithmetic_benchmark(50),
+        iterations,
+    );
+
+    benchmark(
+        "Variable Operations (50 ops)",
+        create_variable_benchmark(50),
+        iterations,
+    );
+
+    benchmark(
+        "Conditional Branches (50 ops)",
+        create_conditional_benchmark(50),
+        iterations,
+    );
+
+    benchmark(
+        "Mixed Workload (50 ops)",
+        create_mixed_benchmark(50),
+        iterations,
+    );
+
     println!("\n{}", "=".repeat(60));
     println!("Summary");
     println!("{}", "=".repeat(60));

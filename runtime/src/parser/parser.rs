@@ -198,7 +198,8 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                 let content_expr = parse_expr(content_part.trim())?;
                 let path_expr = parse_expr(file_part.trim())?;
                 // Convert to a statement that appends to file
-                let append_file_expr = Expr::AppendFile(Box::new(content_expr), Box::new(path_expr));
+                let append_file_expr =
+                    Expr::AppendFile(Box::new(content_expr), Box::new(path_expr));
                 out.push(Stmt::Write(append_file_expr));
                 *i += 1;
                 continue;
@@ -567,14 +568,15 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
         // Add route <path> with method <method> to server:
         if let Some(rest) = P::strip_prefix_ci(t, "add route ") {
             if let Some((path_and_method, _)) = rest.split_once(" to server:") {
-                if let Some((path_part, method_part)) = path_and_method.split_once(" with method ") {
+                if let Some((path_part, method_part)) = path_and_method.split_once(" with method ")
+                {
                     let path_expr = parse_expr(path_part.trim())?;
                     let method_expr = parse_expr(method_part.trim())?;
-                    
+
                     // Parse handler block (indented lines following)
                     *i += 1;
                     let handler_start = *i;
-                    
+
                     // Find indented handler lines
                     while *i < lines.len() {
                         let line = lines[*i];
@@ -589,7 +591,7 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                             break;
                         }
                     }
-                    
+
                     // Parse handler as a program
                     let handler_lines: Vec<&str> = lines[handler_start..*i]
                         .iter()
@@ -597,7 +599,7 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                         .collect();
                     let mut handler_i = 0;
                     let handler_prog = parse_until_keywords(&handler_lines, &mut handler_i, &[])?;
-                    
+
                     out.push(Stmt::AddRoute {
                         path: path_expr,
                         method: method_expr,
@@ -607,7 +609,7 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
                 }
             }
         }
-        
+
         // Start server
         if P::strip_prefix_ci(t, "start server").is_some() {
             out.push(Stmt::StartServer);
@@ -1722,7 +1724,10 @@ fn parse_term(s: &str) -> Result<Expr> {
         if let Some((data_part, status_part)) = split_once_top_level(rest, " and status ") {
             let data_expr = parse_expr(data_part.trim())?;
             let status_expr = parse_expr(status_part.trim())?;
-            return Ok(Expr::JsonResponseStatus(Box::new(data_expr), Box::new(status_expr)));
+            return Ok(Expr::JsonResponseStatus(
+                Box::new(data_expr),
+                Box::new(status_expr),
+            ));
         }
         return Ok(Expr::JsonResponse(Box::new(parse_expr(rest)?)));
     }
@@ -1731,7 +1736,10 @@ fn parse_term(s: &str) -> Result<Expr> {
         if let Some((template_part, data_part)) = split_once_top_level(rest, " with ") {
             let template_expr = parse_expr(template_part.trim())?;
             let data_expr = parse_expr(data_part.trim())?;
-            return Ok(Expr::RenderTemplate(Box::new(template_expr), Box::new(data_expr)));
+            return Ok(Expr::RenderTemplate(
+                Box::new(template_expr),
+                Box::new(data_expr),
+            ));
         }
     }
     // error response with status <status> and message <message>
@@ -1739,7 +1747,10 @@ fn parse_term(s: &str) -> Result<Expr> {
         if let Some((status_part, message_part)) = split_once_top_level(rest, " and message ") {
             let status_expr = parse_expr(status_part.trim())?;
             let message_expr = parse_expr(message_part.trim())?;
-            return Ok(Expr::ErrorResponse(Box::new(status_expr), Box::new(message_expr)));
+            return Ok(Expr::ErrorResponse(
+                Box::new(status_expr),
+                Box::new(message_expr),
+            ));
         }
     }
 

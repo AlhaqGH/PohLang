@@ -1,5 +1,5 @@
 // Basic bytecode infrastructure tests
-use pohlang::bytecode::{Instruction, Constant, ConstantPool, BytecodeChunk};
+use pohlang::bytecode::{BytecodeChunk, Constant, ConstantPool, Instruction};
 
 #[test]
 fn test_instruction_basic() {
@@ -15,7 +15,7 @@ fn test_constant_pool_basic() {
     let idx1 = pool.add_constant(Constant::Number(42.0));
     let idx2 = pool.add_constant(Constant::String("hello".to_string()));
     let idx3 = pool.add_constant(Constant::Number(42.0)); // duplicate
-    
+
     assert_eq!(idx1, 0);
     assert_eq!(idx2, 1);
     assert_eq!(idx1, idx3); // deduplication works
@@ -29,7 +29,7 @@ fn test_bytecode_chunk_basic() {
     chunk.constants.push(Constant::Number(10.0));
     chunk.code.push(Instruction::LoadConst(0));
     chunk.code.push(Instruction::Return);
-    
+
     assert_eq!(chunk.instruction_count(), 2);
     assert!(chunk.size_bytes() > 0);
     println!("✓ Bytecode chunk basic test passed");
@@ -40,13 +40,17 @@ fn test_all_instruction_variants_have_size() {
     // Test that all instruction variants have a size defined
     let instructions = vec![
         Instruction::LoadConst(0),
+        Instruction::LoadTrue,
+        Instruction::LoadFalse,
+        Instruction::LoadNull,
         Instruction::LoadLocal(0),
         Instruction::StoreLocal(0),
+        Instruction::LoadGlobal("x".to_string()),
+        Instruction::StoreGlobal("x".to_string()),
         Instruction::Add,
         Instruction::Subtract,
         Instruction::Multiply,
         Instruction::Divide,
-        Instruction::Modulo,
         Instruction::Negate,
         Instruction::Equal,
         Instruction::NotEqual,
@@ -59,37 +63,32 @@ fn test_all_instruction_variants_have_size() {
         Instruction::Or,
         Instruction::Jump(0),
         Instruction::JumpIfFalse(0),
+        Instruction::JumpIfTrue(0),
         Instruction::Loop(0),
         Instruction::Call(0),
         Instruction::Return,
-        Instruction::Pop,
-        Instruction::Print,
-        Instruction::Input,
-        Instruction::MakeList,
-        Instruction::MakeDict,
-        Instruction::IndexGet,
-        Instruction::IndexSet,
-        Instruction::GetProperty,
-        Instruction::SetProperty,
-        Instruction::Append,
-        Instruction::Remove,
-        Instruction::Contains,
-        Instruction::Length,
+        Instruction::BuildList(0),
+        Instruction::BuildDict(0),
+        Instruction::Index,
+        Instruction::IndexStore,
         Instruction::PushTryHandler(0),
         Instruction::PopTryHandler,
         Instruction::Throw,
+        Instruction::Print,
+        Instruction::Input,
+        Instruction::WriteFile,
+        Instruction::ReadFile,
         Instruction::CreateWebServer,
         Instruction::AddRoute,
         Instruction::StartServer,
         Instruction::HtmlResponse,
         Instruction::JsonResponse,
-        Instruction::CreateTask,
-        Instruction::SpawnThread,
-        Instruction::Await,
-        Instruction::Sleep,
+        Instruction::Pop,
+        Instruction::Duplicate,
+        Instruction::Swap,
         Instruction::Halt,
     ];
-    
+
     for inst in instructions {
         let size = inst.size();
         assert!(size > 0, "Instruction {} should have size > 0", inst.name());
@@ -103,14 +102,14 @@ fn test_constant_types() {
     let string = Constant::String("test".to_string());
     let boolean = Constant::Boolean(true);
     let null = Constant::Null;
-    
+
     // Just verify they can be created and stored
     let mut pool = ConstantPool::new();
     pool.add_constant(num);
     pool.add_constant(string);
     pool.add_constant(boolean);
     pool.add_constant(null);
-    
+
     assert_eq!(pool.constants.len(), 4);
     println!("✓ All constant types work");
 }
