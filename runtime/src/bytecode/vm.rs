@@ -874,13 +874,13 @@ mod tests {
         
         // Check statistics
         let stats = vm.get_stats().expect("Stats should be available");
-    assert_eq!(stats.total_instructions, 6); // 6 instructions executed
-    // Execution time can be 0ns on very fast runners; don't assert > 0 to avoid flakiness
-    assert!(stats.max_stack_depth > 0); // Stack was used
+        assert_eq!(stats.total_instructions, 6); // 6 instructions executed
+        // Execution time can be 0ns on very fast runners; don't assert > 0 to avoid flakiness
+        assert!(stats.max_stack_depth > 0); // Stack was used
         
-    // Check cache statistics: one LoadGlobal executed => first access is a miss, no hits yet
-    assert_eq!(stats.cache_hits, 0);
-    assert_eq!(stats.cache_misses, 1);
+        // Check cache statistics: one LoadGlobal executed => first access is a miss, no hits yet
+        assert_eq!(stats.cache_hits, 0);
+        assert_eq!(stats.cache_misses, 1);
         
         // Print report for manual inspection
         if let Some(report) = vm.stats_report() {
