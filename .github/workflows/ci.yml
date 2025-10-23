@@ -53,6 +53,11 @@ jobs:
         working-directory: runtime
         run: cargo test --verbose --all
 
+      - name: Run benchmarks (compile only)
+        working-directory: runtime
+        run: cargo build --example vm_benchmark --verbose
+        continue-on-error: true
+
       - name: Build runtime (release)
         working-directory: runtime
         run: cargo build --release --verbose
