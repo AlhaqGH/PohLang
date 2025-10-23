@@ -6,7 +6,7 @@
 /// - VM execution statistics
 
 use pohlang::bytecode::{BytecodeVM, Compiler};
-use pohlang::parser::Parser;
+use pohlang::parser;
 use std::time::Instant;
 
 fn main() {
@@ -61,8 +61,7 @@ End Program
 
 fn run_benchmark(name: &str, source: &str) {
     // Parse the program
-    let mut parser = Parser::new(source);
-    let program = match parser.parse() {
+    let program = match parser::parse(source) {
         Ok(prog) => prog,
         Err(e) => {
             eprintln!("Parse error: {:?}", e);
