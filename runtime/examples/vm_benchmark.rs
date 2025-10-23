@@ -4,7 +4,6 @@
 /// - Inline caching for global variables
 /// - Enhanced error messages with line numbers
 /// - VM execution statistics
-
 use pohlang::bytecode::{BytecodeVM, Compiler};
 use pohlang::parser;
 use std::time::Instant;
@@ -95,16 +94,21 @@ fn run_benchmark(name: &str, source: &str) {
 
             // Print statistics
             if let Some(stats) = vm.get_stats() {
-                println!("  Total instructions executed: {}", stats.total_instructions);
+                println!(
+                    "  Total instructions executed: {}",
+                    stats.total_instructions
+                );
                 println!("  Max stack depth: {}", stats.max_stack_depth);
-                
+
                 let total_cache = stats.cache_hits + stats.cache_misses;
                 if total_cache > 0 {
                     let hit_rate = (stats.cache_hits as f64 / total_cache as f64) * 100.0;
-                    println!("  Cache hit rate: {:.1}% ({}/{})", 
-                        hit_rate, stats.cache_hits, total_cache);
+                    println!(
+                        "  Cache hit rate: {:.1}% ({}/{})",
+                        hit_rate, stats.cache_hits, total_cache
+                    );
                 }
-                
+
                 if stats.total_instructions > 0 {
                     let ips = stats.total_instructions as f64 / duration.as_secs_f64();
                     println!("  Instructions/sec: {:.0}", ips);

@@ -55,7 +55,7 @@ fn main() -> anyhow::Result<()> {
         let mut vm = bytecode::BytecodeVM::new();
         vm.load(chunk);
         let _result = vm.run()?;
-        
+
         // Show statistics if requested
         if args.stats {
             // vm.print_stats();
@@ -112,7 +112,7 @@ fn main() -> anyhow::Result<()> {
         let mut vm = bytecode::BytecodeVM::new();
         vm.load(chunk);
         let _result = vm.run()?;
-        
+
         // Show statistics if requested
         if args.stats {
             // vm.print_stats();

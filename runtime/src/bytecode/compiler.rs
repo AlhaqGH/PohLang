@@ -100,7 +100,7 @@ impl Compiler {
         }
         // Add implicit return at end
         self.emit(Instruction::Return);
-        
+
         // Add debug info if we tracked any line numbers
         if !self.line_numbers.is_empty() {
             self.chunk.debug_info = Some(DebugInfo {
@@ -109,7 +109,7 @@ impl Compiler {
                 variable_names: Vec::new(),
             });
         }
-        
+
         Ok(self.chunk)
     }
 
@@ -118,7 +118,7 @@ impl Compiler {
         self.chunk.code.push(instruction);
         self.line_numbers.push(self.current_line);
     }
-    
+
     /// Set the current line number for subsequent emissions
     fn set_line(&mut self, line: u32) {
         self.current_line = line;

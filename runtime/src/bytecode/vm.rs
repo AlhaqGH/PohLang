@@ -2,8 +2,8 @@
 ///
 /// Stack-based VM for executing bytecode instructions
 use super::{BytecodeChunk, Constant, Instruction};
-use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::time::{Duration, Instant};
@@ -106,20 +106,20 @@ const GLOBAL_CACHE_SIZE: usize = 256;
 pub struct VMStats {
     /// Total instructions executed
     pub total_instructions: u64,
-    
+
     /// Execution time
     pub execution_time: Duration,
-    
+
     /// Instruction counts by type
     pub instruction_counts: HashMap<String, u64>,
-    
+
     /// Cache hit/miss statistics
     pub cache_hits: u64,
     pub cache_misses: u64,
-    
+
     /// Stack statistics
     pub max_stack_depth: usize,
-    
+
     /// Number of function calls
     pub function_calls: u64,
 }
@@ -136,34 +136,40 @@ impl VMStats {
             function_calls: 0,
         }
     }
-    
+
     fn record_instruction(&mut self, instruction_name: &str) {
         self.total_instructions += 1;
-        *self.instruction_counts.entry(instruction_name.to_string()).or_insert(0) += 1;
+        *self
+            .instruction_counts
+            .entry(instruction_name.to_string())
+            .or_insert(0) += 1;
     }
-    
+
     fn update_max_stack(&mut self, stack_size: usize) {
         if stack_size > self.max_stack_depth {
             self.max_stack_depth = stack_size;
         }
     }
-    
+
     /// Format statistics as a readable string
     pub fn format_report(&self) -> String {
         let mut report = String::new();
-        
+
         report.push_str(&format!("=== VM Execution Statistics ===\n"));
-        report.push_str(&format!("Total Instructions: {}\n", self.total_instructions));
+        report.push_str(&format!(
+            "Total Instructions: {}\n",
+            self.total_instructions
+        ));
         report.push_str(&format!("Execution Time: {:.2?}\n", self.execution_time));
-        
+
         if self.total_instructions > 0 {
             let ips = self.total_instructions as f64 / self.execution_time.as_secs_f64();
             report.push_str(&format!("Instructions/sec: {:.0}\n", ips));
         }
-        
+
         report.push_str(&format!("\nStack:\n"));
         report.push_str(&format!("  Max Depth: {}\n", self.max_stack_depth));
-        
+
         report.push_str(&format!("\nCache:\n"));
         let total_cache_ops = self.cache_hits + self.cache_misses;
         if total_cache_ops > 0 {
@@ -173,7 +179,7 @@ impl VMStats {
         } else {
             report.push_str(&format!("  No cache operations\n"));
         }
-        
+
         report.push_str(&format!("\nTop Instructions:\n"));
         let mut sorted_instructions: Vec<_> = self.instruction_counts.iter().collect();
         sorted_instructions.sort_by(|a, b| b.1.cmp(a.1));
@@ -181,7 +187,7 @@ impl VMStats {
             let percentage = (*count * 100) as f64 / self.total_instructions as f64;
             report.push_str(&format!("  {:20} {:8} ({:.1}%)\n", name, count, percentage));
         }
-        
+
         report
     }
 }
@@ -214,10 +220,10 @@ pub struct BytecodeVM {
 
     /// Version counter for cache invalidation
     cache_version: u64,
-    
+
     /// Execution statistics (optional profiling)
     stats: Option<VMStats>,
-    
+
     /// Start time for execution timing
     start_time: Option<Instant>,
 }
@@ -239,17 +245,17 @@ impl BytecodeVM {
             start_time: None,
         }
     }
-    
+
     /// Enable statistics collection
     pub fn enable_stats(&mut self) {
         self.stats = Some(VMStats::new());
     }
-    
+
     /// Get statistics (if enabled)
     pub fn get_stats(&self) -> Option<&VMStats> {
         self.stats.as_ref()
     }
-    
+
     /// Get formatted statistics report
     pub fn stats_report(&self) -> Option<String> {
         self.stats.as_ref().map(|s| s.format_report())
@@ -272,22 +278,22 @@ impl BytecodeVM {
         if self.chunk.is_none() {
             return Err(VMError::Other("No bytecode loaded".to_string()));
         }
-        
+
         // Start timing if stats enabled
         if self.stats.is_some() {
             self.start_time = Some(Instant::now());
         }
 
         let result = self.run_loop();
-        
+
         // Record execution time if stats enabled
         if let (Some(stats), Some(start)) = (&mut self.stats, self.start_time) {
             stats.execution_time = start.elapsed();
         }
-        
+
         result
     }
-    
+
     /// Internal run loop
     fn run_loop(&mut self) -> VMResult<Value> {
         loop {
@@ -301,10 +307,15 @@ impl BytecodeVM {
             // Fetch and execute instruction
             let instruction = &chunk.code[self.ip].clone();
             self.ip += 1;
-            
+
             // Record instruction in stats
             if let Some(stats) = &mut self.stats {
-                stats.record_instruction(&format!("{:?}", instruction).split('(').next().unwrap_or("Unknown"));
+                stats.record_instruction(
+                    &format!("{:?}", instruction)
+                        .split('(')
+                        .next()
+                        .unwrap_or("Unknown"),
+                );
                 stats.update_max_stack(self.stack.len());
             }
 
@@ -597,17 +608,17 @@ impl BytecodeVM {
     pub fn clear_output(&mut self) {
         self.output.clear();
     }
-    
+
     /// Get the current line number for error reporting
     fn get_current_line(&self) -> Option<u32> {
         let chunk = self.chunk.as_ref()?;
         let debug_info = chunk.debug_info.as_ref()?;
-        
+
         // ip is already incremented, so we need ip - 1
         let instruction_index = self.ip.saturating_sub(1);
         debug_info.line_numbers.get(instruction_index).copied()
     }
-    
+
     /// Format an error with line number information
     fn format_error(&self, error: VMError) -> VMError {
         if let Some(line) = self.get_current_line() {
@@ -630,17 +641,13 @@ impl BytecodeVM {
                 return Ok(entry.value.clone());
             }
         }
-        
+
         // Cache miss
         if let Some(stats) = &mut self.stats {
             stats.cache_misses += 1;
         }
 
-        let value = self
-            .globals
-            .get(name)
-            .cloned()
-            .unwrap_or(Value::Null);
+        let value = self.globals.get(name).cloned().unwrap_or(Value::Null);
 
         self.global_cache[index] = Some(CacheEntry {
             key_hash,
@@ -822,41 +829,45 @@ mod tests {
 
         assert_eq!(result, Value::Number(2.0));
     }
-    
+
     #[test]
     fn test_vm_error_with_line_numbers() {
         use super::DebugInfo;
-        
+
         let mut chunk = BytecodeChunk::new(1);
         chunk.constants.push(Constant::Number(10.0));
         chunk.constants.push(Constant::Number(0.0));
-        chunk.code.push(Instruction::LoadConst(0));  // Line 1
-        chunk.code.push(Instruction::LoadConst(1));  // Line 2
-        chunk.code.push(Instruction::Divide);        // Line 3 - division by zero
-        chunk.code.push(Instruction::Return);        // Line 4
-        
+        chunk.code.push(Instruction::LoadConst(0)); // Line 1
+        chunk.code.push(Instruction::LoadConst(1)); // Line 2
+        chunk.code.push(Instruction::Divide); // Line 3 - division by zero
+        chunk.code.push(Instruction::Return); // Line 4
+
         // Add debug info with line numbers
         chunk.debug_info = Some(DebugInfo {
             source_file: "test.poh".to_string(),
             line_numbers: vec![1, 2, 3, 4],
             variable_names: Vec::new(),
         });
-        
+
         let mut vm = BytecodeVM::new();
         vm.load(chunk);
         let result = vm.run();
-        
+
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("line 3"), "Error message should include line number: {}", error_msg);
+        assert!(
+            error_msg.contains("line 3"),
+            "Error message should include line number: {}",
+            error_msg
+        );
     }
-    
+
     #[test]
     fn test_vm_statistics() {
         let mut chunk = BytecodeChunk::new(1);
         chunk.constants.push(Constant::Number(5.0));
         chunk.constants.push(Constant::Number(3.0));
-        
+
         // Simple program: load two numbers, add them, return
         chunk.code.push(Instruction::LoadConst(0));
         chunk.code.push(Instruction::StoreGlobal("x".to_string()));
@@ -864,24 +875,24 @@ mod tests {
         chunk.code.push(Instruction::LoadConst(1));
         chunk.code.push(Instruction::Add);
         chunk.code.push(Instruction::Return);
-        
+
         let mut vm = BytecodeVM::new();
         vm.enable_stats(); // Enable statistics collection
         vm.load(chunk);
         let result = vm.run().unwrap();
-        
+
         assert_eq!(result, Value::Number(8.0));
-        
+
         // Check statistics
         let stats = vm.get_stats().expect("Stats should be available");
         assert_eq!(stats.total_instructions, 6); // 6 instructions executed
-        // Execution time can be 0ns on very fast runners; don't assert > 0 to avoid flakiness
+                                                 // Execution time can be 0ns on very fast runners; don't assert > 0 to avoid flakiness
         assert!(stats.max_stack_depth > 0); // Stack was used
-        
+
         // Check cache statistics: one LoadGlobal executed => first access is a miss, no hits yet
         assert_eq!(stats.cache_hits, 0);
         assert_eq!(stats.cache_misses, 1);
-        
+
         // Print report for manual inspection
         if let Some(report) = vm.stats_report() {
             println!("\n{}", report);
