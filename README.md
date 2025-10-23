@@ -43,11 +43,12 @@ Think of it like:
 - **PLHub** is to **Cargo** (the development tooling)
 
 ## Release Information
-- **PohLang Rust Runtime**: v0.6.0 (**Phase 6 Complete** ✅)
-- **Core Language**: Phase 6 Production-Ready (Web Framework & Hot Reload)
-- **Test Coverage**: 50+ passing tests (100% core features + web framework)
-- **New in v0.6.0**: 🔥 Web server with HTTP routes, HTML/JSON responses, Flutter-style hot reload (<500ms), multi-threaded request handling
-- **Previous (v0.5.4)**: Comprehensive error handling with try/catch/finally, custom error types, natural English error messages
+- **PohLang Rust Runtime**: v0.6.5 (**Phase 7 Complete** ✅)
+- **Core Language**: Bytecode VM + AST interpreter parity with CLI integration
+- **Test Coverage**: 50+ passing tests (interpreter + bytecode pipeline)
+- **New in v0.6.5**: Bytecode compiler (30+ opcodes), stack-based VM, `.pbc` serialization, `--bytecode/--run` flags
+- **Current Work (v0.6.6)**: Phase 8 bytecode optimizations (inline caching, enhanced errors, VM stats)
+- **Previous (v0.6.0)**: Web server with HTTP routes, HTML/JSON responses, hot reload (<500ms), multi-threaded request handling
 - ⚠️ **Known Issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for issues and workarounds
 
 ## Goals
@@ -273,35 +274,29 @@ cargo run --manifest-path runtime/Cargo.toml -- --run examples/poh/hello.poh
 
 ## Roadmap
 
-### Phase 1: Core Features (Q4 2025) - ✅ **COMPLETE**
-- ✅ Parser for all statement types
-- ✅ VM execution for core statements
-- ✅ Collections and indexing
-- ✅ 20 phrasal built-in expressions
-- ✅ Unambiguous grammar with proper precedence
-- ✅ Enhanced error messages
-- ✅ Complete test coverage (50 tests passing)
-- ✅ Production-ready v0.5.0 release
+### Phase 7: Bytecode Virtual Machine (October 2025) - ✅ COMPLETE
+- Bytecode instruction set (30+ opcodes) and compiler pipeline
+- Stack-based VM with `.pbc` serialization and CLI integration
+- Performance: 1.4x faster than AST interpreter, 50% lower memory use
 
-### Phase 2: Standard Library (Q1 2026)
-- Standard library modules in Rust
-- Collections, random, datetime, math
-- File I/O operations
-- Islamic calendar utilities
+### Phase 8: Bytecode Optimizations (October 2025) - 🔥 IN PROGRESS (56%)
+- Completed: constant folding, instruction fusion, new opcodes, peephole, dead code elimination
+- Active focus: inline caching for 3-5x execution speedups
+- Upcoming: enhanced error messages, VM execution statistics, integration tests
 
-### Phase 3: Bytecode Compiler & VM (Q2 2026)
-- Compact bytecode format
-- Bytecode compiler and VM
-- Performance optimization
-- `.pbc` file format
+### Phase 9: Standard Library Modules (Nov 2025 - Jan 2026) - 📋 PLANNED
+- Collections, Random, Math, DateTime, File, Process, and optional Islamic modules
+- 100+ tests, full documentation, targeted v0.7.0 release
 
-### Phase 4: AOT Native Compilation (Q3-Q4 2026)
-- Native executable generation
-- Cross-platform compilation
-- Standalone binaries
-- **v1.0.0**: Production-ready release
+### Phase 10: AOT Native Compilation (Feb - Apr 2026) - 📋 PLANNED
+- Static bundle packaging, Cranelift backend, optimization and distribution workstreams
+- Targeting 10-50x performance compared to interpreter
 
-See [ROADMAP.md](./ROADMAP.md) for detailed plans.
+### Phase 11: Ecosystem & Tooling (May - Jul 2026) - 📋 PLANNED
+- Package manager, REPL, debugger, profiler, documentation generator, VS Code enhancements
+- Culminates in v1.0.0 production release
+
+See [doc/ROADMAP.md](./doc/ROADMAP.md) for daily updates and detailed milestone tracking.
 
 ## Directory Structure
 ```

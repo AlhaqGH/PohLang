@@ -1,4 +1,4 @@
-use super::{BytecodeChunk, Constant, Instruction};
+use super::{BytecodeChunk, Constant, DebugInfo, Instruction};
 use crate::parser::ast::{CmpOp, Expr, Program, Stmt};
 use std::collections::HashMap;
 
@@ -78,6 +78,8 @@ impl CompilerContext {
 pub struct Compiler {
     chunk: BytecodeChunk,
     context: CompilerContext,
+    current_line: u32,
+    line_numbers: Vec<u32>,
 }
 
 impl Compiler {
@@ -86,6 +88,8 @@ impl Compiler {
         Self {
             chunk: BytecodeChunk::new(1),
             context: CompilerContext::new(),
+            current_line: 1,
+            line_numbers: Vec::new(),
         }
     }
 
@@ -96,12 +100,28 @@ impl Compiler {
         }
         // Add implicit return at end
         self.emit(Instruction::Return);
+        
+        // Add debug info if we tracked any line numbers
+        if !self.line_numbers.is_empty() {
+            self.chunk.debug_info = Some(DebugInfo {
+                source_file: "program.poh".to_string(),
+                line_numbers: self.line_numbers,
+                variable_names: Vec::new(),
+            });
+        }
+        
         Ok(self.chunk)
     }
 
     /// Emit a bytecode instruction
     fn emit(&mut self, instruction: Instruction) {
         self.chunk.code.push(instruction);
+        self.line_numbers.push(self.current_line);
+    }
+    
+    /// Set the current line number for subsequent emissions
+    fn set_line(&mut self, line: u32) {
+        self.current_line = line;
     }
 
     /// Add a constant to the constant pool and return its index

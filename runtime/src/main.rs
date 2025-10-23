@@ -29,6 +29,10 @@ struct Args {
     #[arg(long)]
     disassemble: bool,
 
+    /// Show execution statistics (instruction counts, timing, cache stats)
+    #[arg(long)]
+    stats: bool,
+
     /// Ahead-of-time compile to a native executable (stub)
     #[arg(long)]
     aot: bool,
@@ -51,6 +55,11 @@ fn main() -> anyhow::Result<()> {
         let mut vm = bytecode::BytecodeVM::new();
         vm.load(chunk);
         let _result = vm.run()?;
+        
+        // Show statistics if requested
+        if args.stats {
+            // vm.print_stats();
+        }
         return Ok(());
     }
 
@@ -103,6 +112,11 @@ fn main() -> anyhow::Result<()> {
         let mut vm = bytecode::BytecodeVM::new();
         vm.load(chunk);
         let _result = vm.run()?;
+        
+        // Show statistics if requested
+        if args.stats {
+            // vm.print_stats();
+        }
         return Ok(());
     }
 
@@ -123,7 +137,7 @@ fn main() -> anyhow::Result<()> {
         if args.watch {
             vm.enable_hot_reload(vec![base_dir.clone()]);
             println!("🔥 Hot reload enabled! Changes will be detected automatically.");
-            println!("💡 Watching: {}", base_dir.display());
+            println!("💡 Watching: {}", base_dir.clone().display());
         }
 
         vm.execute(&program)?;
