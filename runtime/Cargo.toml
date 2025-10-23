@@ -1,6 +1,6 @@
 [package]
 name = "pohlang"
-version = "0.6.1"
+version = "0.6.6"
 edition = "2021"
 
 [dependencies]
