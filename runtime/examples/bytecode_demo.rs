@@ -47,7 +47,7 @@ fn main() {
     let idx4 = pool.add_constant(Constant::Number(42.0)); // duplicate
     println!("   Added number 42.0 again (dedup) at index {}", idx4);
 
-    println!("   Pool size: {} unique constants", pool.constants.len());
+    println!("   Pool size: {} unique constants", pool.len());
     println!("   ✓ Constant pool with deduplication works!\n");
 
     // Test 3: Bytecode Chunk
