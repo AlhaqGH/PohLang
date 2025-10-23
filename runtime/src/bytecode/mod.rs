@@ -16,6 +16,9 @@ pub use serialization::{
 };
 pub use vm::{BytecodeVM, VMError, VMResult, Value};
 
+// Export BytecodeChunk and DebugInfo for external use
+pub use self::{BytecodeChunk, DebugInfo};
+
 /// Bytecode chunk containing instructions and constants
 #[derive(Debug, Clone)]
 pub struct BytecodeChunk {
