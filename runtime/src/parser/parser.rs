@@ -1689,6 +1689,11 @@ fn parse_term(s: &str) -> Result<Expr> {
             ));
         }
     }
+    // get path parameter <name>
+    if let Some(rest) = P::strip_prefix_ci(s, P::P_GET_PATH_PARAM) {
+        let param_expr = parse_expr(rest.trim())?;
+        return Ok(Expr::GetPathParam(Box::new(param_expr)));
+    }
     // error response with status <status> and message <message>
     if let Some(rest) = P::strip_prefix_ci(s, "error response with status ") {
         if let Some((status_part, message_part)) = split_once_top_level(rest, " and message ") {

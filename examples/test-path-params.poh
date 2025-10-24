@@ -13,15 +13,22 @@ Add route "/" with method "GET" to server:
 
 # Route with path parameter :id
 Add route "/users/:id" with method "GET" to server:
-    Write json response with "message" set to "User endpoint", "id" set to "test-id"
+    Set user_id to get path parameter "id"
+    Set response_data to make a dictionary with "message" set to "User endpoint", "id" set to user_id
+    Write json response with response_data
 
 # Route with multiple parameters
 Add route "/posts/:year/:month/:slug" with method "GET" to server:
-    Write json response with "message" set to "Post endpoint", "year" set to "2024", "month" set to "01", "slug" set to "test"
+    Set year_value to get path parameter "year"
+    Set month_value to get path parameter "month"
+    Set slug_value to get path parameter "slug"
+    Set response_data to make a dictionary with "message" set to "Post endpoint", "year" set to year_value, "month" set to month_value, "slug" set to slug_value
+    Write json response with response_data
 
 # Regular route (no parameters)
 Add route "/api/test" with method "GET" to server:
-    Write json response with "message" set to "Regular route works"
+    Set response_data to make a dictionary with "message" set to "Regular route works"
+    Write json response with response_data
 
 Write ""
 Write "Server starting on http://localhost:8080"

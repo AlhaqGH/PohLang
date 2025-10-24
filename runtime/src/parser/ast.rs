@@ -78,6 +78,7 @@ pub enum Expr {
     RenderTemplate(Box<Expr>, Box<Expr>),     // render template with data
     ErrorResponse(Box<Expr>, Box<Expr>),      // error response with status and message
     RequestField(Box<Expr>, Box<Expr>),       // request["field"]
+    GetPathParam(Box<Expr>),                  // get path parameter by name
 }
 
 #[derive(Debug, Clone)]

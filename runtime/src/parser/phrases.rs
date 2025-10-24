@@ -84,6 +84,9 @@ pub const P_ERROR_MESSAGE: &str = "error message of ";
 pub const P_ERROR_TYPE: &str = "error type of ";
 pub const P_WITH_MESSAGE: &str = " with message ";
 
+// Web server phrases
+pub const P_GET_PATH_PARAM: &str = "get path parameter ";
+
 pub fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
     if s.len() < prefix.len() {
         return None;

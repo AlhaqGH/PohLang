@@ -45,6 +45,7 @@ enum Value {
     Dict(HashMap<String, Value>),
     Error(PohError),
     WebServer(std::sync::Arc<std::sync::Mutex<crate::stdlib::http::WebServer>>),
+    HttpRequest(crate::stdlib::http::HttpRequest),
     HttpResponse(crate::stdlib::http::HttpResponse),
     LiveReloadTracker(crate::stdlib::livereload::LiveReloadTracker),
 }
@@ -396,10 +397,13 @@ impl Vm {
 
                     // Create handler function that executes the PohLang code
                     let handler_fn = std::sync::Arc::new(
-                        move |_request: crate::stdlib::http::HttpRequest| {
+                        move |request: crate::stdlib::http::HttpRequest| {
                             // Create a new VM instance for this request
                             let mut vm = Vm::with_base_dir(base_dir_snapshot.clone());
                             vm.globals = globals_snapshot.clone();
+                            
+                            // Store request in VM context for access by handler
+                            vm.globals.insert("__request".to_string(), Value::HttpRequest(request));
 
                             // Execute each statement and check for response values
                             for stmt in &handler_program {
@@ -1048,6 +1052,27 @@ impl Vm {
                     Err(e) => bail!("Failed to convert to pretty JSON: {}", e),
                 }
             }
+            Expr::GetPathParam(param_name_expr) => {
+                let param_name_val = self.eval(param_name_expr)?;
+                let param_name = match param_name_val {
+                    Value::Str(s) => s,
+                    _ => bail!("get path parameter: parameter name must be a string"),
+                };
+                
+                // Get the request from VM context
+                let request_val = self.globals.get("__request")
+                    .ok_or_else(|| anyhow!("get path parameter: no request context available"))?;
+                    
+                match request_val {
+                    Value::HttpRequest(ref req) => {
+                        req.path_params.get(&param_name)
+                            .cloned()
+                            .map(Value::Str)
+                            .ok_or_else(|| anyhow!("Path parameter '{}' not found", param_name))
+                    }
+                    _ => bail!("get path parameter: invalid request context"),
+                }
+            }
             Expr::JsonGet(json_expr, key_expr) => {
                 let json_val = self.eval(json_expr)?;
                 let key_val = self.eval(key_expr)?;
@@ -1266,6 +1291,7 @@ impl Vm {
             Value::Func(_) => bail!("Cannot convert function to JSON"),
             Value::Error(e) => bail!("Cannot convert error to JSON: {}", e.message),
             Value::WebServer(_) => bail!("Cannot convert web server to JSON"),
+            Value::HttpRequest(_) => bail!("Cannot convert HTTP request to JSON"),
             Value::HttpResponse(_) => bail!("Cannot convert HTTP response to JSON"),
             Value::LiveReloadTracker(_) => bail!("Cannot convert LiveReloadTracker to JSON"),
         }
@@ -1282,6 +1308,7 @@ impl Vm {
             Value::Dict(m) => Ok(!m.is_empty()),
             Value::Error(_) => Ok(true), // Errors are truthy (presence indicates something went wrong)
             Value::WebServer(_) => Ok(true), // Web servers are truthy
+            Value::HttpRequest(_) => Ok(true), // HTTP requests are truthy
             Value::HttpResponse(_) => Ok(true), // HTTP responses are truthy
             Value::LiveReloadTracker(_) => Ok(true), // LiveReloadTracker is truthy
         }
@@ -1945,6 +1972,7 @@ impl Vm {
             | Expr::ParseJson(_)
             | Expr::ToJson(_)
             | Expr::ToJsonPretty(_)
+            | Expr::GetPathParam(_)
             | Expr::JsonGet(_, _)
             | Expr::JsonSet(_, _, _)
             | Expr::NewJsonObject
@@ -2242,6 +2270,7 @@ impl Vm {
             | Expr::ParseJson(_)
             | Expr::ToJson(_)
             | Expr::ToJsonPretty(_)
+            | Expr::GetPathParam(_)
             | Expr::JsonGet(_, _)
             | Expr::JsonSet(_, _, _)
             | Expr::NewJsonObject
@@ -2575,6 +2604,7 @@ impl Vm {
             | Expr::ParseJson(_)
             | Expr::ToJson(_)
             | Expr::ToJsonPretty(_)
+            | Expr::GetPathParam(_)
             | Expr::JsonGet(_, _)
             | Expr::JsonSet(_, _, _)
             | Expr::NewJsonObject
@@ -2992,6 +3022,7 @@ fn dump_expr(e: &Expr) -> String {
         Expr::ParseJson(s) => format!("parse json from {}", dump_expr(s)),
         Expr::ToJson(v) => format!("convert to json {}", dump_expr(v)),
         Expr::ToJsonPretty(v) => format!("convert to pretty json {}", dump_expr(v)),
+        Expr::GetPathParam(name) => format!("get path parameter {}", dump_expr(name)),
         Expr::JsonGet(json, key) => format!("get {} from json {}", dump_expr(key), dump_expr(json)),
         Expr::JsonSet(json, key, val) => {
             format!(
@@ -3101,6 +3132,7 @@ fn to_string(v: &Value) -> String {
             }
         }
         Value::WebServer(_) => "<WebServer>".to_string(),
+        Value::HttpRequest(_) => "<HttpRequest>".to_string(),
         Value::HttpResponse(r) => format!("<HttpResponse status={}>", r.status),
         Value::LiveReloadTracker(_) => "<LiveReloadTracker>".to_string(),
     }
