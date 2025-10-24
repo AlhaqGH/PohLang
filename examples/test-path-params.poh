@@ -1,0 +1,38 @@
+Start Program
+
+# Test Path Parameters with working syntax
+
+Write "Starting Path Parameters Test Server..."
+
+# Create web server
+Set server to create web server on port 8080
+
+# Home page
+Add route "/" with method "GET" to server:
+    Write html response with "<html><head><title>Path Parameters Test</title></head><body><h1>Path Parameters Test</h1><p>Try these URLs:</p><ul><li><a href='/users/123'>GET /users/123</a></li><li><a href='/users/456'>GET /users/456</a></li><li><a href='/posts/2024/01/hello'>GET /posts/2024/01/hello</a></li></ul></body></html>"
+
+# Route with path parameter :id
+Add route "/users/:id" with method "GET" to server:
+    Write json response with "message" set to "User endpoint", "id" set to "test-id"
+
+# Route with multiple parameters
+Add route "/posts/:year/:month/:slug" with method "GET" to server:
+    Write json response with "message" set to "Post endpoint", "year" set to "2024", "month" set to "01", "slug" set to "test"
+
+# Regular route (no parameters)
+Add route "/api/test" with method "GET" to server:
+    Write json response with "message" set to "Regular route works"
+
+Write ""
+Write "Server starting on http://localhost:8080"
+Write "Test URLs:"
+Write "  - http://localhost:8080/"
+Write "  - http://localhost:8080/users/123"
+Write "  - http://localhost:8080/users/456"  
+Write "  - http://localhost:8080/posts/2024/01/hello-world"
+Write "  - http://localhost:8080/api/test"
+Write ""
+
+Start server
+
+End Program

@@ -8,6 +8,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use tiny_http::{Header, Request, Response, Server, StatusCode};
 
+use super::router::{Router, RoutePattern};
+
 /// Represents an HTTP request for PohLang
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
@@ -16,6 +18,7 @@ pub struct HttpRequest {
     pub query: HashMap<String, String>,
     pub headers: HashMap<String, String>,
     pub body: String,
+    pub path_params: HashMap<String, String>, // Added for path parameters
 }
 
 /// Represents an HTTP response for PohLang
@@ -62,6 +65,7 @@ impl std::fmt::Debug for Route {
 pub struct WebServer {
     port: u16,
     routes: Arc<Mutex<Vec<Route>>>,
+    router: Arc<Mutex<Router>>, // Added for advanced routing
 }
 
 impl WebServer {
@@ -70,6 +74,7 @@ impl WebServer {
         Self {
             port,
             routes: Arc::new(Mutex::new(Vec::new())),
+            router: Arc::new(Mutex::new(Router::new())),
         }
     }
 
@@ -218,20 +223,49 @@ fn handle_request(mut request: Request, routes: &Arc<Mutex<Vec<Route>>>) -> Resu
         query,
         headers,
         body: body_string,
+        path_params: HashMap::new(), // Will be filled by router if matched
     };
 
-    // Find matching route
+    // Find matching route - try exact match first, then pattern matching
     let routes_guard = routes.lock().unwrap();
-    let matched_route = routes_guard
+    
+    // Try exact match first (for backwards compatibility)
+    let exact_match = routes_guard
         .iter()
         .find(|r| r.path == poh_request.path && r.method == method);
 
-    let response = match matched_route {
-        Some(route) => match (route.handler)(poh_request.clone()) {
+    let response = if let Some(route) = exact_match {
+        // Exact route match
+        match (route.handler)(poh_request.clone()) {
             Ok(resp) => resp,
             Err(e) => error_response(500, format!("Handler error: {}", e)),
-        },
-        None => error_response(404, "Not Found".to_string()),
+        }
+    } else {
+        // Try pattern matching for path parameters
+        let mut matched = false;
+        let mut final_response = error_response(404, "Not Found".to_string());
+        
+        for route in routes_guard.iter() {
+            // Check if this route has path parameters (contains ':')
+            if route.path.contains(':') && route.method == method {
+                if let Ok(pattern) = RoutePattern::new(&route.path) {
+                    if let Some(params) = pattern.matches(&poh_request.path) {
+                        // Found a match! Create request with path params
+                        let mut req_with_params = poh_request.clone();
+                        req_with_params.path_params = params;
+                        
+                        final_response = match (route.handler)(req_with_params) {
+                            Ok(resp) => resp,
+                            Err(e) => error_response(500, format!("Handler error: {}", e)),
+                        };
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        final_response
     };
 
     // Build tiny_http response

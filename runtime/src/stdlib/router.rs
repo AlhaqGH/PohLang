@@ -101,6 +101,17 @@ pub struct Router {
     error_handler: Option<Arc<dyn Fn(anyhow::Error) -> HttpResponse + Send + Sync>>,
 }
 
+impl std::fmt::Debug for Router {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Router")
+            .field("routes", &self.routes)
+            .field("middleware_count", &self.middleware.len())
+            .field("has_not_found_handler", &self.not_found_handler.is_some())
+            .field("has_error_handler", &self.error_handler.is_some())
+            .finish()
+    }
+}
+
 impl Router {
     pub fn new() -> Self {
         Self {
