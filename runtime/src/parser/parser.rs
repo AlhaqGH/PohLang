@@ -88,9 +88,14 @@ pub fn parse(src: &str) -> Result<Program> {
     let lines: Vec<&str> = src.lines().collect();
     let mut i = 0usize;
 
-    // Skip leading blank lines
-    while i < lines.len() && lines[i].trim().is_empty() {
-        i += 1;
+    // Skip leading blank lines and comments
+    while i < lines.len() {
+        let trimmed = lines[i].trim();
+        if trimmed.is_empty() || trimmed.starts_with("//") || trimmed.starts_with("#") {
+            i += 1;
+        } else {
+            break;
+        }
     }
 
     if i == lines.len() {

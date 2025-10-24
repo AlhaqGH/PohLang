@@ -1,0 +1,14 @@
+// This is a comment before Start Program
+// It should be allowed now!
+# This is another comment style
+
+// Author: Test User
+// Date: 2025-10-25
+// Purpose: Test that comments work before Start Program
+
+Start Program
+
+Write "Comments before Start Program are now supported!"
+Write "This file had 7 comment lines before the Start Program line."
+
+End Program
