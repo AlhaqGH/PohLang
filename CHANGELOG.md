@@ -5,6 +5,31 @@ All notable changes to PohLang will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7] - 2025-10-25 - Path Parameters & Parser Improvements
+
+### Added
+- **Path Parameters Support**
+  - Dynamic route parameters with `:param` syntax (e.g., `/users/:id`, `/posts/:year/:month/:slug`)
+  - `Get path parameter "name"` expression to access path parameters in route handlers
+  - RoutePattern integration with HTTP server for pattern matching
+  - Automatic parameter extraction from URLs into HashMap
+  - Support for multiple parameters in a single route
+  - Full documentation in `doc/PATH_PARAMETERS.md`
+
+- **Parser Improvements**
+  - Comments now allowed before `Start Program`
+  - Support for file headers, author info, and documentation at file top
+  - Both `//` and `#` comment styles supported before program start
+
+### Changed
+- HTTP route handlers now receive and store `HttpRequest` in VM context (previously ignored)
+- `Value` enum includes `HttpRequest` variant for proper type handling
+- Router module fully integrated with HTTP server
+
+### Examples
+- `examples/test-path-params.poh` - Demonstrates path parameter extraction
+- `examples/test-comments-before-start.poh` - Shows comment support before Start Program
+
 ## [0.6.0] - 2025-10-11 - Web Framework & Hot Reload (Phase 6)
 
 ### Overview
