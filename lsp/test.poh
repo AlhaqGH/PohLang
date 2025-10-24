@@ -1,0 +1,16 @@
+Start Program
+
+Write "Testing PohLang LSP Server..."
+
+Set greeting to "Hello from PohLang!"
+Write greeting
+
+Make testFunction with name
+    Write "Hello "
+    Return name
+End
+
+Set result to testFunction("World")
+Write result
+
+End Program

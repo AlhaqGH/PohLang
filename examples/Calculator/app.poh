@@ -1,0 +1,283 @@
+# Simple Calculator Web App
+# Demonstrates all PohLang syntax features in a clean, working example
+
+Start Program
+
+# ============================================
+# CALCULATOR FUNCTIONS
+# ============================================
+
+# Basic arithmetic with mixed operators
+Make calculate with operation, a, b
+  If operation is "add"
+    Return a + b
+  End
+  If operation is "subtract"
+    Return a - b
+  End
+  If operation is "multiply"
+    Return a * b
+  End
+  If operation is "divide"
+    If b is not 0
+      Return a / b
+    End
+    Return "Error: Division by zero"
+  End
+  Return "Error: Unknown operation"
+End
+
+# Complex calculation with grouping
+Make complex_calc with nums
+  # Demonstrates: (nums[0] + nums[1]) * nums[2] - nums[3]
+  # BIDMAS: Parentheses first, then multiply, then subtract
+  
+  Set first to nums[0]
+  Set second to nums[1]
+  Set third to nums[2]
+  Set fourth to nums[3]
+  
+  Set sum to first + second
+  Set product to sum * third
+  Set result to product - fourth
+  
+  Return result
+End
+
+# Statistics calculator using phrasal built-ins
+Make calculate_stats with numbers
+  Set total_sum to total of numbers
+  Set minimum to smallest in numbers
+  Set maximum to largest in numbers
+  Set count to length(numbers)
+  
+  # Calculate average with grouping
+  Set average to total_sum / count
+  
+  # Calculate range
+  Set range_val to maximum - minimum
+  
+  Return Make a dictionary with
+    "sum" set to total_sum,
+    "min" set to minimum,
+    "max" set to maximum,
+    "avg" set to average,
+    "range" set to range_val,
+    "count" set to count
+End
+
+# ============================================
+# WEB ROUTE HANDLERS
+# ============================================
+
+Make handle_home with request
+  Set html to "<html><head><title>PohLang Calculator</title></head><body><h1>PohLang Calculator Demo</h1><p>Visit /api/calc?op=add&a=10&b=5</p><p>Visit /api/complex</p><p>Visit /api/stats</p></body></html>"
+  Return Make a dictionary with "status" set to 200, "body" set to html
+End
+
+Make handle_simple_calc with request
+  # Get query parameters (simplified)
+  Set op to "add"
+  Set a to 10
+  Set b to 5
+  
+  Set result to calculate with op, a, b
+  
+  Set response to Make a dictionary with
+    "operation" set to op,
+    "a" set to a,
+    "b" set to b,
+    "result" set to result
+  
+  Return Make a dictionary with "status" set to 200, "body" set to response
+End
+
+Make handle_complex_calc with request
+  # Create test numbers using phrasal syntax
+  Set test_nums to Make a list of 10, 5, 3, 2
+  
+  # Calculate: (10 + 5) * 3 - 2 = 43
+  Set result to complex_calc with test_nums
+  
+  Set response to Make a dictionary with
+    "numbers" set to test_nums,
+    "expression" set to "(nums[0] + nums[1]) * nums[2] - nums[3]",
+    "calculation" set to "(10 + 5) * 3 - 2",
+    "result" set to result,
+    "expected" set to 43
+  
+  Return Make a dictionary with "status" set to 200, "body" set to response
+End
+
+Make handle_stats with request
+  # Create sample dataset
+  Set data to Make a list of 23, 45, 12, 67, 34, 89, 15, 56
+  
+  Set stats to calculate_stats with data
+  
+  Set response to Make a dictionary with
+    "data" set to data,
+    "statistics" set to stats
+  
+  Return Make a dictionary with "status" set to 200, "body" set to response
+End
+
+Make handle_demo with request
+  # Comprehensive syntax demonstration
+  
+  # 1. Phrasal collections
+  Set fruits to Make a list of "apple", "banana", "cherry"
+  Set person to Make a dictionary with "name" set to "Ada", "age" set to 36
+  
+  # 2. Indexing with brackets
+  Set first_fruit to fruits[0]
+  Set last_fruit to fruits[-1]
+  Set person_name to person["name"]
+  
+  # 3. Arithmetic with grouping
+  Set x to 10
+  Set y to 5
+  Set z to 2
+  
+  Set without_grouping to x + y * z      # 20 (multiply first)
+  Set with_grouping to (x + y) * z       # 30 (parentheses override)
+  
+  # 4. Mixed operators (symbolic and phrasal)
+  Set symbolic_result to x + y - z       # 13
+  Set phrasal_result to x plus y minus z # 13
+  Set mixed_result to (x + y) times z    # 30
+  
+  # 5. Phrasal built-ins
+  Set numbers to Make a list of 5, 10, 15, 20
+  Set sum_result to total of numbers           # 50
+  Set first_num to first in numbers            # 5
+  Set last_num to last in numbers              # 20
+  Set reversed to reverse of numbers           # [20, 15, 10, 5]
+  
+  # 6. String operations
+  Set greeting to "hello world"
+  Set upper to make uppercase greeting         # "HELLO WORLD"
+  Set lower to make lowercase "LOUD TEXT"      # "loud text"
+  
+  # 7. Complex nested indexing
+  Set matrix to Make a list of 
+    Make a list of 1, 2, 3,
+    Make a list of 4, 5, 6,
+    Make a list of 7, 8, 9
+  
+  Set center to matrix[1][1]                   # 5
+  
+  # 8. Indexing in expressions with grouping
+  Set expr_result to (numbers[0] + numbers[1]) * numbers[2]  # (5 + 10) * 15 = 225
+  
+  # Build comprehensive response
+  Set response to Make a dictionary with
+    "collections" set to Make a dictionary with
+      "list" set to fruits,
+      "dict" set to person,
+    "indexing" set to Make a dictionary with
+      "first_fruit" set to first_fruit,
+      "last_fruit" set to last_fruit,
+      "person_name" set to person_name,
+      "matrix_center" set to center,
+    "arithmetic" set to Make a dictionary with
+      "without_grouping" set to without_grouping,
+      "with_grouping" set to with_grouping,
+      "symbolic" set to symbolic_result,
+      "phrasal" set to phrasal_result,
+      "mixed" set to mixed_result,
+    "built_ins" set to Make a dictionary with
+      "sum" set to sum_result,
+      "first" set to first_num,
+      "last" set to last_num,
+      "reversed" set to reversed,
+    "strings" set to Make a dictionary with
+      "uppercase" set to upper,
+      "lowercase" set to lower,
+    "complex" set to Make a dictionary with
+      "expression" set to "(numbers[0] + numbers[1]) * numbers[2]",
+      "result" set to expr_result,
+      "expected" set to 225
+  
+  Return Make a dictionary with "status" set to 200, "body" set to response
+End
+
+# ============================================
+# MAIN ROUTER
+# ============================================
+
+Make router with request
+  Set path to request["path"]
+  
+  If path is "/"
+    Return handle_home with request
+  End
+  
+  If path is "/api/calc"
+    Return handle_simple_calc with request
+  End
+  
+  If path is "/api/complex"
+    Return handle_complex_calc with request
+  End
+  
+  If path is "/api/stats"
+    Return handle_stats with request
+  End
+  
+  If path is "/api/demo"
+    Return handle_demo with request
+  End
+  
+  Set error to Make a dictionary with "error" set to "Not Found", "path" set to path
+  Return Make a dictionary with "status" set to 404, "body" set to error
+End
+
+# ============================================
+# START SERVER
+# ============================================
+
+Write "=========================================="
+Write "PohLang Calculator Web App"
+Write "=========================================="
+Write ""
+Write "Syntax Features Demonstrated:"
+Write ""
+Write "✓ Phrasal Collections:"
+Write "  - Make a list of 1, 2, 3"
+Write "  - Make a dictionary with key set to value"
+Write ""
+Write "✓ Bracket Indexing []:"
+Write "  - list[0], dict[key], matrix[i][j]"
+Write "  - Negative indices: list[-1]"
+Write ""
+Write "✓ Parentheses Grouping ():"
+Write "  - (a + b) * c"
+Write "  - Override BIDMAS precedence"
+Write ""
+Write "✓ Mixed Operators:"
+Write "  - Symbolic: +, -, *, /"
+Write "  - Phrasal: plus, minus, times, divided by"
+Write "  - Both work together!"
+Write ""
+Write "✓ Phrasal Built-ins:"
+Write "  - total of, smallest in, largest in"
+Write "  - first in, last in, reverse of"
+Write "  - make uppercase, make lowercase"
+Write ""
+Write "=========================================="
+Write "Server running on http://localhost:8080"
+Write "=========================================="
+Write ""
+Write "Try these endpoints:"
+Write "  GET /                  - Home page"
+Write "  GET /api/calc          - Simple calculator"
+Write "  GET /api/complex       - Complex calculation demo"
+Write "  GET /api/stats         - Statistics calculator"
+Write "  GET /api/demo          - Full syntax demonstration"
+Write ""
+Write "=========================================="
+
+Start server on 8080 with router
+
+End Program

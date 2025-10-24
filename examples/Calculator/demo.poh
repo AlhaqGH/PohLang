@@ -1,0 +1,273 @@
+Start Program
+
+# PohLang Calculator Demo - Showcasing All Syntax Features
+# Features: Phrasal collections, bracket indexing, parentheses grouping, mixed operators
+
+Write "=========================================="
+Write "PohLang Calculator Demo"
+Write "=========================================="
+Write ""
+
+# ============================================
+# 1. PHRASAL COLLECTIONS
+# ============================================
+
+Write "1. Phrasal Collections"
+Write "----------------------"
+
+Set numbers to Make a list of 10, 20, 30, 40, 50
+Write "List created: numbers"
+Write numbers
+
+Set person to Make a dictionary with "name" set to "Ada", "age" set to 36, "role" set to "Developer"
+Write "Dictionary created: person"
+Write person
+Write ""
+
+# ============================================
+# 2. BRACKET INDEXING
+# ============================================
+
+Write "2. Bracket Indexing []"
+Write "----------------------"
+
+Write "First number (numbers[0]):"
+Write numbers[0]
+
+Write "Last number (numbers[-1]):"
+Write numbers[-1]
+
+Write "Person name (person[\"name\"]):"
+Write person["name"]
+
+Write "Person age (person[\"age\"]):"
+Write person["age"]
+
+Write ""
+
+# ============================================
+# 3. PARENTHESES GROUPING & PRECEDENCE
+# ============================================
+
+Write "3. Operator Precedence (BIDMAS)"
+Write "--------------------------------"
+
+Set a to 10
+Set b to 5
+Set c to 2
+
+Write "Without grouping: 10 + 5 * 2"
+Set result1 to a + b * c
+Write result1
+Write "(Expected: 20 - multiply first)"
+Write ""
+
+Write "With grouping: (10 + 5) * 2"
+Set result2 to (a + b) * c
+Write result2
+Write "(Expected: 30 - add first)"
+Write ""
+
+Write "Complex: ((10 + 5) * 2) - 5"
+Set result3 to ((a + b) * c) - b
+Write result3
+Write "(Expected: 25)"
+Write ""
+
+# ============================================
+# 4. MIXED OPERATORS (SYMBOLIC + PHRASAL)
+# ============================================
+
+Write "4. Mixed Operators"
+Write "------------------"
+
+Write "All symbolic: 10 + 5 - 2"
+Set mixed1 to a + b - c
+Write mixed1
+
+Write "All phrasal: 10 plus 5 minus 2"
+Set mixed2 to a plus b minus c
+Write mixed2
+
+Write "Mixed: (10 + 5) times 2"
+Set mixed3 to (a + b) times c
+Write mixed3
+
+Write "Mixed: 10 plus (5 * 2)"
+Set mixed4 to a plus (b * c)
+Write mixed4
+Write ""
+
+# ============================================
+# 5. PHRASAL BUILT-INS
+# ============================================
+
+Write "5. Phrasal Built-ins"
+Write "--------------------"
+
+Set data to Make a list of 23, 45, 12, 67, 34, 89, 15, 56
+
+Write "Data:"
+Write data
+
+Write "Total of data:"
+Write total of data
+
+Write "Smallest in data:"
+Write smallest in data
+
+Write "Largest in data:"
+Write largest in data
+
+Write "First in data:"
+Write first in data
+
+Write "Last in data:"
+Write last in data
+
+Write ""
+
+# ============================================
+# 6. STRING OPERATIONS
+# ============================================
+
+Write "6. String Operations"
+Write "--------------------"
+
+Set text to "hello world"
+Write "Original: hello world"
+
+Write "Uppercase:"
+Write make uppercase text
+
+Write "Uppercase LOUD:"
+Write make lowercase "LOUD TEXT"
+
+Set greeting to "  spaces  "
+Write "Trimmed spaces:"
+Write trim spaces from greeting
+Write ""
+
+# ============================================
+# 7. NESTED INDEXING
+# ============================================
+
+Write "7. Nested Indexing"
+Write "------------------"
+
+Set row1 to Make a list of 1, 2, 3
+Set row2 to Make a list of 4, 5, 6
+Set row3 to Make a list of 7, 8, 9
+Set matrix to Make a list of row1, row2, row3
+
+Write "Matrix:"
+Write matrix
+
+Write "Center element (matrix[1][1]):"
+Write matrix[1][1]
+
+Write "Top-right (matrix[0][2]):"
+Write matrix[0][2]
+
+Write "Bottom-left (matrix[2][0]):"
+Write matrix[2][0]
+Write ""
+
+# ============================================
+# 8. INDEXING IN EXPRESSIONS
+# ============================================
+
+Write "8. Indexing in Expressions"
+Write "---------------------------"
+
+Set nums to Make a list of 5, 10, 15, 20
+
+Write "nums[0] + nums[1]:"
+Write nums[0] + nums[1]
+
+Write "(nums[0] + nums[1]) * nums[2]:"
+Set expr_result to (nums[0] + nums[1]) * nums[2]
+Write expr_result
+Write "(Expected: (5 + 10) * 15 = 225)"
+Write ""
+
+# ============================================
+# 9. COMPLETE EXAMPLE - STATISTICS
+# ============================================
+
+Write "9. Complete Example: Statistics Calculator"
+Write "-------------------------------------------"
+
+Set scores to Make a list of 85, 92, 78, 95, 88, 91, 87, 94
+
+Write "Scores:"
+Write scores
+
+Set total_score to total of scores
+Write "Total:"
+Write total_score
+
+Set highest to largest in scores
+Write "Highest:"
+Write highest
+
+Set lowest to smallest in scores
+Write "Lowest:"
+Write lowest
+
+Set count to length(scores)
+Write "Count:"
+Write count
+
+Set average to total_score / count
+Write "Average:"
+Write average
+
+Set range_val to highest - lowest
+Write "Range:"
+Write range_val
+Write ""
+
+# ============================================
+# 10. GROUPING WITH INDEXING
+# ============================================
+
+Write "10. Advanced: Grouping with Indexing"
+Write "-------------------------------------"
+
+Set values to Make a list of 100, 200, 300
+
+Write "Complex expression:"
+Write "(values[0] + values[1]) / values[2] * 10"
+Set complex to (values[0] + values[1]) / values[2] * 10
+Write complex
+Write "(Expected: (100 + 200) / 300 * 10 = 10)"
+Write ""
+
+# ============================================
+# SUMMARY
+# ============================================
+
+Write "=========================================="
+Write "[SUCCESS] ALL FEATURES DEMONSTRATED"
+Write "=========================================="
+Write ""
+Write "What we showed:"
+Write "1. Phrasal collections (Make a list of, Make a dictionary with)"
+Write "2. Bracket indexing [] for accessing elements"
+Write "3. Parentheses grouping () for precedence"
+Write "4. Mixed symbolic (+, -) and phrasal (times, plus) operators"
+Write "5. Phrasal built-ins (total of, smallest in, etc.)"
+Write "6. String operations with natural language"
+Write "7. Nested data structures and indexing"
+Write "8. Complex expressions combining all features"
+Write ""
+Write "Remember:"
+Write "  [OK] Create collections: Make a list of / Make a dictionary with"
+Write "  [OK] Access elements: Use [] brackets"
+Write "  [OK] Group expressions: Use () parentheses"
+Write "  [OK] Mix operators: Symbolic and phrasal work together!"
+Write ""
+Write "=========================================="
+
+End Program

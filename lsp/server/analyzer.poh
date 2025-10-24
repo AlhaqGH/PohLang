@@ -1,0 +1,20 @@
+Start Program
+
+Write "PohLang LSP - Code Analyzer"
+
+Make analyzeDocument with content
+    Set diagnostics to []
+    Return diagnostics
+End
+
+Make findSymbols with content
+    Set symbols to []
+    Return symbols
+End
+
+Make checkSyntax with line
+    Set isValid to True
+    Return isValid
+End
+
+End Program

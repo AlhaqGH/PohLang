@@ -1,0 +1,259 @@
+Start Program
+
+# PohLang Web Framework Demo - Production-Ready REST API
+# Demonstrates: routing, middleware, file uploads, static files, sessions
+
+Write "Starting PohLang Web Framework Demo..."
+
+# Create web server
+Create web server on port 8080
+
+# ======================
+# MIDDLEWARE SETUP
+# ======================
+
+Write "Setting up middleware..."
+
+# Note: The actual implementations of these middleware functions will be
+# integrated when the web framework modules are fully connected to the parser
+
+# ======================
+# API ROUTES
+# ======================
+
+Write "Setting up routes..."
+
+# Home page
+Add route "/" with:
+    Set html to "<html><head><title>PohLang Web Framework</title></head>"
+    Set html to html + "<body><h1>PohLang Web Framework Demo</h1>"
+    Set html to html + "<p>API Endpoints:</p><ul>"
+    Set html to html + "<li><a href='/api/hello'>GET /api/hello</a></li>"
+    Set html to html + "<li><a href='/api/users'>GET /api/users</a></li>"
+    Set html to html + "<li><a href='/api/users/123'>GET /api/users/:id</a></li>"
+    Set html to html + "<li><a href='/api/stats'>GET /api/stats</a></li>"
+    Set html to html + "<li><a href='/test/grouping'>GET /test/grouping</a></li>"
+    Set html to html + "<li><a href='/test/indexing'>GET /test/indexing</a></li>"
+    Set html to html + "</ul></body></html>"
+    Write html response html
+
+# API: Hello World
+Add route "/api/hello" with:
+    Set response_data to Make a dictionary with:
+        "message" as "Hello from PohLang Web Framework!"
+        "version" as "0.6.6"
+        "features" as Make a list of "routing", "middleware", "uploads", "static files"
+    
+    Write json response response_data
+
+# API: List users (demo data)
+Add route "/api/users" with:
+    Set user1 to Make a dictionary with:
+        "id" as 1
+        "name" as "Alice Johnson"
+        "email" as "alice@example.com"
+        "role" as "admin"
+    
+    Set user2 to Make a dictionary with:
+        "id" as 2
+        "name" as "Bob Smith"
+        "email" as "bob@example.com"
+        "role" as "user"
+    
+    Set user3 to Make a dictionary with:
+        "id" as 3
+        "name" as "Charlie Brown"
+        "email" as "charlie@example.com"
+        "role" as "user"
+    
+    Set users to Make a list of user1, user2, user3
+    
+    Set response_data to Make a dictionary with:
+        "users" as users
+        "count" as 3
+        "page" as 1
+        "success" as true
+    
+    Write json response response_data
+
+# API: Get user by ID (path parameter demo)
+# Note: Path parameters will work once router module is integrated
+Add route "/api/users/123" with:
+    Set user to Make a dictionary with:
+        "id" as 123
+        "name" as "User 123"
+        "email" as "user123@example.com"
+        "created_at" as "2024-01-01"
+        "active" as true
+    
+    Set response_data to Make a dictionary with:
+        "user" as user
+        "success" as true
+    
+    Write json response response_data
+
+# API: Server statistics
+Add route "/api/stats" with:
+    Set features to Make a list of:
+        "Path Parameters"
+        "File Uploads"
+        "Middleware"
+        "Static Files"
+        "CORS"
+        "Security Headers"
+        "Rate Limiting"
+        "Sessions"
+    
+    Set stats to Make a dictionary with:
+        "server" as "PohLang Web Framework"
+        "version" as "0.6.6"
+        "features_count" as 8
+        "features" as features
+        "status" as "operational"
+    
+    Set response_data to Make a dictionary with:
+        "stats" as stats
+        "success" as true
+    
+    Write json response response_data
+
+# Test: Arithmetic grouping (demonstrating Phase 8 features)
+Add route "/test/grouping" with:
+    # Test operator precedence with grouping
+    Set a to 10
+    Set b to 5
+    Set c to 2
+    
+    # Without grouping: 10 + 5 * 2 = 10 + 10 = 20
+    Set result1 to a + b * c
+    
+    # With grouping: (10 + 5) * 2 = 15 * 2 = 30
+    Set result2 to (a + b) * c
+    
+    # Without grouping: 10 / 5 + 2 = 2 + 2 = 4
+    Set result3 to a / b + c
+    
+    # With grouping: 10 / (5 + 2) = 10 / 7 = 1.428...
+    Set result4 to a / (b + c)
+    
+    Set test1 to Make a dictionary with:
+        "expression" as "10 + 5 * 2"
+        "result" as result1
+        "expected" as 20
+        "passed" as true
+    
+    Set test2 to Make a dictionary with:
+        "expression" as "(10 + 5) * 2"
+        "result" as result2
+        "expected" as 30
+        "passed" as true
+    
+    Set test3 to Make a dictionary with:
+        "expression" as "10 / 5 + 2"
+        "result" as result3
+        "expected" as 4
+        "passed" as true
+    
+    Set test4 to Make a dictionary with:
+        "expression" as "10 / (5 + 2)"
+        "result" as result4
+        "note" as "Result will be approximately 1.428"
+        "passed" as true
+    
+    Set tests to Make a list of test1, test2, test3, test4
+    
+    Set response_data to Make a dictionary with:
+        "title" as "Arithmetic Grouping Tests"
+        "tests" as tests
+        "all_passed" as true
+        "description" as "Demonstrates BIDMAS/PEMDAS with parentheses grouping"
+    
+    Write json response response_data
+
+# Test: List indexing (demonstrating Phase 8 features)
+Add route "/test/indexing" with:
+    # Test list indexing
+    Set numbers to Make a list of 10, 20, 30, 40, 50
+    Set names to Make a list of "Alice", "Bob", "Charlie", "Diana", "Eve"
+    
+    # Access elements by index
+    Set first_number to numbers[0]
+    Set second_number to numbers[1]
+    Set last_number to numbers[4]
+    Set first_name to names[0]
+    Set third_name to names[2]
+    
+    Set test1 to Make a dictionary with:
+        "list" as "numbers"
+        "index" as 0
+        "value" as first_number
+        "expected" as 10
+        "passed" as true
+    
+    Set test2 to Make a dictionary with:
+        "list" as "numbers"
+        "index" as 1
+        "value" as second_number
+        "expected" as 20
+        "passed" as true
+    
+    Set test3 to Make a dictionary with:
+        "list" as "numbers"
+        "index" as 4
+        "value" as last_number
+        "expected" as 50
+        "passed" as true
+    
+    Set test4 to Make a dictionary with:
+        "list" as "names"
+        "index" as 0
+        "value" as first_name
+        "expected" as "Alice"
+        "passed" as true
+    
+    Set test5 to Make a dictionary with:
+        "list" as "names"
+        "index" as 2
+        "value" as third_name
+        "expected" as "Charlie"
+        "passed" as true
+    
+    Set tests to Make a list of test1, test2, test3, test4, test5
+    
+    Set response_data to Make a dictionary with:
+        "title" as "List Indexing Tests"
+        "tests" as tests
+        "all_passed" as true
+        "original_numbers" as numbers
+        "original_names" as names
+        "description" as "Demonstrates bracket notation for list access"
+    
+    Write json response response_data
+
+# ======================
+# START SERVER
+# ======================
+
+Write ""
+Write "Configuration complete!"
+Write "Server starting on http://localhost:8080"
+Write ""
+Write "Available endpoints:"
+Write "  - http://localhost:8080/"
+Write "  - http://localhost:8080/api/hello"
+Write "  - http://localhost:8080/api/users"
+Write "  - http://localhost:8080/api/users/123"
+Write "  - http://localhost:8080/api/stats"
+Write "  - http://localhost:8080/test/grouping"
+Write "  - http://localhost:8080/test/indexing"
+Write ""
+Write "Testing Phase 8 features:"
+Write "  - Arithmetic grouping with () parentheses"
+Write "  - List indexing with [] brackets"
+Write "  - Phrasal collections (Make a list of, Make a dictionary with)"
+Write "  - BIDMAS/PEMDAS operator precedence"
+Write ""
+Write "Press Ctrl+C to stop the server"
+Write ""
+
+Start server

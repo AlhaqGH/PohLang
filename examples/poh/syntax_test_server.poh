@@ -1,0 +1,146 @@
+Start Program
+
+Write "=== Testing Current PohLang Syntax ==="
+Write ""
+
+Write "--- Test 1: List Creation ---"
+
+// Modern bracket syntax
+Set numbers to [1, 2, 3, 4, 5]
+Write "Bracket syntax: " plus numbers
+
+// Legacy phrasal syntax
+Set old_numbers to List contains 10, 20, 30
+Write "Phrasal syntax: " plus old_numbers
+
+Write ""
+Write "--- Test 2: List Indexing ---"
+
+// Indexing with brackets (should stay)
+Write "First number: " plus numbers[0]
+Write "Last number: " plus numbers[-1]
+Set idx to 2
+Write "Index 2: " plus numbers[idx]
+
+Write ""
+Write "--- Test 3: Dictionary Creation ---"
+
+// Modern bracket syntax
+Set person to {name: "Alice", age: 30, city: "NYC"}
+Write "Bracket dict: " plus person
+
+// Legacy phrasal syntax
+Set old_person to Dictionary contains "name" set to "Bob", "age" set to 25
+Write "Phrasal dict: " plus old_person
+
+Write ""
+Write "--- Test 4: Dictionary Access ---"
+
+Write "Name: " plus person["name"]
+Write "Age: " plus person["age"]
+
+Write ""
+Write "--- Test 5: Function Calls ---"
+
+# Define a function
+Make greet with name
+    Return "Hello, " plus name
+End Make
+
+// Call with 'Use' statement
+Use greet with "World"
+Use greet with "World"
+
+// Call with parentheses (should be removed)
+Set greeting to greet("Alice")
+Write greeting
+
+// Call with phrasal 'with' in expression
+Set greeting2 to greet with "Bob"
+Write greeting2
+
+Write ""
+Write "--- Test 6: Arithmetic with Symbols ---"
+
+Set a to 10
+Set b to 5
+
+Write "Symbolic: " plus (a + b * 2)
+Write "Phrasal: " plus (a plus (b times 2))
+Write "Mixed: " plus (a + b times 2)
+
+Write ""
+Write "--- Test 7: Comparisons ---"
+
+If a > b
+    Write "Symbolic comparison works"
+End If
+
+If a is greater than b
+    Write "Phrasal comparison works"
+End If
+
+Write ""
+Write "--- Test 8: Grouping with Parentheses ---"
+
+Set result1 to (10 + 5) * 2
+Write "Grouped with (): " plus result1
+
+Set result2 to (10 plus 5) times 2
+Write "Grouped with (): " plus result2
+
+Write ""
+Write "--- Test 9: Built-in Functions ---"
+
+// With parentheses (should be removed)
+Set nums to [1, 2, 3, 4, 5]
+Set r to range(5)
+Write "range(5): " plus r
+
+Set txt to join(nums, ", ")
+Write "join with (): " plus txt
+
+// With phrasal 'with' (should keep)
+Set parts to split with "a,b,c", ","
+Write "split with 'with': " plus parts
+
+Write ""
+Write "--- Test 10: Phrasal Expressions ---"
+
+Set values to [5, 10, 15, 20, 25]
+Write "Total of values: " plus (total of values)
+Write "Largest in values: " plus (largest in values)
+Write "Count of values: " plus (count of values)
+
+Set text to "  hello world  "
+Write "Trimmed: [" plus (trim spaces from text) plus "]"
+
+Write ""
+Write "=== Web Server Test ==="
+
+// Create web server
+Create web server on port 8080
+
+// Add route with handler
+Add route "/" with method "GET" to server:
+    Write html response with "<h1>Task Manager API</h1><p>Server is running!</p>"
+End route
+
+Add route "/api/tasks" with method "GET" to server:
+    Set tasks to [
+        {id: 1, title: "Task 1", done: False},
+        {id: 2, title: "Task 2", done: True}
+    ]
+    Write json response with tasks
+End route
+
+Add route "/api/task" with method "POST" to server:
+    Set new_task to {id: 3, title: "New Task", done: False}
+    Write json response with new_task
+End route
+
+Write "Starting server on http://localhost:8080"
+Write "Press Ctrl+C to stop"
+Start server
+
+End Program

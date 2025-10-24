@@ -59,9 +59,9 @@ If x is greater than 8 And y is less than 10
 End If
 
 # Test 10: Phrasal expressions in arithmetic
-Set nums to [1, 2, 3]
+Set nums to Make a list of 1, 2, 3
 Set test10 to count of nums times 10
-Write "Test 10: count of [1,2,3] times 10"
+Write "Test 10: count of list times 10"
 Write test10
 Write "Expected: 30"
 
@@ -73,7 +73,7 @@ Write test11
 Write "Expected: 11"
 
 # Test 12: Indexing has highest precedence
-Set items to [10, 20, 30]
+Set items to Make a list of 10, 20, 30
 Set test12 to items[1] plus 5
 Write "Test 12: items[1] plus 5"
 Write test12

@@ -1369,67 +1369,14 @@ fn parse_term(s: &str) -> Result<Expr> {
         return Ok(Expr::DictLit(pairs));
     }
 
-    // Modern list literal: [1, 2, 3]
+    // Bracket list literals are NOT supported - use phrasal syntax
     if s.starts_with('[') && s.ends_with(']') {
-        eprintln!("Warning: Symbolic list literal '[]' is legacy. Prefer: Make a list of ...");
-        let inner = s[1..s.len() - 1].trim();
-        let items = if inner.is_empty() {
-            vec![]
-        } else {
-            parse_arg_list(inner)?
-        };
-        return Ok(Expr::ListLit(items));
+        return Err(anyhow!("Bracket list literals '[]' are not supported. Use: Make a list of ..."));
     }
 
-    // Modern dictionary literal: {key: value, key2: value2}
+    // Brace dict literals are NOT supported - use phrasal syntax
     if s.starts_with('{') && s.ends_with('}') {
-        eprintln!("Warning: Symbolic dictionary literal '{{}}' is legacy. Prefer: Make a dictionary with ...");
-        let inner = s[1..s.len() - 1].trim();
-        let mut pairs = Vec::new();
-        if !inner.is_empty() {
-            let parts = split_top_level(inner, ",");
-            for part in parts {
-                let p = part.trim();
-                // Check if this colon is at top level (not inside parens/strings)
-                let mut in_str = false;
-                let mut depth = 0i32;
-                let mut colon_idx = None;
-                for (i, ch) in p.char_indices() {
-                    if ch == '"' {
-                        in_str = !in_str;
-                        continue;
-                    }
-                    if !in_str {
-                        if ch == '(' || ch == '[' || ch == '{' {
-                            depth += 1;
-                        } else if ch == ')' || ch == ']' || ch == '}' {
-                            depth -= 1;
-                        } else if ch == ':' && depth == 0 {
-                            colon_idx = Some(i);
-                            break;
-                        }
-                    }
-                }
-                if let Some(cidx) = colon_idx {
-                    let kpart = p[..cidx].trim();
-                    let vpart = p[cidx + 1..].trim();
-                    let vexpr = parse_expr(vpart)?;
-                    // Key can be a quoted string or an identifier
-                    if let Some(k) = extract_quoted(kpart) {
-                        pairs.push((k, vexpr));
-                    } else if kpart.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                        pairs.push((kpart.to_string(), vexpr));
-                    } else {
-                        return Err(anyhow!(
-                            "Dictionary key must be string literal or identifier"
-                        ));
-                    }
-                } else {
-                    return Err(anyhow!("Expected ':' in dictionary literal item"));
-                }
-            }
-        }
-        return Ok(Expr::DictLit(pairs));
+        return Err(anyhow!("Brace dictionary literals '{{}}' are not supported. Use: Make a dictionary with ..."));
     }
 
     // Phrasal built-in expressions (case-insensitive)
@@ -1771,38 +1718,13 @@ fn parse_term(s: &str) -> Result<Expr> {
     if s.eq_ignore_ascii_case("Null") || s.eq_ignore_ascii_case("Nothing") || s == "None" {
         return Ok(Expr::Null);
     }
-    // List literal: legacy form "List contains <exprs>"
-    if let Some(rest) = strip_prefix_ci(s, "List contains ") {
-        eprintln!("Warning: Legacy 'List contains' is deprecated. Prefer: Make a list of ...");
-        let items = if rest.trim().is_empty() {
-            vec![]
-        } else {
-            parse_arg_list(rest)?
-        };
-        return Ok(Expr::ListLit(items));
+    // Legacy list syntax is NOT supported
+    if let Some(_rest) = strip_prefix_ci(s, "List contains ") {
+        return Err(anyhow!("Legacy 'List contains' is not supported. Use: Make a list of ..."));
     }
-    // Dictionary literal: legacy form "Dictionary contains \"k\" set to v, ..."
-    if let Some(rest) = strip_prefix_ci(s, "Dictionary contains ") {
-        eprintln!("Warning: Legacy 'Dictionary contains' is deprecated. Prefer: Make a dictionary with ...");
-        let mut pairs = Vec::new();
-        // split rest by commas at top-level
-        let parts = split_top_level(rest, ",");
-        for part in parts {
-            let p = part.trim();
-            // expect "key" set to value
-            if let Some(idx) = p.find(" set to ") {
-                let (kpart, vpart) = p.split_at(idx);
-                let vexpr = parse_expr(vpart[" set to ".len()..].trim())?;
-                if let Some(k) = extract_quoted(kpart.trim()) {
-                    pairs.push((k, vexpr));
-                } else {
-                    return Err(anyhow!("Expected quoted key in dictionary literal"));
-                }
-            } else {
-                return Err(anyhow!("Expected 'set to' in dictionary literal item"));
-            }
-        }
-        return Ok(Expr::DictLit(pairs));
+    // Legacy dictionary syntax is NOT supported
+    if let Some(_rest) = strip_prefix_ci(s, "Dictionary contains ") {
+        return Err(anyhow!("Legacy 'Dictionary contains' is not supported. Use: Make a dictionary with ..."));
     }
     // Number
     if let Ok(n) = s.parse::<f64>() {
@@ -1820,11 +1742,23 @@ fn parse_term(s: &str) -> Result<Expr> {
             return Ok(Expr::Call { name, args });
         }
     }
-    // Call form: name(args)
+    // Call form: name(args) OR grouping: (expr)
     if let Some(idx) = s.find('(') {
         if s.ends_with(')') {
             let name = s[..idx].trim();
             let args_str = &s[idx + 1..s.len() - 1];
+            
+            // If name is empty, this is a grouping expression: (expr)
+            if name.is_empty() {
+                let inner = args_str.trim();
+                if inner.is_empty() {
+                    return Err(anyhow!("Empty parentheses () are not allowed"));
+                }
+                // Parse the grouped expression recursively
+                return parse_expr(inner);
+            }
+            
+            // Otherwise, it's a function call: name(args)
             let args = if args_str.trim().is_empty() {
                 vec![]
             } else {

@@ -56,10 +56,23 @@ It mirrors the grammar file and highlights how the lexicon grows in Phases 2 an
 | Comparisons (Phrasal) | `is equal to`, `is not equal to`, `is greater than`, `is less than`, `is at least`, `is at most` |
 | Comparisons (Symbolic) | `==`, `!=`, `>`, `<`, `>=`, `<=` |
 | Logic | `And`, `Or`, `Not` (case-insensitive) |
-| Collections | `[expr, ...]`, `{key: value, ...}` |
-| Indexing | `<expr>[index]` with optional negatives |
+| **Collections (Phrasal)** | `Make a list of <items>`, `Make a dictionary with <pairs>` |
+| **Indexing (Brackets)** | `<expr>[index]` for accessing elements (supports negatives) |
+| **Grouping (Parentheses)** | `(<expr>)` to override operator precedence |
 
-**Note:** Both phrasal and symbolic forms are fully supported and can be mixed in the same program.
+**Important Syntax Rules:**
+- ✅ **Collections**: Use phrasal syntax ONLY (`Make a list of`, `Make a dictionary with`)
+- ❌ **Bracket literals**: `[1, 2, 3]` and `{"key": "value"}` are NOT supported
+- ✅ **Indexing**: Use `[]` to ACCESS elements: `list[0]`, `dict["key"]`, `matrix[i][j]`
+- ✅ **Grouping**: Use `()` to override precedence: `(a + b) * c`
+- ✅ **Mixed operators**: Symbolic and phrasal can be combined: `(10 + 5) times 2`
+
+**Operator Precedence (BIDMAS/PEMDAS):**
+1. **Parentheses** `()` - Highest priority
+2. **Multiplication/Division** `*`, `/`, `times`, `divided by` - Same level, left-to-right
+3. **Addition/Subtraction** `+`, `-`, `plus`, `minus` - Lowest priority, left-to-right
+
+**Note:** Both phrasal and symbolic operators are fully supported and can be mixed in the same program.
 
 ### Built-in Functions
 

@@ -1,0 +1,9 @@
+Start Program
+
+Write "Testing bracket literal rejection..."
+
+// This should fail
+Set nums to [1, 2, 3]
+Write nums
+
+End Program

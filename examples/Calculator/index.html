@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PohLang Calculator Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+      padding: 30px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border-left: 5px solid #667eea;
+    }
+
+    .section h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.8em;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .demo-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .demo-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .demo-card h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .code-block {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin: 15px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      line-height: 1.6;
+    }
+
+    .code-block .keyword {
+      color: #ff79c6;
+    }
+
+    .code-block .string {
+      color: #f1fa8c;
+    }
+
+    .code-block .number {
+      color: #bd93f9;
+    }
+
+    .code-block .comment {
+      color: #6272a4;
+    }
+
+    .result {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+
+    .result strong {
+      color: #2e7d32;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: transform 0.2s;
+      display: inline-block;
+      margin: 5px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .feature {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .feature .icon {
+      font-size: 3em;
+      margin-bottom: 15px;
+    }
+
+    .syntax-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .syntax-comparison .column {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .syntax-comparison h4 {
+      color: #333;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .syntax-comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .output-section {
+      background: #263238;
+      color: #aed581;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .output-section h4 {
+      color: #fff;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 PohLang Calculator</h1>
+      <p>Natural Language Programming Demo</p>
+    </div>
+
+    <div class="content">
+      <!-- Features Overview -->
+      <div class="section">
+        <h2>✨ Language Features</h2>
+        <div class="features">
+          <div class="feature">
+            <div class="icon">📝</div>
+            <h3>Phrasal Collections</h3>
+            <p>Create data structures with natural language</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🔢</div>
+            <h3>Bracket Indexing</h3>
+            <p>Access elements with familiar [] syntax</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🎯</div>
+            <h3>Grouping Support</h3>
+            <p>Override precedence with ()</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🔀</div>
+            <h3>Mixed Operators</h3>
+            <p>Use both symbolic and phrasal freely</p>
+          </div>
+          <div class="feature">
+            <div class="icon">📊</div>
+            <h3>Built-in Functions</h3>
+            <p>Natural language built-ins</p>
+          </div>
+          <div class="feature">
+            <div class="icon">⚡</div>
+            <h3>BIDMAS Rules</h3>
+            <p>Standard math precedence</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Syntax Examples -->
+      <div class="section">
+        <h2>📚 Syntax Examples</h2>
+        
+        <div class="demo-card">
+          <h3>1. Creating Collections</h3>
+          <div class="code-block">
+<span class="comment"># Lists use phrasal syntax</span>
+<span class="keyword">Set</span> numbers <span class="keyword">to</span> <span class="keyword">Make a list of</span> <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>
+
+<span class="comment"># Dictionaries also use phrasal syntax</span>
+<span class="keyword">Set</span> person <span class="keyword">to</span> <span class="keyword">Make a dictionary with</span>
+  <span class="string">"name"</span> <span class="keyword">set to</span> <span class="string">"Ada"</span>,
+  <span class="string">"age"</span> <span class="keyword">set to</span> <span class="number">36</span>
+          </div>
+          <div class="result">
+            <strong>✓ No bracket literals</strong> - collections created with natural language
+          </div>
+        </div>
+
+        <div class="demo-card">
+          <h3>2. Indexing Elements</h3>
+          <div class="code-block">
+<span class="comment"># Bracket indexing for accessing</span>
+<span class="keyword">Write</span> numbers[<span class="number">0</span>]        <span class="comment"># 1 (first element)</span>
+<span class="keyword">Write</span> numbers[<span class="number">-1</span>]       <span class="comment"># 5 (last element)</span>
+<span class="keyword">Write</span> person[<span class="string">"name"</span>]   <span class="comment"># "Ada"</span>
+
+<span class="comment"># Nested indexing</span>
+<span class="keyword">Set</span> matrix <span class="keyword">to</span> <span class="keyword">Make a list of</span>
+  <span class="keyword">Make a list of</span> <span class="number">1</span>, <span class="number">2</span>,
+  <span class="keyword">Make a list of</span> <span class="number">3</span>, <span class="number">4</span>
+<span class="keyword">Write</span> matrix[<span class="number">0</span>][<span class="number">1</span>]     <span class="comment"># 2</span>
+          </div>
+          <div class="result">
+            <strong>✓ Brackets only for indexing</strong> - not for creating collections
+          </div>
+        </div>
+
+        <div class="demo-card">
+          <h3>3. Operator Precedence with Grouping</h3>
+          <div class="code-block">
+<span class="comment"># Without grouping (BIDMAS rules)</span>
+<span class="keyword">Write</span> <span class="number">10</span> + <span class="number">5</span> * <span class="number">2</span>           <span class="comment"># 20 (multiply first)</span>
+
+<span class="comment"># With grouping (override precedence)</span>
+<span class="keyword">Write</span> (<span class="number">10</span> + <span class="number">5</span>) * <span class="number">2</span>         <span class="comment"># 30 (add first)</span>
+
+<span class="comment"># Complex grouping</span>
+<span class="keyword">Write</span> ((<span class="number">10</span> + <span class="number">5</span>) * <span class="number">3</span>) - <span class="number">2</span>   <span class="comment"># 43</span>
+          </div>
+          <div class="result">
+            <strong>✓ Standard BIDMAS</strong> - parentheses override precedence
+          </div>
+        </div>
+
+        <div class="demo-card">
+          <h3>4. Mixed Operators</h3>
+          <div class="code-block">
+<span class="comment"># All symbolic</span>
+<span class="keyword">Set</span> result <span class="keyword">to</span> <span class="number">10</span> + <span class="number">5</span> - <span class="number">2</span>       <span class="comment"># 13</span>
+
+<span class="comment"># All phrasal</span>
+<span class="keyword">Set</span> result <span class="keyword">to</span> <span class="number">10</span> <span class="keyword">plus</span> <span class="number">5</span> <span class="keyword">minus</span> <span class="number">2</span>  <span class="comment"># 13</span>
+
+<span class="comment"># Mixed (symbolic + phrasal)</span>
+<span class="keyword">Set</span> result <span class="keyword">to</span> (<span class="number">10</span> + <span class="number">5</span>) <span class="keyword">times</span> <span class="number">2</span>  <span class="comment"># 30</span>
+          </div>
+          <div class="result">
+            <strong>✓ Use what feels natural</strong> - both styles work together
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison: Old vs New -->
+      <div class="section">
+        <h2>🔄 Syntax Evolution</h2>
+        <div class="syntax-comparison">
+          <div class="column">
+            <h4>❌ Old Syntax (Deprecated)</h4>
+            <div class="code-block">
+<span class="comment"># Bracket literals (NOT SUPPORTED)</span>
+<span class="keyword">Set</span> nums <span class="keyword">to</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]
+
+<span class="comment"># Brace literals (NOT SUPPORTED)</span>
+<span class="keyword">Set</span> dict <span class="keyword">to</span> {<span class="string">"key"</span>: <span class="string">"value"</span>}
+
+<span class="comment"># These will throw errors!</span>
+            </div>
+          </div>
+          <div class="column">
+            <h4>✅ Current Syntax</h4>
+            <div class="code-block">
+<span class="comment"># Phrasal creation</span>
+<span class="keyword">Set</span> nums <span class="keyword">to</span> <span class="keyword">Make a list of</span> <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>
+
+<span class="comment"># Phrasal dictionary</span>
+<span class="keyword">Set</span> dict <span class="keyword">to</span> <span class="keyword">Make a dictionary with</span>
+  <span class="string">"key"</span> <span class="keyword">set to</span> <span class="string">"value"</span>
+
+<span class="comment"># Natural and readable!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Demos -->
+      <div class="section">
+        <h2>🎮 Try the API</h2>
+        <div class="demo-grid">
+          <div class="demo-card">
+            <h3>Simple Calculator</h3>
+            <p>Basic arithmetic operations</p>
+            <button class="btn" onclick="testSimpleCalc()">Test /api/calc</button>
+            <div id="simpleCalcResult" class="output-section" style="display:none;">
+              <h4>Output:</h4>
+              <pre id="simpleCalcOutput"></pre>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3>Complex Calculation</h3>
+            <p>Demonstrates grouping and indexing</p>
+            <button class="btn" onclick="testComplexCalc()">Test /api/complex</button>
+            <div id="complexCalcResult" class="output-section" style="display:none;">
+              <h4>Output:</h4>
+              <pre id="complexCalcOutput"></pre>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3>Statistics</h3>
+            <p>Phrasal built-ins in action</p>
+            <button class="btn" onclick="testStats()">Test /api/stats</button>
+            <div id="statsResult" class="output-section" style="display:none;">
+              <h4>Output:</h4>
+              <pre id="statsOutput"></pre>
+            </div>
+          </div>
+
+          <div class="demo-card">
+            <h3>Full Demo</h3>
+            <p>Complete syntax showcase</p>
+            <button class="btn" onclick="testFullDemo()">Test /api/demo</button>
+            <div id="fullDemoResult" class="output-section" style="display:none;">
+              <h4>Output:</h4>
+              <pre id="fullDemoOutput"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Concepts -->
+      <div class="section">
+        <h2>🔑 Key Concepts</h2>
+        <div class="demo-grid">
+          <div class="demo-card">
+            <h3>Collections</h3>
+            <p><strong>Create:</strong> Use phrasal syntax only</p>
+            <p><strong>Access:</strong> Use [] brackets for indexing</p>
+            <p><strong>Remember:</strong> Brackets ≠ Literals</p>
+          </div>
+
+          <div class="demo-card">
+            <h3>Operators</h3>
+            <p><strong>Symbolic:</strong> +, -, *, /, ==, !=, >, <</p>
+            <p><strong>Phrasal:</strong> plus, minus, times, is greater than</p>
+            <p><strong>Mix freely:</strong> (a + b) times c</p>
+          </div>
+
+          <div class="demo-card">
+            <h3>Precedence</h3>
+            <p><strong>1. Parentheses:</strong> Highest priority</p>
+            <p><strong>2. Multiply/Divide:</strong> Before add/subtract</p>
+            <p><strong>3. Add/Subtract:</strong> Left-to-right</p>
+          </div>
+
+          <div class="demo-card">
+            <h3>Built-ins</h3>
+            <p><strong>Math:</strong> total of, smallest in, largest in</p>
+            <p><strong>Collections:</strong> first in, last in, reverse of</p>
+            <p><strong>Strings:</strong> make uppercase, make lowercase</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function testSimpleCalc() {
+      const resultDiv = document.getElementById('simpleCalcResult');
+      const outputPre = document.getElementById('simpleCalcOutput');
+      
+      try {
+        const response = await fetch('/api/calc');
+        const data = await response.json();
+        outputPre.textContent = JSON.stringify(data, null, 2);
+        resultDiv.style.display = 'block';
+      } catch (error) {
+        outputPre.textContent = 'Error: ' + error.message;
+        resultDiv.style.display = 'block';
+      }
+    }
+
+    async function testComplexCalc() {
+      const resultDiv = document.getElementById('complexCalcResult');
+      const outputPre = document.getElementById('complexCalcOutput');
+      
+      try {
+        const response = await fetch('/api/complex');
+        const data = await response.json();
+        outputPre.textContent = JSON.stringify(data, null, 2);
+        resultDiv.style.display = 'block';
+      } catch (error) {
+        outputPre.textContent = 'Error: ' + error.message;
+        resultDiv.style.display = 'block';
+      }
+    }
+
+    async function testStats() {
+      const resultDiv = document.getElementById('statsResult');
+      const outputPre = document.getElementById('statsOutput');
+      
+      try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        outputPre.textContent = JSON.stringify(data, null, 2);
+        resultDiv.style.display = 'block';
+      } catch (error) {
+        outputPre.textContent = 'Error: ' + error.message;
+        resultDiv.style.display = 'block';
+      }
+    }
+
+    async function testFullDemo() {
+      const resultDiv = document.getElementById('fullDemoResult');
+      const outputPre = document.getElementById('fullDemoOutput');
+      
+      try {
+        const response = await fetch('/api/demo');
+        const data = await response.json();
+        outputPre.textContent = JSON.stringify(data, null, 2);
+        resultDiv.style.display = 'block';
+      } catch (error) {
+        outputPre.textContent = 'Error: ' + error.message;
+        resultDiv.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

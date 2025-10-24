@@ -1,0 +1,66 @@
+Start Program
+
+Write "=== Testing [] for Indexing ==="
+Write ""
+
+Write "Test 1: Basic list indexing"
+Set nums to Make a list of 10, 20, 30, 40, 50
+Write "List: " plus nums
+Write "nums[0] = " plus nums[0]
+Write "nums[2] = " plus nums[2]
+Write "nums[4] = " plus nums[4]
+Write ""
+
+Write "Test 2: Negative indexing"
+Write "nums[-1] = " plus nums[-1]
+Write "nums[-2] = " plus nums[-2]
+Write ""
+
+Write "Test 3: Variable index"
+Set idx to 3
+Write "idx = 3, nums[idx] = " plus nums[idx]
+Write ""
+
+Write "Test 4: Dictionary indexing with string keys"
+Set person to Make a dictionary with "name" set to "Alice", "age" set to 30, "city" set to "NYC"
+Write "Dict: " plus person
+Write "person['name'] = " plus person["name"]
+Write "person['age'] = " plus person["age"]
+Write "person['city'] = " plus person["city"]
+Write ""
+
+Write "Test 5: String indexing"
+Set text to "Hello World"
+Write "text = " plus text
+Write "text[0] = " plus text[0]
+Write "text[6] = " plus text[6]
+Write "text[-1] = " plus text[-1]
+Write ""
+
+Write "Test 6: Nested list indexing"
+Set row1 to Make a list of 1, 2, 3
+Set row2 to Make a list of 4, 5, 6
+Set matrix to Make a list of row1, row2
+Write "matrix = " plus matrix
+Write "matrix[0] = " plus matrix[0]
+Write "matrix[1] = " plus matrix[1]
+Write "matrix[0][0] = " plus matrix[0][0]
+Write "matrix[0][2] = " plus matrix[0][2]
+Write "matrix[1][1] = " plus matrix[1][1]
+Write ""
+
+Write "Test 7: Indexing in expressions"
+Set a to nums[1]
+Set b to nums[2]
+Set sum_result to a + b
+Write "nums[1] + nums[2] = " plus sum_result
+Write ""
+
+Write "Test 8: Indexing with arithmetic"
+Set result to nums[0] + nums[1] * 2
+Write "nums[0] + nums[1] * 2 = " plus result
+Write ""
+
+Write "=== All indexing tests passed! ==="
+
+End Program

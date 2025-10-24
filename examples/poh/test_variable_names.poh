@@ -1,0 +1,42 @@
+Start Program
+
+Write "Testing variable names..."
+Write ""
+
+// Test various variable names
+Set ints to Make a list of 1, 2, 3, 4, 5
+Write "ints: " plus ints
+
+Set nums to Make a list of 10, 20, 30
+Write "nums: " plus nums
+
+Set values to Make a list of 100, 200, 300
+Write "values: " plus values
+
+Set my_list to Make a list of 5, 10, 15
+Write "my_list: " plus my_list
+
+Set data123 to Make a list of 7, 8, 9
+Write "data123: " plus data123
+
+// Test with dictionaries
+Set person to Make a dictionary with "name" set to "Alice", "age" set to 30
+Write "person: " plus person
+
+Set config to Make a dictionary with "host" set to "localhost", "port" set to 8080
+Write "config: " plus config
+
+// Test single values
+Set x to 42
+Write "x: " plus x
+
+Set name to "Bob"
+Write "name: " plus name
+
+Set active to True
+Write "active: " plus active
+
+Write ""
+Write "All variable assignments work!"
+
+End Program

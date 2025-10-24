@@ -1,7 +1,7 @@
 Start Program
 Write "=== List Indexing ==="
 
-Set numbers to [10, 20, 30, 40, 50]
+Set numbers to Make a list of 10, 20, 30, 40, 50
 Write "List: " plus numbers
 
 Write "First element (index 0): " plus numbers[0]
@@ -14,14 +14,14 @@ Write "Dynamic index [3]: " plus numbers[idx]
 Write ""
 Write "=== Negative Indexing ==="
 
-Set items to ["first", "second", "third", "last"]
+Set items to Make a list of "first", "second", "third", "last"
 Write "Last element [-1]: " plus items[-1]
 Write "Second to last [-2]: " plus items[-2]
 
 Write ""
 Write "=== Dictionary Indexing ==="
 
-Set person to {name: "Alice", age: 30, city: "NYC"}
+Set person to Make a dictionary with "name" set to "Alice", "age" set to 30, "city" set to "NYC"
 Write "Name: " plus person["name"]
 Write "Age: " plus person["age"]
 Write "City: " plus person["city"]
@@ -37,7 +37,10 @@ Write "Middle char [2]: " plus text[2]
 Write ""
 Write "=== Nested Indexing ==="
 
-Set matrix to [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+Set row1 to Make a list of 1, 2, 3
+Set row2 to Make a list of 4, 5, 6
+Set row3 to Make a list of 7, 8, 9
+Set matrix to Make a list of row1, row2, row3
 Write "Matrix: " plus matrix
 Write "First row: " plus matrix[0]
 Write "First row, second column: " plus matrix[0][1]
@@ -46,14 +49,14 @@ Write "Third row, third column: " plus matrix[2][2]
 Write ""
 Write "=== Complex Expressions ==="
 
-Set data to [100, 200, 300]
+Set data to Make a list of 100, 200, 300
 Set sum_result to data[0] plus data[1]
 Write "Sum of first two: " plus sum_result
 
 Set doubled to data[2] times 2
 Write "Doubled third: " plus doubled
 
-Set prices to {apple: 1.5, banana: 0.75, orange: 2.0}
+Set prices to Make a dictionary with "apple" set to 1.5, "banana" set to 0.75, "orange" set to 2.0
 Set apple_price to prices["apple"]
 Set total_apples to apple_price times 3
 Write "Total for 3 apples: " plus total_apples

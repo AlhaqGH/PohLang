@@ -1,0 +1,32 @@
+Start Program
+
+Write "Testing where () grouping works..."
+Write ""
+
+Write "Test 1: Direct calculation without assignment"
+Set a to 10
+Set b to 5
+Set c to 2
+
+Write "Test 1a: No parentheses"
+Set temp1 to a + b * c
+Write "a + b * c = " plus temp1
+
+Write "Test 1b: Try grouping in If condition"
+If (a + b) > 12
+    Write "(a + b) > 12 is True - grouping works in conditions!"
+End
+
+Write ""
+Write "Test 2: Grouping with single operation"
+Set temp2 to a + b
+Set result to temp2 * c
+Write "(a + b) times c via two steps = " plus result
+
+Write ""
+Write "Test 3: Phrasal operators with grouping attempt"
+Set sum_ab to a plus b
+Set result2 to sum_ab times c
+Write "(a plus b) times c via two steps = " plus result2
+
+End Program

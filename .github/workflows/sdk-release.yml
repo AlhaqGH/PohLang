@@ -59,35 +59,170 @@ jobs:
           SDK_DIR="pohlang-sdk-${{ steps.tag.outputs.tag }}-${{ matrix.platform }}"
           mkdir -p "${SDK_DIR}"
           mkdir -p "${SDK_DIR}/bin"
+          mkdir -p "${SDK_DIR}/lib"
+          mkdir -p "${SDK_DIR}/include"
           mkdir -p "${SDK_DIR}/examples"
-          mkdir -p "${SDK_DIR}/doc"
+          mkdir -p "${SDK_DIR}/docs/api"
+          mkdir -p "${SDK_DIR}/docs/spec"
+          mkdir -p "${SDK_DIR}/docs/guide"
           
-          # Copy binary
+          # Copy runtime binary
           cp runtime/target/release/${{ matrix.binary }} "${SDK_DIR}/bin/"
+          
+          # Copy library (for embedding)
+          if [ -f runtime/target/release/libpohlang_runtime.* ]; then
+            cp runtime/target/release/libpohlang_runtime.* "${SDK_DIR}/lib/" || true
+          fi
           
           # Copy examples
           cp -r examples/poh/* "${SDK_DIR}/examples/"
           
-          # Copy documentation
-          cp doc/PohLang_Guide.md "${SDK_DIR}/doc/"
+          # Copy language specification
+          cp spec/Grammar.ebnf "${SDK_DIR}/docs/spec/"
+          cp spec/Vocabulary.md "${SDK_DIR}/docs/spec/"
+          
+          # Copy user guide
+          cp doc/PohLang_Guide.md "${SDK_DIR}/docs/guide/"
+          
+          # Copy design documents
+          if [ -f runtime/DESIGN.md ]; then
+            cp runtime/DESIGN.md "${SDK_DIR}/docs/api/Runtime_Design.md"
+          fi
+          
+          # Copy README and LICENSE
           cp README.md "${SDK_DIR}/"
           cp LICENSE "${SDK_DIR}/"
           
-          # Create a quick start guide
-          cat > "${SDK_DIR}/QUICK_START.md" << 'EOF'
-          # PohLang SDK Quick Start
+          # Create SDK documentation
+          cat > "${SDK_DIR}/SDK_README.md" << 'EOF'
+          # PohLang Language SDK
           
-          **✅ No Installation Required!** - This package contains everything you need.
+          This is the **official PohLang Language SDK** for developers who want to:
+          - Embed PohLang in their applications
+          - Create language bindings for other languages
+          - Build tools and extensions for PohLang
+          - Study the language implementation
           
-          **✅ No Rust, Visual Studio, or Build Tools** - Just extract and run!
+          ## Package Contents
           
-          ## What's Included
+          ### For End Users
+          - `bin/` - PohLang runtime executable
+          - `examples/` - Sample PohLang programs
+          - `docs/guide/` - User documentation
           
-          - `bin/` - PohLang executable (ready to use)
-          - `examples/` - Sample programs to learn from
-          - `doc/` - Complete language guide
-          - `README.md` - Project overview
-          - `LICENSE` - MIT license
+          ### For Language Developers
+          - `lib/` - Runtime libraries for embedding
+          - `include/` - C/FFI headers (if available)
+          - `docs/spec/` - Language specification (Grammar, Vocabulary)
+          - `docs/api/` - Runtime design and architecture
+          
+          ## SDK Structure
+          
+          ```
+          pohlang-sdk-{version}-{platform}/
+          ├── bin/
+          │   └── pohlang          # Runtime executable
+          ├── lib/
+          │   └── libpohlang_*     # Runtime library (for embedding)
+          ├── include/             # Headers for FFI/embedding
+          ├── examples/            # Sample .poh programs
+          ├── docs/
+          │   ├── guide/           # PohLang_Guide.md
+          │   ├── spec/            # Grammar.ebnf, Vocabulary.md
+          │   └── api/             # Runtime_Design.md
+          ├── README.md
+          ├── LICENSE
+          └── SDK_README.md        # This file
+          ```
+          
+          ## For End Users
+          
+          ### Running PohLang Programs
+          
+          ```bash
+          # Windows
+          bin\pohlang.exe examples\hello.poh
+          
+          # Linux/macOS  
+          ./bin/pohlang examples/hello.poh
+          ```
+          
+          See `docs/guide/PohLang_Guide.md` for language tutorials.
+          
+          ## For Language Developers
+          
+          ### Understanding PohLang
+          
+          1. **Language Specification** (`docs/spec/`)
+             - `Grammar.ebnf` - Formal grammar in EBNF notation
+             - `Vocabulary.md` - Keywords, operators, and syntax rules
+          
+          2. **Runtime Design** (`docs/api/`)
+             - `Runtime_Design.md` - VM architecture and implementation
+          
+          3. **Examples** (`examples/`)
+             - Study real PohLang programs to understand language features
+          
+          ### Embedding PohLang
+          
+          The runtime library in `lib/` allows you to embed PohLang in your applications.
+          
+          **Example (conceptual):**
+          ```c
+          #include "pohlang.h"
+          
+          int main() {
+              pohlang_vm* vm = pohlang_vm_create();
+              pohlang_vm_eval(vm, "Write 'Hello from embedded PohLang!'");
+              pohlang_vm_destroy(vm);
+              return 0;
+          }
+          ```
+          
+          ### Creating Language Bindings
+          
+          Use the specifications in `docs/spec/` to create parsers and tools:
+          
+          - **Python**: Create a PohLang parser using the EBNF grammar
+          - **JavaScript**: Build a web-based PohLang interpreter
+          - **Java/C#**: Integrate PohLang into JVM/.NET applications
+          
+          ### Building Tools
+          
+          The SDK provides everything needed to build:
+          - **Syntax highlighters** (use Grammar.ebnf)
+          - **LSP servers** (language server protocol)
+          - **Code formatters** (based on syntax rules)
+          - **Static analyzers** (using the specification)
+          - **Transpilers** (PohLang to other languages)
+          
+          ## Language Specification Highlights
+          
+          From `docs/spec/Grammar.ebnf`:
+          - Program structure: `Start Program ... End Program`
+          - Variables: `Set name to value`
+          - Functions: `Make functionName with params: ... End`
+          - Control flow: `If condition ... End`, `While condition ... End`
+          - Operations: Phrasal (`plus`, `minus`) and symbolic (`+`, `-`)
+          
+          ## Version Information
+          
+          This SDK corresponds to PohLang runtime version in the tag name.
+          Check `bin/pohlang --version` for exact version details.
+          
+          ## Resources
+          
+          - **Repository**: https://github.com/AlhaqGH/PohLang
+          - **Issues**: https://github.com/AlhaqGH/PohLang/issues
+          - **Discussions**: https://github.com/AlhaqGH/PohLang/discussions
+          
+          ## License
+          
+          PohLang is released under the MIT License. See `LICENSE` file.
+          
+          ---
+          
+          **For questions about embedding or creating bindings, open a discussion on GitHub!**
           
           ## Getting Started (3 Steps)
           

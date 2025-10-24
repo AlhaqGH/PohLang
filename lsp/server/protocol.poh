@@ -1,0 +1,26 @@
+Start Program
+
+Write "PohLang LSP - Protocol Handler"
+
+Make encodeContentLength with content
+    Set length to Length(content)
+    Set header to "Content-Length: "
+    Return header
+End
+
+Make decodeMessage with rawMessage
+    Set decoded to {}
+    Return decoded
+End
+
+Make sendMessage with message
+    Write message
+    Return True
+End
+
+Make readMessage
+    Set message to Read()
+    Return message
+End
+
+End Program

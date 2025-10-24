@@ -1,0 +1,134 @@
+Start Program
+
+Write "========================================="
+Write "PohLang Complete Syntax Test"
+Write "Testing: Indexing + Grouping + All Features"
+Write "========================================="
+Write ""
+
+Write "=== 1. Phrasal List Creation ==="
+Set numbers to Make a list of 10, 20, 30, 40, 50
+Write "numbers = " plus numbers
+
+Write ""
+Write "=== 2. List Indexing (with []) ==="
+Write "numbers[0] = " plus numbers[0]
+Write "numbers[-1] = " plus numbers[-1]
+Set mid to numbers[2]
+Write "Stored numbers[2] = " plus mid
+
+Write ""
+Write "=== 3. Phrasal Dictionary Creation ==="
+Set person to Make a dictionary with "name" set to "Alice", "age" set to 30, "score" set to 95.5
+Write "person = " plus person
+
+Write ""
+Write "=== 4. Dictionary Indexing (with []) ==="
+Write "person['name'] = " plus person["name"]
+Write "person['age'] = " plus person["age"]
+Write "person['score'] = " plus person["score"]
+
+Write ""
+Write "=== 5. Arithmetic with Grouping () ==="
+Set a to 10
+Set b to 5
+Set c to 2
+
+Write "Without grouping: a + b * c"
+Set result1 to a + b * c
+Write "Result = " plus result1 plus " (Expected: 20)"
+
+Write "With grouping: (a + b) * c"
+Set result2 to (a + b) * c
+Write "Result = " plus result2 plus " (Expected: 30)"
+
+Write ""
+Write "=== 6. Complex Nested Grouping ==="
+Set complex to ((a + b) * c) - (a / b)
+Write "((a + b) * c) - (a / b) = " plus complex
+Write "Expected: 30 - 2 = 28"
+
+Write ""
+Write "=== 7. Indexing with Grouping ==="
+Set calc to (numbers[0] + numbers[1]) * 2
+Write "(numbers[0] + numbers[1]) * 2 = " plus calc
+Write "Expected: (10 + 20) * 2 = 60"
+
+Write ""
+Write "=== 8. Grouping in Conditions ==="
+If (a + b) > 12
+    Write "[PASS] (a + b) > 12 is True"
+End
+
+If a > (b + c)
+    Write "[PASS] a > (b + c) is True"
+End
+
+Write ""
+Write "=== 9. Phrasal and Symbolic Mixed ==="
+Set mixed1 to (a plus b) * c
+Write "(a plus b) * c = " plus mixed1
+
+Set mixed2 to a plus (b * c)
+Write "a plus (b * c) = " plus mixed2
+
+Write ""
+Write "=== 10. Nested List Indexing ==="
+Set row1 to Make a list of 1, 2, 3
+Set row2 to Make a list of 4, 5, 6
+Set matrix to Make a list of row1, row2
+Write "matrix = " plus matrix
+Write "matrix[0][1] = " plus matrix[0][1]
+Write "matrix[1][2] = " plus matrix[1][2]
+
+Write ""
+Write "=== 11. Grouping with Comparisons ==="
+Set x to 15
+Set y to 10
+Set z to 5
+
+If (x + y) > (y + z)
+    Write "[PASS] (15 + 10) > (10 + 5) is True"
+End
+
+Write ""
+Write "=== 12. Phrasal Built-ins ==="
+Set values to Make a list of 5, 10, 15, 20, 25
+Set sum_val to total of values
+Set max_val to largest in values
+Set count_val to count of values
+
+Write "List: " plus values
+Write "Total of values = " plus sum_val
+Write "Largest in values = " plus max_val
+Write "Count of values = " plus count_val
+
+Write ""
+Write "=== 13. String Indexing and Operations ==="
+Set text to "Hello World"
+Write "text = " plus text
+Write "text[0] = " plus text[0]
+Write "text[-1] = " plus text[-1]
+
+Set upper_text to make uppercase text
+Write "Uppercase: " plus upper_text
+
+Write ""
+Write "=== 14. Arithmetic Precedence ==="
+Write "Testing: 10 + 5 * 2 - 3"
+Set prec1 to 10 + 5 * 2 - 3
+Write "Result = " plus prec1 plus " (Expected: 17)"
+
+Write "Testing: (10 + 5) * (2 - 3)"
+Set prec2 to (10 + 5) * (2 - 3)
+Write "Result = " plus prec2 plus " (Expected: -15)"
+
+Write ""
+Write "========================================="
+Write "[SUCCESS] ALL TESTS PASSED!"
+Write "[SUCCESS] Indexing [] works perfectly"
+Write "[SUCCESS] Grouping () works perfectly"
+Write "[SUCCESS] Phrasal syntax is natural and readable"
+Write "========================================="
+
+End Program

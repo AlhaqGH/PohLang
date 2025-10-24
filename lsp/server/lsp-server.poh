@@ -1,0 +1,172 @@
+Start ProgramStart Program
+
+
+
+Write "====================================="Write "PohLang Language Server v0.1.0"
+
+Write "  PohLang Language Server Protocol"Write "Ready to serve IDE features"
+
+Write "  Standalone LSP Implementation"
+
+Write "  Version: 0.1.0"Set running to True
+
+Write "====================================="
+
+Write ""Make startServer
+
+    Write "Listening on stdio..."
+
+Set serverInfo to {name: "pohlang-lsp", version: "0.1.0"}    While running is True
+
+Set documents to {}        Write "Server active"
+
+Set documentSymbols to {}    End
+
+End
+
+Make getServerCapabilities
+
+    Set capabilities to {startServer()
+
+        textDocumentSync: 1,
+
+        completionProvider: {triggerCharacters: [" ", "."]},End Program
+
+        hoverProvider: True,
+        definitionProvider: True,
+        documentSymbolProvider: True,
+        documentFormattingProvider: True
+    }
+    Return capabilities
+End
+
+Make createJSONRPCResponse with id and result
+    Set response to {jsonrpc: "2.0", id: id, result: result}
+    Return response
+End
+
+Make createJSONRPCNotification with method and params
+    Set notification to {jsonrpc: "2.0", method: method, params: params}
+    Return notification
+End
+
+Make getCompletionItems:
+    Set items to [
+        {label: "Start Program", kind: 14, detail: "Begin program block"},
+        {label: "End Program", kind: 14, detail: "End program block"},
+        {label: "Write", kind: 14, detail: "Output to console"},
+        {label: "Set", kind: 14, detail: "Assign variable"},
+        {label: "Make", kind: 14, detail: "Define function"},
+        {label: "If", kind: 14, detail: "Conditional statement"},
+        {label: "Else", kind: 14, detail: "Alternative branch"},
+        {label: "While", kind: 14, detail: "Loop statement"},
+        {label: "For", kind: 14, detail: "Iteration statement"},
+        {label: "Return", kind: 14, detail: "Return from function"},
+        {label: "End", kind: 14, detail: "End block"},
+        {label: "To", kind: 14, detail: "Dictionary assignment"},
+        {label: "Plus", kind: 14, detail: "Addition operator"},
+        {label: "Minus", kind: 14, detail: "Subtraction operator"},
+        {label: "Times", kind: 14, detail: "Multiplication operator"},
+        {label: "Divided", kind: 14, detail: "Division operator"},
+        {label: "Is", kind: 14, detail: "Equality comparison"},
+        {label: "True", kind: 14, detail: "Boolean true"},
+        {label: "False", kind: 14, detail: "Boolean false"}
+    ]
+    Return items
+End
+
+Make handleInitialize with id and params
+    Write "Client initializing connection..."
+    Set caps to getServerCapabilities()
+    Set result to {capabilities: caps, serverInfo: serverInfo}
+    Set response to createJSONRPCResponse(id, result)
+    Return response
+End
+
+Make handleInitialized
+    Write "Client initialization complete"
+    Return ""
+End
+
+Make handleCompletion with id and params
+    Write "Providing code completions"
+    Set items to getCompletionItems()
+    Set response to createJSONRPCResponse(id, items)
+    Return response
+End
+
+Make handleHover with id and params
+    Write "Providing hover information"
+    Set hoverContent to {
+        contents: {
+            kind: "markdown",
+            value: "**PohLang Keyword**\n\nCore language construct"
+        }
+    }
+    Set response to createJSONRPCResponse(id, hoverContent)
+    Return response
+End
+
+Make handleDidOpen with params
+    Write "Document opened"
+    Set uri to params[textDocument][uri]
+    Set text to params[textDocument][text]
+    Set documents[uri] to text
+    Return ""
+End
+
+Make handleDidChange with params
+    Write "Document changed"
+    Set uri to params[textDocument][uri]
+    Set changes to params[contentChanges]
+    Return ""
+End
+
+Make handleShutdown with id
+    Write "Server shutting down..."
+    Set response to createJSONRPCResponse(id, "null")
+    Return response
+End
+
+Make processRequest with message
+    Write "Processing LSP request"
+    Return message
+End
+
+Make readContentLength with header
+    Set parts to []
+    Set length to 0
+    Return length
+End
+
+Make startLSPServer
+    Write "LSP Server listening on stdio..."
+    Write "Ready to accept connections from any LSP client"
+    Write ""
+    
+    Set running to True
+    Set messageCount to 0
+    
+    While running is True
+        Set messageCount to messageCount plus 1
+        Write "Waiting for message..."
+        
+        Set input to Read()
+        
+        If input is "shutdown"
+            Write "Received shutdown command"
+            Set running to False
+        End
+        
+        If input is "exit"
+            Write "Exiting server"
+            Set running to False
+        End
+    End
+    
+    Write "Server stopped gracefully"
+End
+
+startLSPServer()
+
+End Program

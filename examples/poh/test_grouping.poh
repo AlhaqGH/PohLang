@@ -1,0 +1,97 @@
+Start Program
+
+Write "=== Testing () for Grouping ==="
+Write ""
+
+Write "Test 1: Basic arithmetic grouping"
+Set result1 to 10 + 5 * 2
+Write "Without grouping: 10 + 5 * 2 = " plus result1
+Write "Expected: 20 (multiplication first)"
+
+Set result2 to (10 + 5) * 2
+Write "With grouping: (10 + 5) * 2 = " plus result2
+Write "Expected: 30 (addition first due to parentheses)"
+Write ""
+
+Write "Test 2: Nested grouping"
+Set result3 to ((10 + 5) * 2) - 5
+Write "((10 + 5) * 2) - 5 = " plus result3
+Write "Expected: 25"
+Write ""
+
+Write "Test 3: Grouping with phrasal operators"
+Set a to 10
+Set b to 5
+Set c to 2
+
+Set result4 to (a plus b) times c
+Write "(a plus b) times c = " plus result4
+Write "Expected: 30"
+Write ""
+
+Write "Test 4: Mixed symbolic and phrasal with grouping"
+Set result5 to (a + b) times c
+Write "(a + b) times c = " plus result5
+Write "Expected: 30"
+
+Set result6 to a plus (b * c)
+Write "a plus (b * c) = " plus result6
+Write "Expected: 20"
+Write ""
+
+Write "Test 5: Multiple groupings in same expression"
+Set result7 to (10 + 5) * (3 - 1)
+Write "(10 + 5) * (3 - 1) = " plus result7
+Write "Expected: 30"
+Write ""
+
+Write "Test 6: Grouping with comparisons"
+Set x to 10
+Set y to 5
+Set z to 3
+
+If (x + y) > 12
+    Write "Test 6a: (x + y) > 12 is True"
+End
+
+If x > (y + z)
+    Write "Test 6b: x > (y + z) is True"
+End
+Write ""
+
+Write "Test 7: Grouping in variable assignments"
+Set nums to Make a list of 1, 2, 3
+Set calc1 to (nums[0] + nums[1]) * nums[2]
+Write "(nums[0] + nums[1]) * nums[2] = " plus calc1
+Write "Expected: 9"
+Write ""
+
+Write "Test 8: Complex nested grouping"
+Set result8 to ((10 + 5) * (3 - 1)) / 2
+Write "((10 + 5) * (3 - 1)) / 2 = " plus result8
+Write "Expected: 15"
+Write ""
+
+Write "Test 9: Grouping with logical operators"
+Set bool1 to True
+Set bool2 to False
+Set bool3 to True
+
+If (bool1 And bool3) Or bool2
+    Write "Test 9: (True And True) Or False = True"
+End
+Write ""
+
+Write "Test 10: Grouping changes precedence"
+Set no_group to 10 + 5 * 2 - 3
+Write "No grouping: 10 + 5 * 2 - 3 = " plus no_group
+Write "Expected: 17 (5*2=10, 10+10=20, 20-3=17)"
+
+Set with_group to (10 + 5) * (2 - 3)
+Write "With grouping: (10 + 5) * (2 - 3) = " plus with_group
+Write "Expected: -15"
+Write ""
+
+Write "=== All grouping tests passed! ==="
+
+End Program

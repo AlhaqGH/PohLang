@@ -1,10 +1,12 @@
-# PohLang Language Guide (September 2025)
+# PohLang Language Guide (October 2025)
 
-This is a step‑by‑step user mEquality uses "is" (or "="). Tip: You do not need brackets in PohLang code. Prefer phrasal forms like "name with a, b" and "List contains …".
+This is a step-by-step user manual for PohLang. It teaches absolute beginners and experienced developers how to write real programs with the current language and runtime. 
 
-**Operator Flexibility:** PohLang supports BOTH phrasal and symbolic operators:
-- **Phrasal forms** (`plus`, `is greater than`) are great for beginners and readability
-- **Symbolic forms** (`+`, `>`) are familiar to experienced programmers
+**PohLang Philosophy:**
+- **Natural language for data structures** - Use `Make a list of` and `Make a dictionary with`
+- **Symbolic operators for math** - Use `+`, `-`, `*`, `/` or phrasal `plus`, `minus`, `times`, `divided by`
+- **Brackets only for indexing** - `list[0]`, `dict["key"]` to access data, NOT to create collections
+- **Parentheses for grouping** - `(a + b) * c` follows standard BIDMAS/PEMDAS rules
 - **Mix both styles** freely in the same program - use what feels natural!
 
 ---
@@ -103,14 +105,25 @@ Set msg to greet with "Reader"
 Write msg
 ```
 
-Equality uses “is” (or “=”). Inequality uses “is not”. Logical operators can be lowercase (and, or, not):
+Equality uses "is" (or symbolic `==`). Inequality uses "is not" (or `!=`). Logical operators can be lowercase (and, or, not):
 
-```
+```poh
 If name is "Ada" Write "Welcome"
-If ok and not (name is "Bob") Write "Proceed"   # parentheses shown only for grouping in the comment; you do not need them in code
+If ok and not (name is "Bob") Write "Proceed"
 ```
 
-Tip: You do not need brackets in PohLang code. Prefer phrasal forms like “name with a, b” and “List contains …”.
+**Grouping with Parentheses:** Use `()` to override operator precedence following BIDMAS/PEMDAS rules:
+
+```poh
+# Without grouping: 10 + 5 * 2 = 20 (multiplication first)
+Write 10 + 5 * 2
+
+# With grouping: (10 + 5) * 2 = 30 (addition first)
+Write (10 + 5) * 2
+
+# Complex: ((a + b) * c) - d
+Set result to ((10 + 5) * 2) - 5   # 25
+```
 
 ---
 
@@ -150,40 +163,78 @@ You can also repeat over a collection (see lists and dictionaries below).
 
 ## 3. Collections (lists and dictionaries)
 
-Lists (legacy literal supported):
+**Creating Collections (Phrasal Syntax Only):**
 
-```
-Set xs to List contains 1, 2, 3
-Write xs
+Lists use `Make a list of`:
+
+```poh
+Set xs to Make a list of 1, 2, 3
+Write xs                # [1, 2, 3]
 Write length(xs)        # 3
 Write len(xs)           # 3 (alias)
 ```
 
-Dictionaries (legacy literal supported):
+Dictionaries use `Make a dictionary with`:
 
-```
-Set d to Dictionary contains "a" set to 1, "b" set to 2
-Write d
-Write length(d)         # 2
+```poh
+Set person to Make a dictionary with "name" set to "Ada", "age" set to 36
+Write person
+Write length(person)    # 2
 ```
 
-Repeat over a list or dictionary:
+**Accessing Elements with Brackets:**
 
+Use `[]` to index lists, dictionaries, and strings:
+
+```poh
+# List indexing
+Set numbers to Make a list of 10, 20, 30, 40, 50
+Write numbers[0]        # 10 (first element)
+Write numbers[-1]       # 50 (last element)
+
+# Dictionary indexing
+Write person["name"]    # Ada
+Write person["age"]     # 36
+
+# String indexing
+Set word to "Hello"
+Write word[0]           # H
+Write word[-1]          # o
+
+# Nested indexing
+Set matrix to Make a list of Make a list of 1, 2, 3, Make a list of 4, 5, 6
+Write matrix[0][1]      # 2
 ```
-Set xs to List contains "red", "green", "blue"
-Repeat length(xs) times
-  # add your own indexing or iteration helpers as you grow the stdlib
+
+**Using Indexing in Expressions:**
+
+```poh
+Set nums to Make a list of 5, 10, 15
+Set sum to nums[0] + nums[1] + nums[2]     # 30
+Set product to (nums[0] + nums[1]) * 2     # 30 (grouping with parentheses)
+```
+
+Repeat over a list:
+
+```poh
+Set colors to Make a list of "red", "green", "blue"
+Repeat length(colors) times
+  Write "Processing color"
 End
 ```
 
-Simple membership and size checks:
+Simple size checks:
 
-```
-If length(xs) is 3 Write "OK"
-If length(d) is not 0 Write "Has items"
+```poh
+If length(xs) is 3 Write "Has 3 elements"
+If length(person) is not 0 Write "Has data"
 ```
 
-Note: The language aims to keep collections immutable by default. Mutation helpers may live in the standard library modules you Import (see below).
+**Important:** 
+- ❌ Bracket literals `[1, 2, 3]` are NOT supported
+- ❌ Brace literals `{"key": "value"}` are NOT supported
+- ✅ Use phrasal `Make a list of` and `Make a dictionary with`
+- ✅ Use `[]` ONLY for indexing/accessing elements
 
 ---
 
@@ -321,48 +372,86 @@ Write result
 
 Examples:
 
-```
-Write length("abc")                         # 3
-Write join(Make a list of 1, 2, 3, ", ")   # "1, 2, 3"
-Write split("a,b,c", ",")                  # ["a", "b", "c"]
-Write total of Make a list of 10, 20, 30  # 60
-Write count of Make a list of 1, 2 and 3 # 3
-Write join Make a list of "a", "b", "c" with "-"   # "a-b-c"
-Write split "a,b,c" by ","               # ["a", "b", "c"]
+```poh
+Write length("abc")                                    # 3
+Write join(Make a list of 1, 2, 3, ", ")              # "1, 2, 3"
+Write split("a,b,c", ",")                             # ["a", "b", "c"]
+Write total of Make a list of 10, 20, 30             # 60
+Write count of Make a list of 1, 2 and 3              # 3
+Write join Make a list of "a", "b", "c" with "-"      # "a-b-c"
+Write split "a,b,c" by ","                            # ["a", "b", "c"]
 
 # Collection operations
-Write contains 3 in [1, 2, 3]           # True
-Write contains "world" in "hello world" # True
-Set cleaned to remove 0 from [1, 0, 2]  # [1, 2]
-Set extended to append 4 to [1, 2, 3]   # [1, 2, 3, 4]
-Set result to insert 2.5 at 2 in [1, 2, 3]  # [1, 2, 2.5, 3]
+Set nums to Make a list of 1, 2, 3
+Write contains 3 in nums                              # True
+Write contains "world" in "hello world"               # True
+Set cleaned to remove 0 from Make a list of 1, 0, 2   # [1, 2]
+Set extended to append 4 to nums                      # [1, 2, 3, 4]
 
 # Aliases
-Write size of Make a list of 1 and 2   # 2 (alias of count of)
-Write separate "a,b,c" by ","          # ["a", "b", "c"] (alias of split)
+Write size of Make a list of 1 and 2                  # 2 (alias of count of)
+Write separate "a,b,c" by ","                         # ["a", "b", "c"] (alias of split)
 ```
 
 ---
 
-## 7. Errors you might see and how to fix them
+## 7. Operator Precedence (BIDMAS/PEMDAS)
+
+PohLang follows standard mathematical operator precedence rules:
+
+1. **Brackets/Parentheses** `()` - Highest priority
+2. **Division and Multiplication** `/`, `*`, `divided by`, `times` - Same level, left-to-right
+3. **Addition and Subtraction** `+`, `-`, `plus`, `minus` - Lowest priority, left-to-right
+
+Examples:
+
+```poh
+# Basic precedence
+Write 10 + 5 * 2                    # 20 (multiplication first)
+Write (10 + 5) * 2                  # 30 (parentheses override)
+
+# Mixed symbolic and phrasal
+Write 10 plus 5 times 2             # 20 (same precedence rules)
+Write (10 plus 5) times 2           # 30 (grouping works with phrasal)
+
+# Complex expressions
+Set a to 10
+Set b to 5
+Set c to 2
+Write ((a + b) * c) - (a / b)       # 28
+
+# Grouping with indexing
+Set numbers to Make a list of 10, 20, 30
+Write (numbers[0] + numbers[1]) * 2 # 60
+```
+
+**Tip:** When in doubt, use parentheses to make your intent clear!
+
+---
+
+## 8. Errors you might see and how to fix them
 
 If something goes wrong, the runtime prints a helpful message with a line number when it can. Common issues:
 
 - Unknown function name: check spelling, or define it with Make.
-- Wrong number of arguments: make sure calls match the function’s header (defaults help).
+- Wrong number of arguments: make sure calls match the function's header (defaults help).
 - Type mismatches: use numbers with numbers; text with text (plus concatenates text).
 - Index or key problems: verify bounds and keys before access.
+- **Bracket literal error**: Use `Make a list of` instead of `[1, 2, 3]`
+- **Brace literal error**: Use `Make a dictionary with` instead of `{"key": "value"}`
 
 Example messages:
 
 ```
 [script.poh: Line 3] Unknown function 'gree'. Did you mean 'greet'?
 [script.poh: Line 5] Function 'sumTwo' expects 2..2 args but got 1
+[script.poh: Line 7] Bracket list literals '[]' are not supported. Use: Make a list of ...
+[script.poh: Line 9] Brace dictionary literals '{}' are not supported. Use: Make a dictionary with ...
 ```
 
 ---
 
-## 8. Command‑line usage
+## 9. Command‑line usage
 
 ### Building the Runtime
 
@@ -391,7 +480,7 @@ cargo run --manifest-path runtime/Cargo.toml -- --run path/to/script.poh
 
 ### Using PLHub
 
-For a complete development environment, use [PLHub](https://github.com/AlhaqGH/PLHub):
+For a complete development environment, use [PLHub](https://github.com/pohlang/plhub):
 
 ```bash
 plhub run path/to/script.poh

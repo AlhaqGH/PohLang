@@ -1,0 +1,88 @@
+Start Program
+
+Write "=== PohLang Phrasal Syntax Test ==="
+Write ""
+
+Write "--- Test 1: List Creation (Phrasal) ---"
+Set numbers to Make a list of 1, 2, 3, 4, 5
+Write "List: " plus numbers
+
+Write ""
+Write "--- Test 2: List Indexing (with []) ---"
+Write "First: " plus numbers[0]
+Write "Last: " plus numbers[-1]
+Write "Index 2: " plus numbers[2]
+
+Write ""
+Write "--- Test 3: Dictionary Creation (Phrasal) ---"
+Set person to Make a dictionary with "name" set to "Alice", "age" set to 30
+Write "Dict: " plus person
+
+Write ""
+Write "--- Test 4: Dictionary Access (with []) ---"
+Write "Name: " plus person["name"]
+Write "Age: " plus person["age"]
+
+Write ""
+Write "--- Test 5: Function with Phrasal Call ---"
+Make greet with name
+    Return "Hello, " plus name
+End
+
+Set msg to greet with "World"
+Write msg
+
+Write ""
+Write "--- Test 6: Arithmetic with Symbols ---"
+Set a to 10
+Set b to 5
+Set calc1 to a + b
+Write "a + b = " plus calc1
+Set calc2 to a * b
+Write "a * b = " plus calc2
+Set calc3 to a plus b times 2
+Write "a plus b times 2 = " plus calc3
+
+Write ""
+Write "--- Test 7: Comparisons ---"
+If a > b
+    Write "Symbolic > works"
+End
+
+If a is greater than b
+    Write "Phrasal 'is greater than' works"
+End
+
+Write ""
+Write "--- Test 8: Grouping with () ---"
+Set grouped to a + b
+Set result to grouped * 2
+Write "Grouped calc: " plus result
+
+Write ""
+Write "--- Test 9: Phrasal Built-ins ---"
+Set vals to Make a list of 5, 10, 15, 20
+Set total_val to total of vals
+Write "Total: " plus total_val
+Set largest_val to largest in vals
+Write "Largest: " plus largest_val
+Set count_val to count of vals
+Write "Count: " plus count_val
+
+Set txt to "  hello  "
+Set trimmed to trim spaces from txt
+Write "Trimmed: [" plus trimmed plus "]"
+
+Write ""
+Write "--- Test 10: Built-in Functions with 'with' ---"
+Set nums_list to Make a list of 1, 2, 3, 4, 5
+Set joined to join with nums_list, ", "
+Write "Joined: " plus joined
+
+Set words to split with "a,b,c", ","
+Write "Split: " plus words
+
+Write ""
+Write "=== ALL TESTS COMPLETE ==="
+
+End Program
