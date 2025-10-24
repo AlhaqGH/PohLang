@@ -4,6 +4,8 @@
 
 PohLang is distributed as a standalone binary. Just download and run!
 
+🎮 **Try First**: [PohLang Playground](https://pohlang-playground.pages.dev) - Test PohLang in your browser before installing!
+
 ---
 
 ## Quick Install (Recommended)

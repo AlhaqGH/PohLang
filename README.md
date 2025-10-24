@@ -29,7 +29,8 @@ A beginner-focused, fully phrasal (English-like) programming language designed t
 📘 Full documentation: see the comprehensive guide at [PohLang_Guide.md](./doc/PohLang_Guide.md).  
 🗺️ **Roadmap**: See [ROADMAP.md](./doc/ROADMAP.md) for detailed milestones.  
 🔌 **VS Code Extension**: Get the full IDE experience with [PohLang Hub](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)!  
-📦 **Installation**: See [INSTALL.md](./INSTALL.md) for one-line install commands!
+📦 **Installation**: See [INSTALL.md](./INSTALL.md) for one-line install commands!  
+🎮 **Try Online**: [PohLang Playground](https://pohlang-playground.pages.dev) - Write and run PohLang code in your browser!
 
 > **Note**: This repository contains the **core Rust runtime only**. For the complete development environment including CLI tools, package management, and editor integration, see [PLHub](https://github.com/AlhaqGH/PLHub).
 
@@ -100,6 +101,8 @@ pohlang --run --watch server.poh
 Edit your `.poh` file and watch the browser reload automatically!
 
 ## Quick Start
+
+**New to PohLang?** Try the [Online Playground](https://pohlang-playground.pages.dev) - no installation required!
 
 ### 🎯 Option 1: Download Pre-built Binary (Recommended for End Users)
 

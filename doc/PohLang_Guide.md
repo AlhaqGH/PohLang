@@ -1,6 +1,8 @@
 # PohLang Language Guide (October 2025)
 
-This is a step-by-step user manual for PohLang. It teaches absolute beginners and experienced developers how to write real programs with the current language and runtime. 
+This is a step-by-step user manual for PohLang. It teaches absolute beginners and experienced developers how to write real programs with the current language and runtime.
+
+🎮 **Interactive Learning**: Try examples in the [PohLang Playground](https://pohlang-playground.pages.dev) as you read this guide!
 
 **PohLang Philosophy:**
 - **Natural language for data structures** - Use `Make a list of` and `Make a dictionary with`
