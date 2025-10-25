@@ -615,6 +615,42 @@ fn parse_until_keywords(lines: &[&str], i: &mut usize, stops: &[&str]) -> Result
             }
         }
 
+        // Add middleware "<type>" to server (with optional config)
+        // Examples:
+        //   Add middleware "cors" to server
+        //   Add middleware "logging" to server
+        //   Add middleware "auth" with token "secret123" to server
+        if let Some(rest) = P::strip_prefix_ci(t, "add middleware ") {
+            if let Some((type_and_config, _)) = rest.split_once(" to server") {
+                // Extract middleware type (quoted string)
+                if let Some(type_str) = type_and_config.split('"').nth(1) {
+                    let middleware_type = type_str.to_string();
+                    let mut config = Vec::new();
+                    
+                    // Check for "with" keyword for configuration
+                    if let Some(config_part) = type_and_config.split_once(" with ") {
+                        // Parse key-value pairs: key "value"
+                        let config_str = config_part.1;
+                        let parts: Vec<&str> = config_str.split(" and ").collect();
+                        
+                        for part in parts {
+                            if let Some((key, value_str)) = part.trim().split_once(' ') {
+                                let value_expr = parse_expr(value_str.trim())?;
+                                config.push((key.to_string(), value_expr));
+                            }
+                        }
+                    }
+                    
+                    out.push(Stmt::AddMiddleware {
+                        middleware_type,
+                        config,
+                    });
+                    *i += 1;
+                    continue;
+                }
+            }
+        }
+
         // Start server
         if P::strip_prefix_ci(t, "start server").is_some() {
             out.push(Stmt::StartServer);

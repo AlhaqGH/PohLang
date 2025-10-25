@@ -456,6 +456,79 @@ impl Vm {
                         _ => bail!("server variable is not a web server"),
                     }
                 }
+                Stmt::AddMiddleware {
+                    middleware_type,
+                    config,
+                } => {
+                    // Get the server from globals
+                    let server_val = self.globals.get("server").cloned()
+                        .ok_or_else(|| anyhow!("No web server found. Create a server first"))?;
+
+                    match server_val {
+                        Value::WebServer(server_arc) => {
+                            let server = server_arc.lock().unwrap();
+                            
+                            // Parse configuration
+                            let mut config_map = std::collections::HashMap::new();
+                            for (key, expr) in config {
+                                let val = self.eval(expr)?;
+                                if let Value::Str(s) = val {
+                                    config_map.insert(key.clone(), s);
+                                }
+                            }
+                            
+                            // Add middleware based on type
+                            match middleware_type.as_str() {
+                                "cors" => {
+                                    let origins = config_map.get("origins")
+                                        .map(|s| vec![s.clone()])
+                                        .unwrap_or_else(|| vec!["*".to_string()]);
+                                    let methods = config_map.get("methods")
+                                        .map(|s| vec![s.clone()])
+                                        .unwrap_or_else(|| vec!["GET".to_string(), "POST".to_string(), "PUT".to_string(), "DELETE".to_string()]);
+                                    let headers = config_map.get("headers")
+                                        .map(|s| vec![s.clone()])
+                                        .unwrap_or_else(|| vec!["Content-Type".to_string()]);
+                                    
+                                    let middleware = crate::stdlib::middleware::cors_middleware(origins, methods, headers);
+                                    server.add_response_middleware(middleware);
+                                    core_io::write("✓ CORS middleware added");
+                                }
+                                "logging" => {
+                                    let middleware = crate::stdlib::middleware::logging_middleware();
+                                    server.add_request_middleware(middleware);
+                                    core_io::write("✓ Logging middleware added");
+                                }
+                                "auth" => {
+                                    let token_name = config_map.get("token_name")
+                                        .cloned()
+                                        .unwrap_or_else(|| "Authorization".to_string());
+                                    let token = config_map.get("token")
+                                        .cloned()
+                                        .ok_or_else(|| anyhow!("auth middleware requires 'token' config"))?;
+                                    
+                                    let middleware = crate::stdlib::middleware::auth_middleware(token_name, token);
+                                    server.add_request_middleware(middleware);
+                                    core_io::write("✓ Auth middleware added");
+                                }
+                                "security" => {
+                                    let middleware = crate::stdlib::middleware::security_headers_middleware();
+                                    server.add_response_middleware(middleware);
+                                    core_io::write("✓ Security headers middleware added");
+                                }
+                                "timing" => {
+                                    let middleware = crate::stdlib::middleware::response_time_middleware();
+                                    server.add_response_middleware(middleware);
+                                    core_io::write("✓ Response timing middleware added");
+                                }
+                                _ => {
+                                    bail!("Unknown middleware type: {}. Available: cors, logging, auth, security, timing", middleware_type);
+                                }
+                            }
+                        }
+                        _ => bail!("server variable is not a web server"),
+                    }
+                }
                 Stmt::StartServer => {
                     // Get the server from globals
                     let server_val = self.globals.remove("server")
@@ -1667,6 +1740,11 @@ impl Vm {
                     // Web server routes cannot be defined inside functions
                     // They must be defined at module level
                     eprintln!("Warning: AddRoute statement inside function is not supported");
+                    return ControlFlow::Continue;
+                }
+                Stmt::AddMiddleware { .. } => {
+                    // Middleware cannot be added inside functions
+                    eprintln!("Warning: AddMiddleware statement inside function is not supported");
                     return ControlFlow::Continue;
                 }
                 Stmt::StartServer => {

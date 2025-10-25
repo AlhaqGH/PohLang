@@ -56,6 +56,15 @@ pub struct MiddlewareChain {
     response_middleware: Vec<ResponseMiddlewareFunc>,
 }
 
+impl std::fmt::Debug for MiddlewareChain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MiddlewareChain")
+            .field("request_middleware_count", &self.request_middleware.len())
+            .field("response_middleware_count", &self.response_middleware.len())
+            .finish()
+    }
+}
+
 impl MiddlewareChain {
     pub fn new() -> Self {
         Self {

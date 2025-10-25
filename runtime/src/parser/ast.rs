@@ -144,6 +144,10 @@ pub enum Stmt {
         method: Expr,
         handler: Program,
     },
+    AddMiddleware {
+        middleware_type: String,
+        config: Vec<(String, Expr)>, // Configuration key-value pairs
+    },
     StartServer,
 }
 

@@ -9,6 +9,7 @@ use std::thread;
 use tiny_http::{Header, Request, Response, Server, StatusCode};
 
 use super::router::{Router, RoutePattern};
+use super::middleware::MiddlewareChain;
 
 /// Represents an HTTP request for PohLang
 #[derive(Debug, Clone)]
@@ -66,6 +67,7 @@ pub struct WebServer {
     port: u16,
     routes: Arc<Mutex<Vec<Route>>>,
     router: Arc<Mutex<Router>>, // Added for advanced routing
+    middleware: Arc<Mutex<MiddlewareChain>>, // Added for middleware support
 }
 
 impl WebServer {
@@ -75,6 +77,7 @@ impl WebServer {
             port,
             routes: Arc::new(Mutex::new(Vec::new())),
             router: Arc::new(Mutex::new(Router::new())),
+            middleware: Arc::new(Mutex::new(MiddlewareChain::new())),
         }
     }
 
@@ -95,6 +98,20 @@ impl WebServer {
     pub fn add_route_direct(&self, route: Route) {
         if let Ok(mut routes) = self.routes.lock() {
             routes.push(route);
+        }
+    }
+
+    /// Adds request middleware (runs before route handler)
+    pub fn add_request_middleware(&self, middleware: super::middleware::MiddlewareFunc) {
+        if let Ok(mut chain) = self.middleware.lock() {
+            chain.add_request_middleware(middleware);
+        }
+    }
+
+    /// Adds response middleware (runs after route handler)
+    pub fn add_response_middleware(&self, middleware: super::middleware::ResponseMiddlewareFunc) {
+        if let Ok(mut chain) = self.middleware.lock() {
+            chain.add_response_middleware(middleware);
         }
     }
 

@@ -1,0 +1,45 @@
+// Test middleware integration
+// Demonstrates CORS, logging, security, and timing middleware
+
+Start Program
+
+Write "Setting up web server with middleware..."
+
+# Create web server
+Set server to create web server on port 8080
+
+# Add middleware (order matters!)
+Add middleware "logging" to server
+Add middleware "cors" to server
+Add middleware "security" to server
+Add middleware "timing" to server
+
+# Simple route to test middleware
+Add route "/" with method "GET" to server:
+    Set response to make a dictionary with "message" set to "Middleware test", "status" set to "ok"
+    Write json response with response
+
+# Route with path parameter
+Add route "/users/:id" with method "GET" to server:
+    Set user_id to get path parameter "id"
+    Set response to make a dictionary with "user_id" set to user_id, "message" set to "User found"
+    Write json response with response
+
+# Another test route
+Add route "/api/test" with method "GET" to server:
+    Write html response with "<h1>Middleware Working!</h1><p>Check response headers for middleware output</p>"
+
+Write ""
+Write "Middleware configured:"
+Write "  - Logging - Logs all requests"
+Write "  - CORS - Adds Access-Control headers"
+Write "  - Security - Adds security headers"
+Write "  - Timing - Adds X-Response-Time header"
+Write ""
+Write "Server starting on http://localhost:8080"
+Write "Test with: curl -v http://localhost:8080/"
+Write ""
+
+Start server
+
+End Program

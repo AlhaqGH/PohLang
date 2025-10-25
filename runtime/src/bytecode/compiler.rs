@@ -455,6 +455,15 @@ impl Compiler {
                 self.emit(Instruction::AddRoute);
             }
 
+            Stmt::AddMiddleware {
+                middleware_type,
+                config,
+            } => {
+                // Middleware statements are not yet supported in bytecode compilation
+                // They execute at server setup time, not at runtime
+                // Skip for now
+            }
+
             Stmt::StartServer => {
                 self.emit(Instruction::StartServer);
             }
