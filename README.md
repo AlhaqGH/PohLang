@@ -1,11 +1,11 @@
 # PohLang
 
-A beginner-focused, fully phrasal (English-like) programming language designed to be a **real co### 🚀 Option 2: VS Code Extension (Best IDE Experience)
+A beginner-focused, fully phrasal (English-like) programming language designed to be a readable and easily maintainable tool for programming, with  🚀 VS Code Extensions (Best IDE Experience)
 
 **For VS Code users** - Get syntax highlighting, IntelliSense, snippets, and integrated runtime without leaving VS Code.
 
 1. Install [VS Code](https://code.visualstudio.com/)
-2. Install [PohLang Hub extension](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
+2. Install [PohLang](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang)
 3. Create a `.poh` file and start coding!
 4. Press `Ctrl+F5` to run your program
 
@@ -20,9 +20,9 @@ A beginner-focused, fully phrasal (English-like) programming language designed t
 
 **Note:** The extension includes its own copy of the PohLang runtime, so you don't need to download binaries from GitHub separately. Perfect for VS Code users who want everything in one place!
 
-### 🔧 Option 3: Using PLHub (Advanced)e**—not a script on top of another runtime. PohLang is built with a standalone Rust toolchain, aiming for native executables and full independence.
+# Using PLHub (Advanced)e**—not a script on top of another runtime. PohLang is built with a standalone Rust toolchain, aiming for native executables and full independence.
 
-[![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/pohlang.pohlang-hub?label=VS%20Code%20Extension&color=blue)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
+[![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/pohlang.pohlang-hub?label=VS%20Code%20Extension&color=blue)](https://marketplace.visualstudio.com/items?itemName=pohlang.plhub)
 [![VS Code Installs](https://img.shields.io/visual-studio-marketplace/i/pohlang.pohlang-hub)](https://marketplace.visualstudio.com/items?itemName=pohlang.pohlang-hub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
